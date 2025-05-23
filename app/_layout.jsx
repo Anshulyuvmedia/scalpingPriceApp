@@ -1,86 +1,60 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Drawer } from 'expo-router/drawer';
+import { Stack, usePathname } from 'expo-router';
+import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-import './globals.css';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { DrawerContentScrollView, DrawerItemList, DrawerItem } from '@react-navigation/drawer';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
+import './globals.css'
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+// Prevent the splash screen from hiding until fonts are loaded
+SplashScreen.preventAutoHideAsync();
 
-function CustomDrawerContent(props) {
-  const { navigation, state, descriptors, ...rest } = props;
+export default function AppLayout() {
+    const pathname = usePathname();
+    const statusBarColor = pathname.includes('(auth)') ? '#6200ea' : '#000'; // Purple for auth, black for root
+    const insets = useSafeAreaInsets(); // Get safe area insets
 
-  return (
-    <DrawerContentScrollView {...props}>
-      <Text style={{ padding: 20, fontSize: 18, fontWeight: 'bold' }}>
-        Wealth Walk
-      </Text>
-      <DrawerItemList {...props} />
-      {/* <DrawerItem
-        label="Chatbot"
-        onPress={() => {
-          // console.log('Navigating to (tabs)/chatbot');
-          navigation.navigate('(tabs)', { screen: 'chatbot' });
-        }}
-        labelStyle={{ fontSize: 16 }}
-        style={{ backgroundColor: state.index === 1 ? '#e0e0e0' : 'transparent' }}
-      /> */}
+    // Load the Questrial-Regular font
+    const [fontsLoaded, fontError] = useFonts({
+        'Questrial-Regular': require('../assets/fonts/Questrial-Regular.ttf'),
+    });
 
-    </DrawerContentScrollView>
-  );
-}
+    // Hide splash screen once fonts are loaded or if there's an error
+    useEffect(() => {
+        if (fontsLoaded || fontError) {
+            SplashScreen.hideAsync();
+        }
+    }, [fontsLoaded, fontError]);
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+    // Render nothing until fonts are loaded and no error occurs
+    if (!fontsLoaded && !fontError) {
+        return null;
+    }
 
-  if (!loaded) {
-    console.log('Fonts not loaded yet');
-    return null;
-  }
-
-  return (
-    <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <Drawer
-          drawerContent={props => <CustomDrawerContent {...props} />}
-          screenOptions={{
-            drawerStyle: {
-              backgroundColor: '#f5f5f5',
-              width: 240,
-            },
-            headerStyle: {
-              backgroundColor: '#6200ea',
-            },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-            swipeEdgeWidth: 100,
-          }}
-        >
-          <Drawer.Screen
-            name="(tabs)"
-            options={{
-              drawerLabel: 'Home',
-              title: 'Home',
-            }}
-          />
-          <Drawer.Screen
-            name="trendalerts"
-            options={{
-              drawerLabel: 'Trend Alerts',
-              title: 'Trend Alerts',
-            }}
-          />
-        </Drawer>
-        <StatusBar style="light" />
-      </GestureHandlerRootView>
-    </ThemeProvider>
-  );
+    return (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaProvider>
+                <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
+                    {/* View to simulate the status bar background */}
+                    <View
+                        style={{
+                            height: insets.top, // Match the status bar height
+                            backgroundColor: statusBarColor, // Custom background color
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                        }}
+                    />
+                    <StatusBar style="light" />
+                    <Stack screenOptions={{ headerShown: false }} initialRouteName="(auth)">
+                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(root)" options={{ headerShown: false }} />
+                    </Stack>
+                </SafeAreaView>
+            </SafeAreaProvider>
+        </GestureHandlerRootView>
+    );
 }
