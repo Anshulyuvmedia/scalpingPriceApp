@@ -9,14 +9,14 @@ const SearchBar = () => {
         <View>
             {/* Outer LinearGradient to create the gradient border */}
             <LinearGradient
-                colors={['#444', '#fff']} // Gradient from black (left) to white (right)
+                colors={['#444', '#AEAED4']} // Gradient from black (left) to white (right)
                 start={{ x: 1, y: 0 }} // Start at the left
                 end={{ x: 0, y: 0 }} // End at the right
                 style={styles.gradientBorder}
             >
                 {/* Inner View to create the "border" effect and contain the search bar content */}
                 <View style={styles.innerContainer} className="flex flex-row items-center">
-                    <AntDesign name="search1" size={22} color="#fff" />
+                    <AntDesign name="search1" size={22} color="#AFAFAF" />
                     <TextInput
                         placeholder="Search for 'Nestle'"
                         placeholderTextColor="#888"
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     textInput: {
         color: '#FFF',
         flex: 1, // Ensures the TextInput takes up remaining space
-        marginLeft: 10, // Adds spacing between the icon and input
+        marginLeft: 5, // Adds spacing between the icon and input
         fontFamily: 'Questrial-Regular',
         fontSize: 14,
     },

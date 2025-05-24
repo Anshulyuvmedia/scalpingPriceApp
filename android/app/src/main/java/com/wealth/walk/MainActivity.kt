@@ -1,4 +1,4 @@
-package com.anshulyuvmedia.ScalpingPriceTrading
+package com.wealth.walk
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

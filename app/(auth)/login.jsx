@@ -1,12 +1,10 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Alert, Image } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/Colors';
+
 import images from '@/constants/images';
 
 const Login = () => {
-    const colorScheme = useColorScheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [emailError, setEmailError] = useState('');
@@ -98,12 +96,12 @@ const Login = () => {
                             styles.input,
                             {
                                 backgroundColor: '#33333D', // Fallback for missing inputBackground
-                                color: Colors[colorScheme ?? 'dark'].text,
+                                color: 'white',
                                 borderColor: '#4A4A55', // Fallback for missing border
                             },
                         ]}
                         placeholder="Email"
-                        placeholderTextColor={Colors[colorScheme ?? 'dark'].tabIconDefault}
+                        placeholderTextColor='gray'
                         value={email}
                         onChangeText={setEmail}
                         keyboardType="email-address"
@@ -117,12 +115,12 @@ const Login = () => {
                             styles.input,
                             {
                                 backgroundColor: '#33333D', // Fallback for missing inputBackground
-                                color: Colors[colorScheme ?? 'dark'].text,
+                                color: 'white',
                                 borderColor: '#4A4A55', // Fallback for missing border
                             },
                         ]}
                         placeholder="Password"
-                        placeholderTextColor={Colors[colorScheme ?? 'dark'].tabIconDefault}
+                        placeholderTextColor='gray'
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry

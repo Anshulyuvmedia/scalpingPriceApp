@@ -1,33 +1,18 @@
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
-import React from 'react';
-// import { PieChart } from 'react-native-chart-kit';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { FontAwesome, Feather } from '@expo/vector-icons';
 import LinearGradient from 'react-native-linear-gradient';
-import SearchBar from '../../../components/SearchBar'; // Assuming this is a custom component
-
-const screenWidth = Dimensions.get('window').width;
+import MaskedView from '@react-native-masked-view/masked-view';
+import SearchBar from '../../../components/SearchBar';
+import IndexPieChart from '../../../components/IndexPieChart';
 
 const Index = () => {
-  // Data for the PieChart
-  const chartData = [
-    { name: 'Others', value: 52.14, color: '#34C759' },
-    { name: 'HDFCLIFE', value: -12.82, color: '#FF3B30' },
-    { name: 'JSWSTEEL', value: 12.41, color: '#28A745' },
-    { name: 'SHRIRAMFIN', value: 12.04, color: '#20C997' },
-    { name: 'ADANIPORTS', value: 10.32, color: '#17A2B8' },
-    { name: 'TECHM', value: 9.32, color: '#007BFF' },
-    { name: 'TITAN', value: 8.76, color: '#6610F2' },
-    { name: 'Apollohosp', value: 16.90, color: '#28A745' },
-    { name: 'Grasim', value: 16.80, color: '#20C997' },
-    { name: 'Ultracemco', value: 19.11, color: '#17A2B8' },
-  ];
 
   // Data for the Call vs Put slider
   const callPercentage = 60;
   const putPercentage = 40;
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity href="">
@@ -72,20 +57,20 @@ const Index = () => {
         >
           <TouchableOpacity style={styles.button}>
             <FontAwesome name="newspaper-o" size={22} color="#FFF" style={styles.iconMargin} />
-            <Text style={styles.buttonText}>NEWS</Text>
+            <Text style={styles.buttonText}>News</Text>
             <Feather name="arrow-up-right" size={16} color="#FFF" style={styles.iconMargin} />
           </TouchableOpacity>
         </LinearGradient>
 
         <LinearGradient
-          colors={['#000', '#fff']}
+          colors={['#000', '#AEAED4']}
           start={{ x: 0.2, y: 1.2 }}
           end={{ x: 0, y: 0 }}
           style={styles.gradientBorder}
         >
           <TouchableOpacity style={styles.button}>
             <FontAwesome name="dollar" size={16} color="#FFF" style={styles.iconMargin} />
-            <Text style={styles.buttonText}>FX SIGNAL</Text>
+            <Text style={styles.buttonText}>FX Signal</Text>
             <Feather name="arrow-up-right" size={16} color="#FFF" style={styles.iconMargin} />
           </TouchableOpacity>
         </LinearGradient>
@@ -94,14 +79,14 @@ const Index = () => {
       {/* NIFTY 50 Index Section */}
       <View style={styles.indexSection}>
         <LinearGradient
-          colors={['#000', '#fff']}
-          start={{ x: 0.2, y: 1.2 }}
+          colors={['#000', '#AEAED4']}
+          start={{ x: 0.3, y: 0.6 }}
           end={{ x: 0, y: 0 }}
           style={styles.gradientBoxBorder}
         >
           <LinearGradient
             colors={['#000', '#1A3B76']}
-            start={{ x: 0, y: 0 }}
+            start={{ x: 0.4, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.innerGradient}
           >
@@ -113,97 +98,96 @@ const Index = () => {
                   <Text style={styles.indexChangePositive}>1.2%</Text>
                 </View>
               </View>
-              <Text style={styles.indexValue}>18,245.32</Text>
+              {/* Gradient Text */}
+              <MaskedView
+                maskElement={<Text style={styles.indexValue}>18,245.32</Text>}
+              >
+                <LinearGradient
+                  colors={['#C6DBF8', '#609DF9']}
+                  start={{ x: 1, y: 0.5 }}
+                  end={{ x: 0, y: 0 }}
+                // style={{ flex: 1 }}
+                >
+                  <Text style={[styles.indexValue, { opacity: 0 }]}>18,245.32</Text>
+                </LinearGradient>
+              </MaskedView>
             </View>
           </LinearGradient>
         </LinearGradient>
 
         <LinearGradient
-          colors={['#000', '#fff']}
-          start={{ x: 0.2, y: 1.2 }}
+          colors={['#000', '#AEAED4']}
+          start={{ x: 0.3, y: 0.6 }}
           end={{ x: 0, y: 0 }}
           style={styles.gradientBoxBorder}
         >
           <LinearGradient
             colors={['#000', '#7A2C3F']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            start={{ x: 1, y: 0 }}
+            end={{ x: 1.5, y: 1 }}
             style={styles.innerGradient}
           >
             <View style={styles.indexCard}>
               <View style={styles.indexHeader}>
-                <Text style={styles.indexTitle}>NIFTY 50</Text>
+                <Text style={styles.indexTitle}>Sensex</Text>
                 <View style={styles.indexChangeContainer}>
-                  <Feather name="arrow-up-right" size={16} color="#FF3B30" style={styles.iconMargin} />
+                  <Feather name="arrow-down-right" size={16} color="#FF3B30" style={styles.iconMargin} />
                   <Text style={styles.indexChangeNegative}> 0.8%</Text>
                 </View>
               </View>
-              <Text style={styles.indexValue}>61,232.45</Text>
+              <MaskedView
+                maskElement={<Text style={styles.indexValue}>61,232.45</Text>}
+              >
+                <LinearGradient
+                  colors={['#F3DF65', '#FF5D57']}
+                  start={{ x: 1, y: 0.5 }}
+                  end={{ x: 0, y: 0 }}
+                // style={{ flex: 1 }}
+                >
+                  <Text style={[styles.indexValue, { opacity: 0 }]}>61,232.45</Text>
+                </LinearGradient>
+              </MaskedView>
             </View>
           </LinearGradient>
         </LinearGradient>
       </View>
 
-      {/* Open Interest Slider */}
       <View style={styles.sliderSection}>
-        <Text style={styles.sliderTitle}>Open Interest: Call vs Put</Text>
-        <View style={styles.slider}>
-          <View style={styles.sliderBar}>
-            <View style={[styles.callBar, { width: `${callPercentage}%` }]} />
-            <View style={[styles.putBar, { width: `${putPercentage}%` }]} />
+        <LinearGradient
+          colors={['#402196', '#30F8EE']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.gradientBoxBorder}
+        >
+          <View style={styles.sliderbox}>
+            <Text style={styles.sliderTitle}>Open Interest: Call vs Put</Text>
+            <View style={styles.slider}>
+              <View style={styles.sliderLabelBox}>
+                <Text style={styles.sliderLabelLeft}>Call: {callPercentage}%</Text>
+                <Text style={styles.sliderLabelRight}>Put: {putPercentage}%</Text>
+              </View>
+              <View style={styles.sliderBar}>
+                <View style={[styles.callBar, { width: `${callPercentage}%` }]} />
+                <View style={[styles.putBar, { width: `${putPercentage}%` }]} />
+              </View>
+            </View>
           </View>
-          <Text style={styles.sliderLabelLeft}>Call: {callPercentage}%</Text>
-          <Text style={styles.sliderLabelRight}>Put: {putPercentage}%</Text>
-        </View>
+        </LinearGradient>
       </View>
 
-      {/* Pie Chart Section */}
-      <View style={styles.chartSection}>
-        <Text style={styles.dropdown}>▼ Index: NIFTY50</Text>
-        {/* <PieChart
-          data={chartData.map(item => ({
-            name: item.name,
-            population: Math.abs(item.value), // Use absolute value for pie chart
-            color: item.color,
-            legendFontColor: '#FFF',
-            legendFontSize: 14,
-          }))}
-          width={screenWidth - 40}
-          height={220}
-          chartConfig={{
-            backgroundColor: '#000',
-            backgroundGradientFrom: '#000',
-            backgroundGradientTo: '#000',
-            color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-            labelColor: () => '#FFF',
-          }}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="15"
-          center={[10, 0]}
-          absolute
-        /> */}
-        {/* <Text style={styles.chartCenterText}>NIFTY 50{"\n"}145 pts</Text> */}
-        <View style={styles.legend}>
-          {/* {chartData.map((item, index) => (
-            <View key={index} style={styles.legendItem}>
-              <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-              <Text style={styles.legendText}>
-                {item.name}: {item.value}
-              </Text>
-            </View>
-          ))} */}
-        </View>
+      <View className="">
+        <IndexPieChart />
       </View>
-    </View>
+
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
-    padding: 20,
+    backgroundColor: '#0C0C18',
+    padding: 10,
   },
   header: {
     flexDirection: 'row',
@@ -257,7 +241,7 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     backgroundColor: '#000',
-    paddingHorizontal: 20,
+    paddingHorizontal: 40,
     paddingVertical: 15,
     borderRadius: 100,
     alignItems: 'center',
@@ -285,10 +269,10 @@ const styles = StyleSheet.create({
   indexCard: {
     // backgroundColor: '#000',
     padding: 15,
-    borderRadius: 23,
+    paddingBottom: 50,
     alignItems: 'center',
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: '#1A3B76',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
@@ -305,15 +289,15 @@ const styles = StyleSheet.create({
   },
   indexTitle: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 12,
     fontFamily: 'Questrial-Regular',
     fontWeight: '600',
   },
   indexValue: {
+    textAlign: 'start',
     color: '#FFF',
-    fontSize: 24,
+    fontSize: 32,
     fontFamily: 'Questrial-Regular',
-    fontWeight: 'bold',
   },
   indexChangePositive: {
     color: '#34C759',
@@ -330,11 +314,17 @@ const styles = StyleSheet.create({
   sliderSection: {
     marginBottom: 20,
   },
+  sliderbox: {
+    backgroundColor: '#000',
+    paddingHorizontal: 30,
+    paddingVertical: 20,
+    borderRadius: 25,
+  },
   sliderTitle: {
     color: '#FFF',
     fontSize: 16,
     fontFamily: 'Questrial-Regular',
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 10,
   },
   slider: {
@@ -348,72 +338,27 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   callBar: {
-    backgroundColor: '#007BFF',
+    backgroundColor: '#1F65FF',
   },
   putBar: {
-    backgroundColor: '#333',
+    backgroundColor: '#20202C',
+  },
+  sliderLabelBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
   },
   sliderLabelLeft: {
     color: '#FFF',
     fontSize: 14,
     fontFamily: 'Questrial-Regular',
-    position: 'absolute',
-    left: 0,
-    top: 15,
   },
   sliderLabelRight: {
     color: '#FFF',
     fontSize: 14,
     fontFamily: 'Questrial-Regular',
-    position: 'absolute',
-    right: 0,
-    top: 15,
   },
-  chartSection: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  dropdown: {
-    color: '#FFF',
-    fontSize: 16,
-    fontFamily: 'Questrial-Regular',
-    fontWeight: '600',
-    alignSelf: 'flex-start',
-    marginBottom: 10,
-  },
-  chartCenterText: {
-    position: 'absolute',
-    top: 90,
-    textAlign: 'center',
-    color: '#FFF',
-    fontSize: 16,
-    fontFamily: 'Questrial-Regular',
-    fontWeight: 'bold',
-  },
-  legend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 8,
-    marginVertical: 4,
-  },
-  legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 3,
-    marginRight: 5,
-  },
-  legendText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontFamily: 'Questrial-Regular',
-    fontWeight: '500',
-  },
+
 });
 
 export default Index;

@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anshulyuvmedia.ScalpingPriceTrading'
+    namespace 'com.wealth.walk'
     defaultConfig {
-        applicationId 'com.anshulyuvmedia.ScalpingPriceTrading'
+        applicationId 'com.wealth.walk'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
