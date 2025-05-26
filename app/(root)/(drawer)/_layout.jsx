@@ -26,7 +26,14 @@ export default function DrawerLayout() {
           swipeEdgeWidth: 100,
         }}
       >
-        <Drawer.Screen name="trendalerts" options={{ drawerLabel: 'Trend Alerts', title: 'Trend Alerts' }} />
+        <Drawer.Screen
+          name="(tabs)"
+          options={{ drawerLabel: 'Home', title: 'Home' }}
+        />
+        <Drawer.Screen
+          name="trendalerts"
+          options={{ drawerLabel: 'Trend Alerts', title: 'Trend Alerts' }}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );

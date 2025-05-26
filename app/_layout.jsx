@@ -19,6 +19,12 @@ export default function AppLayout() {
     // Load the Questrial-Regular font
     const [fontsLoaded, fontError] = useFonts({
         'Questrial-Regular': require('../assets/fonts/Questrial-Regular.ttf'),
+        'Sora-Regular': require('../assets/fonts/Sora-Regular.ttf'),
+        'Sora-Bold': require('../assets/fonts/Sora-Bold.ttf'),
+        'Sora-ExtraBold': require('../assets/fonts/Sora-ExtraBold.ttf'),
+        'Sora-Medium': require('../assets/fonts/Sora-Medium.ttf'),
+        'Sora-Light': require('../assets/fonts/Sora-Light.ttf'),
+        'Sora-SemiBold': require('../assets/fonts/Sora-SemiBold.ttf'),
     });
 
     // Hide splash screen once fonts are loaded or if there's an error
@@ -38,18 +44,9 @@ export default function AppLayout() {
             <SafeAreaProvider>
                 <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
                     {/* View to simulate the status bar background */}
-                    <View
-                        style={{
-                            height: insets.top, // Match the status bar height
-                            backgroundColor: statusBarColor, // Custom background color
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                        }}
-                    />
+                    <View style={{ height: insets.top, backgroundColor: statusBarColor, position: 'absolute', top: 0, left: 0, right: 0, }} />
                     <StatusBar style="light" />
-                    <Stack screenOptions={{ headerShown: false }} initialRouteName="(auth)">
+                    <Stack screenOptions={{ headerShown: false }} initialRouteName="(root)">
                         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                         <Stack.Screen name="(root)" options={{ headerShown: false }} />
                     </Stack>

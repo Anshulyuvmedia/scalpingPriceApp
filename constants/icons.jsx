@@ -8,6 +8,7 @@ import screenerfilled from "@/assets/icons/screenerfilled.png";
 import coursefilled from "@/assets/icons/coursefilled.png";
 import algofilled from "@/assets/icons/algofilled.png";
 import homefilled from "@/assets/icons/homefilled.png";
+import ellipse from "@/assets/icons/ellipse.png";
 
 export default {
     course,
@@ -20,4 +21,5 @@ export default {
     coursefilled,
     homefilled,
     algofilled,
+    ellipse,
 };

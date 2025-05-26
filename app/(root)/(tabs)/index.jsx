@@ -15,7 +15,7 @@ const Index = () => {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity href="">
+        <TouchableOpacity>
           <LinearGradient
             colors={['#AEAED4', '#444', '#AEAED4']}
             start={{ x: 0, y: 0 }}
