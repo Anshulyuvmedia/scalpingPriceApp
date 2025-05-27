@@ -1,9 +1,10 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { FontAwesome, Feather } from '@expo/vector-icons';
 import LinearGradient from 'react-native-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
-import SearchBar from '../../../components/SearchBar';
-import IndexPieChart from '../../../components/IndexPieChart';
+import IndexPieChart from '@/components/IndexPieChart';
+import HomeHeader from '@/components/HomeHeader';
+import { router } from 'expo-router';
 
 const Index = () => {
 
@@ -13,39 +14,8 @@ const Index = () => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity>
-          <LinearGradient
-            colors={['#AEAED4', '#444', '#AEAED4']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.gradientBorder}
-          >
-            <View style={styles.innerContainer}>
-              <FontAwesome name="user-circle" size={30} color="#FFD700" />
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <View style={styles.searchBarContainer}>
-          <SearchBar />
-        </View>
-
-        <TouchableOpacity>
-          <LinearGradient
-            colors={['#444', '#AEAED4']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.gradientBorder}
-          >
-            <View style={styles.coinContainer}>
-              <FontAwesome name="bitcoin" size={20} color="#FFD700" />
-              <Text style={styles.coinText}>400</Text>
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+      
+      <HomeHeader page={'home'} />
 
       {/* News and FX Signal Buttons */}
       <View style={styles.buttonRow}>
@@ -68,7 +38,7 @@ const Index = () => {
           end={{ x: 0, y: 0 }}
           style={styles.gradientBorder}
         >
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('../tradealertscreens/tradealerts')} >
             <FontAwesome name="dollar" size={16} color="#FFF" style={styles.iconMargin} />
             <Text style={styles.buttonText}>FX Signal</Text>
             <Feather name="arrow-up-right" size={16} color="#FFF" style={styles.iconMargin} />
@@ -189,12 +159,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0C0C18',
     padding: 10,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
   gradientBorder: {
     borderRadius: 100,
     padding: 1,
@@ -208,30 +172,6 @@ const styles = StyleSheet.create({
   innerGradient: {
     borderRadius: 24,
     padding: 1,
-  },
-  innerContainer: {
-    backgroundColor: '#000',
-    borderRadius: 100,
-    padding: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchBarContainer: {
-    flex: 1,
-    marginHorizontal: 10,
-  },
-  coinContainer: {
-    flexDirection: 'row',
-    padding: 12,
-    borderRadius: 100,
-    backgroundColor: '#000',
-    alignItems: 'center',
-  },
-  coinText: {
-    color: '#FFD700',
-    fontSize: 16,
-    fontFamily: 'Questrial-Regular',
-    marginLeft: 5,
   },
   buttonRow: {
     flexDirection: 'row',

@@ -1,15 +1,14 @@
 // app/(root)/(tabs)/chatbot/ai-chart-patterns.jsx
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Dimensions, Animated } from 'react-native';
 import React, { useState } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
-import { FontAwesome, Feather } from '@expo/vector-icons';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
-import { router } from 'expo-router';
 import IndexTab from './tabview/IndexTab';
 import StocksTab from './tabview/StocksTab';
 import FutureTab from './tabview/FutureTab';
 import GraphTab from './tabview/GraphTab';
 import TabNavigationHeader from '@/components/TabNavigationHeader';
+import HomeHeader from '@/components/HomeHeader';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
@@ -120,37 +119,7 @@ const AIChartPatterns = () => {
     return (
         <ScrollView style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
-                    <LinearGradient
-                        colors={['#AEAED4', '#000', '#AEAED4']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.gradientBorder}
-                    >
-                        <View style={styles.innerContainer}>
-                            <Feather name="arrow-left" size={30} color="#999" />
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-
-                <View style={styles.heading}>
-                    <Text style={styles.title}>Indian Market</Text>
-                </View>
-
-                <TouchableOpacity>
-                    <LinearGradient
-                        colors={['#AEAED4', '#000', '#AEAED4']}
-                        start={{ x: 1, y: 0 }}
-                        end={{ x: 0, y: 0 }}
-                        style={styles.gradientBorder}
-                    >
-                        <View style={styles.coinContainer}>
-                            <Feather name="refresh-cw" size={26} color="#999" />
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-            </View>
+            <HomeHeader page={'chatbot'} title={'AI Chart Patterns'} action={'refresh'} />
 
             <TabNavigationHeader activeTab="AIChartPatterns" />
 

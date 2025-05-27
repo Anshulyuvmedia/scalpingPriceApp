@@ -1,35 +1,32 @@
-// app/(root)/(tabs)/chatbot/paid-signal.jsx
-import { StyleSheet, Text, View, ScrollView, Dimensions, Animated } from 'react-native';
-import React, { useState } from 'react';
-import LinearGradient from 'react-native-linear-gradient';
+import { StyleSheet, Text, View, ScrollView, Dimensions, Animated } from 'react-native'
+import React, { useState } from 'react'
+import HomeHeader from '@/components/HomeHeader'
+import { Feather } from '@expo/vector-icons';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
-import IndexTab from './tabview/IndexTab';
-import StocksTab from './tabview/StocksTab';
-import FutureTab from './tabview/FutureTab';
-import GraphTab from './tabview/GraphTab';
-import TabNavigationHeader from '@/components/TabNavigationHeader';
-import HomeHeader from '@/components/HomeHeader';
+import LinearGradient from 'react-native-linear-gradient';
+import ForexAlerts from './alertview/forexalerts';
+import CryptoAlerts from './alertview/cryptoalerts';
+import BinaryOptionAlerts from './alertview/binaryoptionalerts';
+import CommodityAlerts from './alertview/commodityalerts';
 
-const initialLayout = { width: Dimensions.get('window').width - 20 }; // Account for paddingHorizontal: 10
 
-const PaidSignal = () => {
+const initialLayout = { width: Dimensions.get('window').width - 20 };
+
+const TradeAlerts = () => {
     const [index, setIndex] = useState(0);
 
     const [routes] = useState([
-        { key: 'index', title: 'Index' },
-        { key: 'stocks', title: 'Stocks' },
-        { key: 'futures', title: 'Futures' },
-        { key: 'graphs', title: 'Graphs' },
+        { key: 'forexalerts', title: 'Forex' },
+        { key: 'cryptoalerts', title: 'Crypto' },
+        { key: 'binaryoptionalerts', title: 'Binary Option' },
+        { key: 'commodityalerts', title: 'Commodity' },
     ]);
-
     const renderScene = SceneMap({
-        index: IndexTab,
-        stocks: StocksTab,
-        futures: FutureTab,
-        graphs: GraphTab,
+        forexalerts: ForexAlerts,
+        cryptoalerts: CryptoAlerts,
+        binaryoptionalerts: BinaryOptionAlerts,
+        commodityalerts: CommodityAlerts,
     });
-
-
     const renderTabBar = (props) => {
         const { navigationState, position } = props;
         const inputRange = routes.map((_, i) => i);
@@ -117,13 +114,14 @@ const PaidSignal = () => {
             </LinearGradient>
         );
     };
-
     return (
         <ScrollView style={styles.container}>
-            {/* Header */}
-            <HomeHeader page={'chatbot'} title={'Paid Signal'} action={'refresh'} />
+            <HomeHeader page={'course'} />
 
-            <TabNavigationHeader activeTab="PaidSignal" />
+            <View style={styles.header}>
+                <Text className="text-white font-sora-bold text-xl">Trade Alerts</Text>
+                <Feather name="bell" size={24} color="#fff" />
+            </View>
 
             <View style={styles.tabViewContainer}>
                 <TabView
@@ -136,22 +134,22 @@ const PaidSignal = () => {
                 />
             </View>
         </ScrollView>
-    );
-};
+    )
+}
 
-export default PaidSignal;
+export default TradeAlerts
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 10,
-        backgroundColor: '#1e1e1e',
+        backgroundColor: '#0C0C18',
+        padding: 10,
     },
     header: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 20,
+        alignItems: 'center',
+        marginBottom: 15,
     },
     gradientBoxBorder: {
         borderRadius: 25,
@@ -159,6 +157,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 5,
         marginBottom: 15,
     },
+
     tabViewContainer: {
         height: 'auto',
         minHeight: 600,
@@ -206,4 +205,4 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontWeight: 'bold',
     },
-});
+})
