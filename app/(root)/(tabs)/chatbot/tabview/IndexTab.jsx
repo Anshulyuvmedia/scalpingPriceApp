@@ -176,14 +176,14 @@ const styles = StyleSheet.create({
         height: 40,
         position: 'absolute',
     },
-    customTrack: {
-        position: 'absolute',
-        top: 15,
-        width: 140,
-        height: 10,
-        backgroundColor: '#1F65FF',
-        borderRadius: 4,
-    },
+    // customTrack: {
+    //     position: 'absolute',
+    //     top: 15,
+    //     width: 140,
+    //     height: 10,
+    //     backgroundColor: '#1F65FF',
+    //     borderRadius: 4,
+    // },
     thumb: {
         position: 'absolute',
         width: 30,

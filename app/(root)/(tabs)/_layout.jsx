@@ -52,8 +52,8 @@ export default function TabLayout() {
         style={{
           transform: [{ scale: scaleAnim }],
           opacity: iconOpacityAnim,
-          width: 70,
-          height: 70,
+          width: 60,
+          height: 60,
           borderRadius: 40,
           justifyContent: 'center',
           alignItems: 'center',
@@ -75,15 +75,15 @@ export default function TabLayout() {
           <Image
             source={getIconSource()}
             style={{
-              width: 28,
-              height: 28,
+              width: 22,
+              height: 22,
               tintColor: focused ? '#fff' : color,
             }}
             resizeMode="contain"
           />
         </LinearGradient>
         <Animated.Text
-          className={`text-sm mt-3 font-medium ${focused ? 'text-white' : 'text-gray-100'}`}
+          className={`text-xs mt-3 font-medium ${focused ? 'text-white' : 'text-gray-100'}`}
           style={{ opacity: labelOpacityAnim }}
         >
           {iconName.charAt(0).toUpperCase() + iconName.slice(1)}
@@ -101,8 +101,8 @@ export default function TabLayout() {
         tabBarBackground: TabBarBackground,
         tabBarStyle: {
           borderTopWidth: 0,
-          paddingTop: 20,
-          height: 90,
+          paddingTop: 10,
+          height: 80,
           elevation: 5,
           backgroundColor: Colors[colorScheme ?? 'light'].tabBarBackground,
         },
@@ -150,7 +150,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="algo"
+        name="algoscreens"
         options={{
           headerShown: false,
           title: 'Algo',

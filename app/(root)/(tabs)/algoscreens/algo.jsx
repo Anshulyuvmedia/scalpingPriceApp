@@ -1,0 +1,141 @@
+import { StyleSheet, Text, View, ScrollView, FlatList, TouchableOpacity, Switch } from 'react-native';
+import React, { useState } from 'react';
+import HomeHeader from '@/components/HomeHeader';
+import LinearGradient from 'react-native-linear-gradient';
+import { Feather } from '@expo/vector-icons';
+import AlgoCard from '@/components/AlgoCard';
+
+
+const ALGO_DATA = [
+    { id: '1', name: 'BTC Momentum', profit: 'Trend Following', winRate: '2023-06-10  |  14:30', status: 'Active' },
+    { id: '2', name: 'Mean Reversion', profit: '-3.2%', winRate: '55%', status: 'Inactive' },
+    { id: '3', name: 'Breakout System', profit: '+8.7%', winRate: '72%', status: 'Active' },
+    { id: '4', name: 'Scalping Algo', profit: '+15.0%', winRate: '65%', status: 'Active' },
+    { id: '5', name: 'Trend Follower', profit: '+9.3%', winRate: '60%', status: 'Active' },
+];
+
+const Algo = () => {
+    const [isEnabled, setIsEnabled] = useState(false);
+    const toggleSwitch = () => setIsEnabled(previousState => !previousState);
+    return (
+        <View style={styles.container}>
+            <HomeHeader page={'algo'} />
+
+            <View className="flex-row justify-between items-center">
+                <TouchableOpacity>
+                    <LinearGradient
+                        colors={['#0C0C18', '#B0B0B0']}
+                        start={{ x: 0.5, y: 0 }}
+                        end={{ x: 0, y: 0 }}
+                        style={styles.gradientBorder}
+                    >
+                        <View style={[styles.tabBox, { backgroundColor: '#000', }]}>
+                            <Text className="text-white font-questrial">Signals</Text>
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+                <TouchableOpacity>
+                    <LinearGradient
+                        colors={['#0C0C18', '#B0B0B0']}
+                        start={{ x: 0.5, y: 0 }}
+                        end={{ x: 0, y: 0 }}
+                        style={styles.gradientBorder}
+                    >
+                        <View style={[styles.tabBox, { backgroundColor: '#000', }]}>
+                            <Text className="text-white font-questrial">Indicator based</Text>
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+                <TouchableOpacity>
+                    <LinearGradient
+                        colors={['#9E68E4', '#723CDF']}
+                        start={{ x: 1, y: 0 }}
+                        end={{ x: 0, y: 0 }}
+                        style={styles.gradientBox}
+                    >
+                        <View style={[styles.tabBox]}>
+                            <Text className="text-white font-questrial">Algorithmic Trading</Text>
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </View>
+
+            <View className="my-7">
+                <Text className="text-white text-xl font-sora-extrabold">Algorithmic Trading</Text>
+                <Text className="text-[#AEAEB9] text-base font-questrial mt-4">Your Trading Algorithms</Text>
+                <Text className="text-[#83838D] text-base font-questrial ">Manage and monitor your active trading algorithms</Text>
+            </View>
+
+            <View className="flex-row justify-between items-center">
+                <Switch
+                    trackColor={{ false: '#444', true: '#444' }}
+                    thumbColor={isEnabled ? '#05FF93' : '#f4f3f4'}
+                    ios_backgroundColor="#3e3e3e"
+                    onValueChange={toggleSwitch}
+                    value={isEnabled}
+                />
+                <Text className="text-[#AEAEB9] font-questrial">Show Paused Algorithms</Text>
+                <LinearGradient
+                    colors={['#AEAED4', '#000']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.gradientBorder}
+                >
+                    <TouchableOpacity className="flex-row items-center bg-black px-4 py-2 rounded-full">
+                        <Feather name="refresh-cw" size={16} color="#999" />
+                        <Text className="text-white  font-questrial ms-2">Refresh data</Text>
+                    </TouchableOpacity>
+                </LinearGradient>
+            </View>
+
+            <View>
+                <FlatList
+                    data={ALGO_DATA}
+                    renderItem={({ item }) => (
+                        <AlgoCard
+                            id={item.id}
+                            name={item.name}
+                            profit={item.profit}
+                            winRate={item.winRate}
+                            status={item.status}
+                        />
+                    )}
+                    horizontal
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.listContainer}
+                    showsHorizontalScrollIndicator={false}
+                />
+            </View>
+        </View>
+    );
+};
+
+export default Algo;
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#1e1e1e',
+        paddingHorizontal: 10,
+    },
+    gradientBorder: {
+        borderRadius: 100,
+        padding: 1,
+    },
+    gradientBox: {
+        borderRadius: 100,
+    },
+    tabBox: {
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 100,
+
+    },
+    listContainer: {
+        paddingVertical: 10,
+        paddingBottom: 20,
+    },
+    columnWrapper: {
+        justifyContent: 'space-between',
+    },
+});
