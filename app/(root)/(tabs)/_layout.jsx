@@ -58,8 +58,6 @@ export default function TabLayout() {
           justifyContent: 'center',
           alignItems: 'center',
           marginTop: focused ? -24 : 24,
-          borderWidth: focused ? 8 : 0,
-          borderColor: '#25242F',
         }}
       >
         <LinearGradient
@@ -70,20 +68,22 @@ export default function TabLayout() {
             borderRadius: 40,
             justifyContent: 'center',
             alignItems: 'center',
+            borderWidth: focused ? 6 : 0,
+            borderColor: '#25242F',
           }}
         >
           <Image
             source={getIconSource()}
             style={{
-              width: 22,
-              height: 22,
+              width: 26,
+              height: 26,
               tintColor: focused ? '#fff' : color,
             }}
             resizeMode="contain"
           />
         </LinearGradient>
         <Animated.Text
-          className={`text-xs mt-3 font-medium ${focused ? 'text-white' : 'text-gray-100'}`}
+          className={`text-sm mt-1 font-questrial ${focused ? 'text-white' : 'text-gray-100'}`}
           style={{ opacity: labelOpacityAnim }}
         >
           {iconName.charAt(0).toUpperCase() + iconName.slice(1)}

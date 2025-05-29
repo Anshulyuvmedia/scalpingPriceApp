@@ -1,17 +1,18 @@
-import { StyleSheet, Text, View, ScrollView, FlatList, TouchableOpacity, Switch } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, Switch } from 'react-native';
 import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import AlgoCard from '@/components/AlgoCard';
+import { router } from 'expo-router';
 
 
 const ALGO_DATA = [
-    { id: '1', name: 'BTC Momentum', profit: 'Trend Following', winRate: '2023-06-10  |  14:30', status: 'Active' },
-    { id: '2', name: 'Mean Reversion', profit: '-3.2%', winRate: '55%', status: 'Inactive' },
-    { id: '3', name: 'Breakout System', profit: '+8.7%', winRate: '72%', status: 'Active' },
-    { id: '4', name: 'Scalping Algo', profit: '+15.0%', winRate: '65%', status: 'Active' },
-    { id: '5', name: 'Trend Follower', profit: '+9.3%', winRate: '60%', status: 'Active' },
+    { id: '1', name: 'BTC Momentum', subtitle: 'Trend Following', date: '2023-06-10  |  14:30', status: 'Active' },
+    { id: '2', name: 'ETH Scalping', subtitle: 'Scalping', date: '2023-06-9  |  22:15', status: 'Inactive' },
+    { id: '3', name: 'BTC Momentum', subtitle: 'Trend Following', date: '2023-06-10  |  14:30', status: 'Active' },
+    { id: '4', name: 'ETH Scalping', subtitle: 'Scalping', date: '2023-06-9  |  22:15', status: 'Active' },
+    { id: '5', name: 'BTC Momentum', subtitle: 'Trend Following', date: '2023-06-10  |  14:30', status: 'Active' },
 ];
 
 const Algo = () => {
@@ -22,7 +23,7 @@ const Algo = () => {
             <HomeHeader page={'algo'} />
 
             <View className="flex-row justify-between items-center">
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push(`/algoscreens/signals`)}>
                     <LinearGradient
                         colors={['#0C0C18', '#B0B0B0']}
                         start={{ x: 0.5, y: 0 }}
@@ -34,7 +35,7 @@ const Algo = () => {
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/algoscreens/indicatorbased')}>
                     <LinearGradient
                         colors={['#0C0C18', '#B0B0B0']}
                         start={{ x: 0.5, y: 0 }}
@@ -95,8 +96,26 @@ const Algo = () => {
                         <AlgoCard
                             id={item.id}
                             name={item.name}
-                            profit={item.profit}
-                            winRate={item.winRate}
+                            subtitle={item.subtitle}
+                            date={item.date}
+                            status={item.status}
+                        />
+                    )}
+                    horizontal
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.listContainer}
+                    showsHorizontalScrollIndicator={false}
+                />
+            </View>
+            <View className="mb-5">
+                <FlatList
+                    data={ALGO_DATA}
+                    renderItem={({ item }) => (
+                        <AlgoCard
+                            id={item.id}
+                            name={item.name}
+                            subtitle={item.subtitle}
+                            date={item.date}
                             status={item.status}
                         />
                     )}
@@ -117,6 +136,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#1e1e1e',
         paddingHorizontal: 10,
+        paddingBottom: 20,
     },
     gradientBorder: {
         borderRadius: 100,
