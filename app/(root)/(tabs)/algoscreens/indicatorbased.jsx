@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import IndicatorCard from '../../../../components/IndicatorCard';
+import IndicatorCard from '@/components/IndicatorCard';
 import images from '@/constants/images';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
