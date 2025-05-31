@@ -100,7 +100,7 @@ const NewsListing = () => {
 
     return (
         <View className="flex-1 bg-gray-900 px-2">
-            <HomeHeader page={'home'} />
+            <HomeHeader page={'news'} />
 
             <View className="mb-4">
                 <Text className="text-white text-2xl font-bold">Market News</Text>

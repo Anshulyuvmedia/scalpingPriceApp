@@ -25,7 +25,7 @@ const Index = () => {
           end={{ x: 0, y: 0 }}
           style={styles.gradientBorder}
         >
-          <TouchableOpacity style={styles.button} onPress={() => router.push('../news/newslisting')}>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/news/newslisting')}>
             <FontAwesome name="newspaper-o" size={22} color="#FFF" style={styles.iconMargin} />
             <Text style={styles.buttonText}>News</Text>
             <Feather name="arrow-up-right" size={16} color="#FFF" style={styles.iconMargin} />
