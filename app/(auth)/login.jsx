@@ -1,12 +1,16 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Alert, Image } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
 
 import images from '@/constants/images';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const navigation = useNavigation();
+    const DUMMY_EMAIL = 'user@example.com';
+    const DUMMY_PASSWORD = 'password123';
+    const [email, setEmail] = useState(DUMMY_EMAIL); // Prefill email
+    const [password, setPassword] = useState(DUMMY_PASSWORD); // Prefill password
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -46,12 +50,13 @@ const Login = () => {
         return emailRegex.test(email);
     };
 
-    // Handle login submission
+    // Handle login submission with dummy validation
     const handleLogin = () => {
         let valid = true;
         setEmailError('');
         setPasswordError('');
 
+        // Basic input validation
         if (!email) {
             setEmailError('Email is required');
             valid = false;
@@ -68,9 +73,15 @@ const Login = () => {
             valid = false;
         }
 
+        // Dummy credential validation
         if (valid) {
-            console.log('Login credentials:', { email, password });
-            Alert.alert('Success', 'Login attempted! Check console for credentials.');
+            if (email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
+                Alert.alert('Success', 'Login successful!', [
+                    { text: 'OK', onPress: () => navigation.navigate('(root)') },
+                ]);
+            } else {
+                Alert.alert('Error', 'Invalid email or password. Please use the credentials shown above.');
+            }
         }
     };
 
@@ -87,47 +98,61 @@ const Login = () => {
                         resizeMode="contain"
                     />
                 </View>
-                <Text style={styles.title}>
-                    Welcome Back
-                </Text>
+                <Text style={styles.title}>Welcome Back</Text>
+
+                {/* Display dummy credentials */}
+                <View style={styles.credentialsContainer}>
+                    <Text style={styles.credentialsText}>
+                        Use these credentials to login:
+                    </Text>
+                    <Text style={styles.credentialsText}>
+                        Email: {DUMMY_EMAIL}
+                    </Text>
+                    <Text style={styles.credentialsText}>
+                        Password: {DUMMY_PASSWORD}
+                    </Text>
+                </View>
+
                 <View style={styles.inputContainer}>
-                    <TextInput
-                        style={[
-                            styles.input,
-                            {
-                                backgroundColor: '#33333D', // Fallback for missing inputBackground
-                                color: 'white',
-                                borderColor: '#4A4A55', // Fallback for missing border
-                            },
-                        ]}
-                        placeholder="Email"
-                        placeholderTextColor='gray'
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
+                    <LinearGradient
+                        colors={['#00FF00', '#00000000']} // Green gradient border
+                        start={{ x: 0, y: 1 }}
+                        end={{ x: 0.5, y: 0 }}
+                        style={styles.inputGradient}
+                    >
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Email"
+                            placeholderTextColor="gray"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
+                    </LinearGradient>
                     {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                 </View>
+
                 <View style={styles.inputContainer}>
-                    <TextInput
-                        style={[
-                            styles.input,
-                            {
-                                backgroundColor: '#33333D', // Fallback for missing inputBackground
-                                color: 'white',
-                                borderColor: '#4A4A55', // Fallback for missing border
-                            },
-                        ]}
-                        placeholder="Password"
-                        placeholderTextColor='gray'
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        autoCapitalize="none"
-                    />
+                    <LinearGradient
+                        colors={['#00FF00', '#00000000']} // Green gradient border
+                        start={{ x: 0, y: 1 }}
+                        end={{ x: 0.5, y: 0 }}
+                        style={styles.inputGradient}
+                    >
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Password"
+                            placeholderTextColor="gray"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                            autoCapitalize="none"
+                        />
+                    </LinearGradient>
                     {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
                 </View>
+
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPressIn={handleButtonPressIn}
@@ -136,20 +161,30 @@ const Login = () => {
                 >
                     <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
                         <LinearGradient
-                            colors={['#723CDF', '#FAC1EC']}
-                            style={styles.button}
+                            colors={['#00FF00', '#00000000']} // Green gradient border
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.buttonGradient}
                         >
-                            <Text style={styles.buttonText}>Login</Text>
+                            <View style={styles.button}>
+                                <Text style={styles.buttonText}>Login</Text>
+                            </View>
                         </LinearGradient>
                     </Animated.View>
                 </TouchableOpacity>
-                <TouchableOpacity
+
+                {/* <TouchableOpacity
                     onPress={() => Alert.alert('Info', 'Forgot Password feature coming soon!')}
                 >
-                    <Text style={styles.forgotPassword}>
-                        Forgot Password?
-                    </Text>
-                </TouchableOpacity>
+                    <LinearGradient
+                        colors={['#00FF00', '#00000000']} // Green gradient for forgot password
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.forgotPasswordButton}
+                    >
+                        <Text style={styles.forgotPassword}>Forgot Password?</Text>
+                    </LinearGradient>
+                </TouchableOpacity> */}
             </Animated.View>
         </LinearGradient>
     );
@@ -168,7 +203,7 @@ const styles = StyleSheet.create({
         maxWidth: 400,
         padding: 20,
         borderRadius: 12,
-        backgroundColor: '#25242F',
+        backgroundColor: '#000',
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
     },
@@ -186,40 +221,69 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         marginBottom: 20,
         textAlign: 'center',
-        color: 'white',
+        color: '#FFFFFF',
+        fontFamily: 'Questrial-Regular',
+    },
+    credentialsContainer: {
+        marginBottom: 20,
+    },
+    credentialsText: {
+        color: '#fff',
+        fontSize: 14,
+        textAlign: 'center',
+        fontFamily: 'Questrial-Regular',
     },
     inputContainer: {
         marginBottom: 15,
     },
+    inputGradient: {
+        borderRadius: 80,
+        padding: 1, // Acts as border width
+    },
     input: {
         height: 50,
-        borderRadius: 8,
+        borderRadius: 80,
         paddingHorizontal: 15,
         fontSize: 16,
-        borderWidth: 1,
+        backgroundColor: '#000',
+        color: '#FFFFFF',
+        fontFamily: 'Questrial-Regular',
     },
     errorText: {
         color: '#FF4D4F',
         fontSize: 12,
         marginTop: 5,
+        fontFamily: 'Questrial-Regular',
+    },
+    buttonGradient: {
+        borderRadius: 8,
+        padding: 1, // Acts as border width
+        marginTop: 10,
     },
     button: {
-        height: 50,
+        height: 48,
         borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 10,
+        backgroundColor: '#000', // Solid black background
     },
     buttonText: {
-        color: '#fff',
+        color: '#FFFFFF', // White text for contrast
         fontSize: 18,
         fontWeight: '600',
+        fontFamily: 'Questrial-Regular',
+    },
+    forgotPasswordButton: {
+        marginTop: 15,
+        borderRadius: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
     },
     forgotPassword: {
-        marginTop: 15,
         fontSize: 14,
         textAlign: 'center',
         textDecorationLine: 'underline',
-        color: 'white',
+        color: '#000000', // Black for contrast on green gradient
+        fontFamily: 'Questrial-Regular',
     },
 });

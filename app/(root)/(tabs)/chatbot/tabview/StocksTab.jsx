@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
         top: 15,
         width: 140,
         height: 10,
-        backgroundColor: '#1F65FF',
+        // backgroundColor: '#1F65FF',
         borderRadius: 4,
     },
     thumb: {

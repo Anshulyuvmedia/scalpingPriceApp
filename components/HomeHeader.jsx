@@ -9,7 +9,15 @@ import { router } from 'expo-router';
 const HomeHeader = ({ page, title, action }) => {
     return (
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity
+                onPress={() => {
+                    if (page === 'home') {
+                        router.push('/(auth)/login');
+                    } else {
+                        router.back();
+                    }
+                }}
+            >
                 <LinearGradient
                     colors={['#AEAED4', '#000', '#AEAED4']}
                     start={{ x: 0, y: 0 }}
