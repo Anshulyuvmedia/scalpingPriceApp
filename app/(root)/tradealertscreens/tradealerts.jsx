@@ -117,7 +117,7 @@ const TradeAlerts = () => {
                 end={{ x: 1, y: 1 }}
                 style={styles.gradientBoxBanner}
             >
-                <TransHeader page={'course'} />
+                <TransHeader page={'alerts'} />
                 <View style={styles.header}>
                     <Text className="text-white font-sora-bold text-xl">Trade Alerts</Text>
                     <Feather name="bell" size={24} color="#fff" />
@@ -143,7 +143,7 @@ export default TradeAlerts;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0C0C18',
+        backgroundColor: '#000',
     },
     header: {
         flexDirection: 'row',

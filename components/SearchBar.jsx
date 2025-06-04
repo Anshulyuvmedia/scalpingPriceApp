@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     gradientBorder: {
         borderRadius: 100,
         padding: 1, // This acts as the "border" width
-        marginHorizontal: 15,
+        marginHorizontal: 10,
     },
     gradientBox: {
         borderRadius: 100,
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     innerContainer: {
         borderRadius: 100, // Matches the outer borderRadius
         paddingHorizontal: 25,
-        paddingVertical: 2,
+        paddingVertical: 0,
         flexDirection: 'row', // Already handled by className, but added for clarity
         alignItems: 'center',
     },

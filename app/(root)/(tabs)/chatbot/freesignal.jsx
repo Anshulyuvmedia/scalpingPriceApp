@@ -117,7 +117,7 @@ const FreeSignal = () => {
     };
 
     return (
-        <ScrollView style={styles.container}>
+        <View style={styles.container}>
             {/* Header */}
             <HomeHeader page={'chatbot'} title={'Free Signal'} action={'refresh'} />
 
@@ -133,7 +133,7 @@ const FreeSignal = () => {
                     renderTabBar={renderTabBar}
                 />
             </View>
-        </ScrollView>
+        </View>
     );
 };
 
@@ -142,8 +142,8 @@ export default FreeSignal;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 10,
-        backgroundColor: '#1e1e1e',
+        padding: 10,
+        backgroundColor: '#000',
     },
     header: {
         flexDirection: 'row',
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
         minHeight: 600,
     },
     tabBar: {
-        backgroundColor: '#1e1e1e',
+        backgroundColor: '#000',
         borderRadius: 24,
         position: 'relative',
     },

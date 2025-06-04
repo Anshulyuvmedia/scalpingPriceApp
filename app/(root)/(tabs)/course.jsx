@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, FlatList, Dimensions } from 'react-native';
+// app/(root)/course.jsx
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image, Dimensions } from 'react-native';
 import React, { useState } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { FontAwesome, Feather } from '@expo/vector-icons';
@@ -69,7 +70,6 @@ const Course = () => {
         <View style={styles.bannerContainer}>
             <Image
                 source={item.image}
-                defaultSource={item.thumbnail}
                 style={styles.bannerImage}
                 resizeMode="cover"
             />
@@ -81,17 +81,14 @@ const Course = () => {
             colors={['#723CDF', '#9E68E4', '#723CDF']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.gradientFiler}
+            style={styles.gradientFilter}
         >
             <TouchableOpacity
                 onPress={() => setSelectedFilter(item)}
-                style={[styles.filterItem, selectedFilter === item && styles.activeFilterText,]}
+                style={[styles.filterItem, selectedFilter === item && styles.activeFilter]}
             >
                 <Text
-                    style={[
-                        styles.filterText,
-                        selectedFilter === item && styles.activeFilterText,
-                    ]}
+                    className={`font-questrial text-base ${selectedFilter === item ? 'text-white' : 'text-white'}`}
                 >
                     {item}
                 </Text>
@@ -112,84 +109,77 @@ const Course = () => {
             >
                 <View style={styles.thumbnailContainer}>
                     <Image
-                        source={item.thumbnail} // Direct reference for local image
+                        source={item.thumbnail}
                         style={styles.thumbnail}
-                        defaultSource={item.thumbnail}
                         resizeMode="cover"
                     />
                     <View style={styles.playButton}>
                         <FontAwesome name="play" size={20} color="#FFF" />
                     </View>
-                    <View
-                        style={[
-                            styles.tagContainer,
-                            { backgroundColor: item.tag === 'Beginner' ? '#733DDF' : item.tag === 'Advanced' ? '#733DDF' : '#733DDF' },
-                        ]}
-                    >
-                        <Text style={styles.tagText}>{item.tag}</Text>
+                    <View style={[styles.tagContainer, { backgroundColor: '#733DDF' }]}>
+                        <Text className="text-white font-questrial text-xs">{item.tag}</Text>
                     </View>
                 </View>
                 <View style={styles.courseInfo}>
-                    <View style={styles.titleRow}>
-                        <Text style={styles.courseTitle} numberOfLines={2}>
-                            {item.title}
-                        </Text>
-
-                    </View>
-                    <Text style={styles.courseCategory}>{item.category}</Text>
+                    <Text className="text-white font-questrial text-sm flex-1 mr-2" numberOfLines={2}>
+                        {item.title}
+                    </Text>
+                    <Text className="text-[#AEAED4] font-questrial text-xs">{item.category}</Text>
                 </View>
             </TouchableOpacity>
         </LinearGradient>
     );
 
     return (
-        <ScrollView style={styles.container}>
-            <HomeHeader page={'course'} />
+        <View style={styles.container}>
+            {/* Fixed Header, Carousel, and Filters */}
+            <View style={styles.fixedContainer}>
+                <View style={styles.header}>
+                    <HomeHeader page="course" />
+                    <View className="flex-row justify-between items-center mb-4">
+                        <Text className="text-white font-sora-bold text-xl">Courses</Text>
+                        <Feather name="bell" size={24} color="#fff" />
+                    </View>
+                </View>
 
-            <View style={styles.header}>
-                <Text className="text-white font-sora-bold text-xl">Courses</Text>
-                <Feather name="bell" size={24} color="#fff" />
+                <ReanimatedCarousel
+                    width={screenWidth - 20}
+                    height={200}
+                    data={BANNERS}
+                    renderItem={renderBannerItem}
+                    autoPlay
+                    autoPlayInterval={3000}
+                    loop
+                    mode="parallax"
+                    modeConfig={{
+                        parallaxScrollingScale: 0.9,
+                        parallaxScrollingOffset: 50,
+                        parallaxAdjacentItemScale: 0.75,
+                    }}
+                    style={styles.carousel}
+                />
+
+                <FlatList
+                    data={FILTERS}
+                    renderItem={renderFilterItem}
+                    keyExtractor={(item) => item}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filterList}
+                />
             </View>
 
-            {/* Banner Carousel */}
-            <ReanimatedCarousel
-                width={screenWidth - 20}
-                height={200}
-                data={BANNERS}
-                renderItem={renderBannerItem}
-                autoPlay
-                autoPlayInterval={3000}
-                loop
-                mode="parallax" // Enable center mode
-                modeConfig={{
-                    parallaxScrollingScale: 0.9, // Scale of the centered item
-                    parallaxScrollingOffset: 50, // Offset for adjacent items (controls how much of them is visible)
-                    parallaxAdjacentItemScale: 0.75, // Scale of adjacent items
-                }}
-                style={styles.carousel}
-            />
-
-            {/* Filter Tabs */}
-            <FlatList
-                data={FILTERS}
-                renderItem={renderFilterItem}
-                keyExtractor={(item) => item}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.filterList}
-            />
-
-            {/* Course Cards (2 per row) */}
+            {/* Scrollable Course Cards */}
             <FlatList
                 data={filteredCourses}
                 renderItem={renderCourseCard}
                 keyExtractor={(item) => item.id}
                 numColumns={2}
                 columnWrapperStyle={styles.columnWrapper}
-                scrollEnabled={false}
                 contentContainerStyle={styles.courseList}
+                showsVerticalScrollIndicator={false}
             />
-        </ScrollView>
+        </View>
     );
 };
 
@@ -198,17 +188,12 @@ export default Course;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#000',
         padding: 10,
-        backgroundColor: '#1e1e1e',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 15,
     },
     carousel: {
         borderRadius: 10,
+        marginBottom: 10,
     },
     bannerContainer: {
         width: '100%',
@@ -221,18 +206,14 @@ const styles = StyleSheet.create({
         height: 200,
         borderRadius: 10,
     },
-    cardGradientBorder: {
-        borderRadius: 25,
-        padding: 1,
-        width: (Dimensions.get('window').width - 40) / 2,
-    },
-    gradientFiler: {
+    gradientFilter: {
         borderRadius: 100,
         padding: 1,
         marginRight: 10,
     },
     filterList: {
-        paddingVertical: 20,
+        paddingVertical: 15,
+        paddingHorizontal: 5,
     },
     filterItem: {
         alignItems: 'center',
@@ -240,29 +221,29 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 10,
         backgroundColor: '#000',
-
     },
-    filterText: {
-        color: '#fff',
-        fontFamily: 'Questrial-Regular',
-        fontSize: 16,
-    },
-    activeFilterText: {
-        color: '#FFF',
+    activeFilter: {
         backgroundColor: '#723CDF',
     },
+    cardGradientBorder: {
+        borderRadius: 10,
+        padding: 1,
+        width: (Dimensions.get('window').width - 40) / 2,
+        marginHorizontal: 5,
+        marginBottom: 15,
+    },
     courseList: {
+        paddingHorizontal: 5,
         paddingBottom: 20,
     },
     columnWrapper: {
         justifyContent: 'space-between',
-        marginBottom: 15,
     },
-
     courseCard: {
-        borderRadius: 25,
-        backgroundColor: '#1e1e1e',
+        borderRadius: 10,
+        backgroundColor: '#000',
         overflow: 'hidden',
+
     },
     thumbnailContainer: {
         position: 'relative',
@@ -287,19 +268,7 @@ const styles = StyleSheet.create({
     },
     courseInfo: {
         padding: 8,
-    },
-    titleRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
-    courseTitle: {
-        color: '#FFF',
-        fontFamily: 'Questrial-Regular',
-        fontSize: 14,
-        flex: 1,
-        marginRight: 8,
+        paddingBottom: 10,
     },
     tagContainer: {
         position: 'absolute',
@@ -308,15 +277,5 @@ const styles = StyleSheet.create({
         paddingVertical: 3,
         paddingHorizontal: 6,
         borderRadius: 10,
-    },
-    tagText: {
-        color: '#FFF',
-        fontFamily: 'Questrial-Regular',
-        fontSize: 10,
-    },
-    courseCategory: {
-        color: '#AEAED4',
-        fontFamily: 'Questrial-Regular',
-        fontSize: 12,
     },
 });

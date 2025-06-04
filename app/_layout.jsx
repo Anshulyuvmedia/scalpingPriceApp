@@ -1,3 +1,4 @@
+// app/_layout.jsx
 import { Stack, usePathname } from 'expo-router';
 import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -14,15 +15,12 @@ SplashScreen.preventAutoHideAsync();
 export default function AppLayout() {
     const pathname = usePathname();
 
-    // Log the pathname for debugging
-    // console.log('Current Pathname:', pathname);
-
     // Normalize the pathname and check for the tradealerts route
     const normalizedPath = pathname.toLowerCase().replace(/^\/|\/$/g, ''); // Remove leading/trailing slashes
     const isTradeAlertsRoute = normalizedPath.includes('tradealertscreens/tradealerts');
     const statusBarColor = isTradeAlertsRoute ? '#723CDF' : '#000'; // Purple for tradealerts, black for others
 
-    // Load the Questrial-Regular font
+    // Load the fonts
     const [fontsLoaded, fontError] = useFonts({
         'Questrial-Regular': require('../assets/fonts/Questrial-Regular.ttf'),
         'Sora-Regular': require('../assets/fonts/Sora-Regular.ttf'),
@@ -57,19 +55,26 @@ export default function AppLayout() {
 function SafeAreaViewWrapper({ statusBarColor }) {
     const insets = useSafeAreaInsets();
     return (
-        <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
-            {/* View to simulate the status bar background */}
-            <View style={{
-                height: insets.top,
-                backgroundColor: statusBarColor,
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
+        <SafeAreaView
+            style={{
+                flex: 1,
+                backgroundColor: '#000', // Set global black background for all screens
             }}
+            edges={['top', 'left', 'right']}
+        >
+            {/* View to simulate the status bar background */}
+            <View
+                style={{
+                    height: insets.top,
+                    backgroundColor: statusBarColor,
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                }}
             />
             <StatusBar style="light" />
-            <Stack screenOptions={{ headerShown: false }} initialRouteName="(root)">
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000' } }}>
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                 <Stack.Screen name="(root)" options={{ headerShown: false }} />
             </Stack>

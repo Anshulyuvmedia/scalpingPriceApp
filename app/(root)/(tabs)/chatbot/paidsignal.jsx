@@ -1,5 +1,5 @@
 // app/(root)/(tabs)/chatbot/paid-signal.jsx
-import { StyleSheet, Text, View, ScrollView, Dimensions, Animated } from 'react-native';
+import { StyleSheet, Text, View, Dimensions, Animated } from 'react-native';
 import React, { useState } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
@@ -119,7 +119,7 @@ const PaidSignal = () => {
     };
 
     return (
-        <ScrollView style={styles.container}>
+        <View style={styles.container}>
             {/* Header */}
             <HomeHeader page={'chatbot'} title={'Paid Signal'} action={'refresh'} />
 
@@ -135,7 +135,7 @@ const PaidSignal = () => {
                     renderTabBar={renderTabBar}
                 />
             </View>
-        </ScrollView>
+        </View>
     );
 };
 
@@ -144,8 +144,8 @@ export default PaidSignal;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 10,
-        backgroundColor: '#1e1e1e',
+        padding: 10,
+        backgroundColor: '#000',
     },
     header: {
         flexDirection: 'row',
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
         minHeight: 600,
     },
     tabBar: {
-        backgroundColor: '#1e1e1e',
+        backgroundColor: '#000',
         borderRadius: 24,
         position: 'relative',
     },

@@ -92,7 +92,7 @@ const Signals = () => {
     };
 
     return (
-        <View className="flex-1 bg-gray-900 px-2">
+        <View style={styles.Container}>
             <HomeHeader page={'algo'} />
 
             <View className="flex-row justify-between items-start mb-3">
@@ -114,7 +114,7 @@ const Signals = () => {
                     lazy
                     renderTabBar={renderTabBar}
                 />
-            </View>            
+            </View>
         </View>
     );
 };
@@ -122,6 +122,11 @@ const Signals = () => {
 export default Signals;
 
 const styles = StyleSheet.create({
+    Container: {
+        flex: 1,
+        backgroundColor: '#000',
+        padding: 10,
+    },
     tabViewContainer: {
         height: 'auto',
         minHeight: 600,

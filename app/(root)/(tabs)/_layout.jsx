@@ -1,30 +1,37 @@
 // app/(root)/(tabs)/_layout.jsx
 import { Tabs } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Image } from 'react-native';
+import { View, Text, Animated } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { HapticTab } from '@/components/HapticTab';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import icons from '@/constants/icons';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   // Custom TabBarIcon component with animation
   const AnimatedTabBarIcon = ({ iconName, color, focused }) => {
-    const scaleAnim = useRef(new Animated.Value(focused ? 1.1 : 1)).current;
+    const scaleAnim = useRef(new Animated.Value(focused ? 1.2 : 1)).current;
+    const translateYAnim = useRef(new Animated.Value(focused ? -10 : 0)).current;
     const iconOpacityAnim = useRef(new Animated.Value(focused ? 1 : 0.5)).current;
     const labelOpacityAnim = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
     useEffect(() => {
       Animated.parallel([
         Animated.spring(scaleAnim, {
-          toValue: focused ? 1.1 : 1,
-          friction: 5,
-          tension: 40,
+          toValue: focused ? 1.2 : 1,
+          friction: 6,
+          tension: 50,
+          useNativeDriver: true,
+        }),
+        Animated.spring(translateYAnim, {
+          toValue: focused ? -10 : 0,
+          friction: 6,
+          tension: 50,
           useNativeDriver: true,
         }),
         Animated.timing(iconOpacityAnim, {
@@ -42,15 +49,22 @@ export default function TabLayout() {
       ]).start();
     }, [focused]);
 
-    // Map iconName to the correct PNG based on focused state
-    const getIconSource = () => {
-      return focused ? icons[`${iconName}filled`] : icons[iconName];
+    // Map iconName to Ionicons for active and inactive states
+    const getIconName = () => {
+      const iconMap = {
+        home: focused ? 'home' : 'home-outline',
+        chatbot: focused ? 'chatbox-ellipses' : 'chatbox-ellipses-outline',
+        course: focused ? 'book' : 'book-outline',
+        algo: focused ? 'hardware-chip-sharp' : 'hardware-chip-outline',
+        screener: focused ? 'search' : 'search-outline',
+      };
+      return iconMap[iconName] || 'circle';
     };
 
     return (
       <Animated.View
         style={{
-          transform: [{ scale: scaleAnim }],
+          transform: [{ scale: scaleAnim }, { translateY: translateYAnim }],
           opacity: iconOpacityAnim,
           width: 60,
           height: 60,
@@ -72,14 +86,10 @@ export default function TabLayout() {
             borderColor: '#25242F',
           }}
         >
-          <Image
-            source={getIconSource()}
-            style={{
-              width: 26,
-              height: 26,
-              tintColor: focused ? '#fff' : color,
-            }}
-            resizeMode="contain"
+          <Ionicons
+            name={getIconName()}
+            size={26}
+            color={focused ? '#fff' : color}
           />
         </LinearGradient>
         <Animated.Text

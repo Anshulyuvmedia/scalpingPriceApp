@@ -24,9 +24,9 @@ const TransHeader = ({ page, title, action }) => {
                     >
                         <View style={styles.innerContainer}>
                             {page === 'home' ?
-                                <FontAwesome name="user-circle" size={30} color="#FFD700" />
+                                <FontAwesome name="user-circle" size={26} color="#FFD700" />
                                 :
-                                <Feather name="arrow-left" size={30} color="#D49DEA" />
+                                <Feather name="arrow-left" size={26} color="#D49DEA" />
                             }
                         </View>
                     </LinearGradient>
@@ -105,11 +105,11 @@ const styles = StyleSheet.create({
     },
     searchBarContainer: {
         flex: 1,
-        marginHorizontal: 10,
+        // marginHorizontal: 5,
     },
     coinContainer: {
         flexDirection: 'row',
-        padding: 12,
+        padding: 8,
         borderRadius: 100,
         // backgroundColor: '#000',
         alignItems: 'center',

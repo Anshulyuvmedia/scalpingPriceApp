@@ -8,7 +8,7 @@ const CryptoAlerts = () => {
     const [lowValue, setLowValue] = useState(70);
 
     return (
-        <ScrollView className="mt-8">
+        <ScrollView className="mt-8 px-3">
             <View className="flex-row justify-between items-center">
                 <View>
                     <Text className="text-white font-sora-bold">BTC/USD</Text>

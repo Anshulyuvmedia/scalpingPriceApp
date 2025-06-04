@@ -159,8 +159,8 @@ export default Screener;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1e1e1e', // Black background to match theme
-        paddingHorizontal: 8,
+        backgroundColor: '#000', // Black background to match theme
+        padding: 10,
     },
     section: {
         marginBottom: 16,

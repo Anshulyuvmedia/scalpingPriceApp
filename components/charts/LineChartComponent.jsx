@@ -34,8 +34,8 @@ const LineChartComponent = ({ data, title }) => {
     // console.log('Data:', data.values, 'Trend:', isAscending ? 'Ascending (Green)' : 'Descending (Red)');
 
     const chartConfig = {
-        backgroundGradientFrom: '#1e1e1e',
-        backgroundGradientTo: '#1e1e1e',
+        backgroundGradientFrom: '#000',
+        backgroundGradientTo: '#000',
         decimalPlaces: 0,
         color: (opacity = 1) => `${lineColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`, // Dynamic color with opacity
         labelColor: (opacity = 1) => `rgba(255, 255, 255, 0)`, // Make labels visible for testing

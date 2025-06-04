@@ -1,15 +1,17 @@
+// app/(root)/algoscreens/IndicatorBased.jsx
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Dimensions } from 'react-native';
 import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import LinearGradient from 'react-native-linear-gradient';
-import { Feather } from '@expo/vector-icons';
 import IndicatorCard from '@/components/IndicatorCard';
 import images from '@/constants/images';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
+const TABS = ['Neutral', 'Bullish', 'Bearish', 'Others'];
+
 const IndicatorBased = () => {
-    const [activeTab, setActiveTab] = useState('Neutral'); // Default tab
+    const [activeTab, setActiveTab] = useState('Neutral');
 
     const Pattern_Data = [
         { id: '1', name: 'Short Straddle', imageuri: images.shortstraddle, type: 'Neutral' },
@@ -22,79 +24,53 @@ const IndicatorBased = () => {
         { id: '8', name: 'Put Option', imageuri: images.ironbutterfly, type: 'Bearish' },
     ];
 
-    // Filter data based on active tab
     const filteredData = Pattern_Data.filter((item) => item.type === activeTab);
 
+    const renderTabItem = ({ item }) => (
+        <TouchableOpacity onPress={() => setActiveTab(item)}>
+            <LinearGradient
+                colors={activeTab === item ? ['#9E68E4', '#723CDF'] : ['#0C0C18', '#B0B0B0']}
+                start={{ x: 1, y: 0 }}
+                end={{ x: 0, y: 0 }}
+                style={styles.gradientBorder}
+            >
+                <View className="bg-black rounded-full">
+                    <View style={styles.tabBox}>
+                        <Text className="text-white font-questrial text-base">{item}</Text>
+                    </View>
+                </View>
+            </LinearGradient>
+        </TouchableOpacity>
+    );
+
     return (
-        <View style={styles.container}>
-            <HomeHeader page={'algo'} />
+        <View className="flex-1 bg-black">
+            {/* Fixed Header and Tabs */}
+            <View style={styles.fixedContainer}>
+                <HomeHeader page="algo" />
 
-            {/* Tabs */}
-            <View className="flex-row justify-between items-center px-2">
-                <TouchableOpacity onPress={() => setActiveTab('Bullish')}>
-                    <LinearGradient
-                        colors={activeTab === 'Bullish' ? ['#9E68E4', '#723CDF'] : ['#0C0C18', '#B0B0B0']}
-                        start={{ x: 1, y: 0 }}
-                        end={{ x: 0, y: 0 }}
-                        style={styles.gradientBorder}
-                    >
-                        <View style={[styles.tabBox, { backgroundColor: activeTab === 'Bullish' ? 'transparent' : '#000' }]}>
-                            <Text className="text-white font-questrial">Bullish</Text>
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setActiveTab('Bearish')}>
-                    <LinearGradient
-                        colors={activeTab === 'Bearish' ? ['#9E68E4', '#723CDF'] : ['#0C0C18', '#B0B0B0']}
-                        start={{ x: 1, y: 0 }}
-                        end={{ x: 0, y: 0 }}
-                        style={styles.gradientBorder}
-                    >
-                        <View style={[styles.tabBox, { backgroundColor: activeTab === 'Bearish' ? 'transparent' : '#000' }]}>
-                            <Text className="text-white font-questrial">Bearish</Text>
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setActiveTab('Neutral')}>
-                    <LinearGradient
-                        colors={activeTab === 'Neutral' ? ['#9E68E4', '#723CDF'] : ['#0C0C18', '#B0B0B0']}
-                        start={{ x: 1, y: 0 }}
-                        end={{ x: 0, y: 0 }}
-                        style={styles.gradientBorder}
-                    >
-                        <View style={[styles.tabBox, { backgroundColor: activeTab === 'Neutral' ? 'transparent' : '#000' }]}>
-                            <Text className="text-white font-questrial">Neutral</Text>
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setActiveTab('Others')}>
-                    <LinearGradient
-                        colors={activeTab === 'Others' ? ['#9E68E4', '#723CDF'] : ['#0C0C18', '#B0B0B0']}
-                        start={{ x: 1, y: 0 }}
-                        end={{ x: 0, y: 0 }}
-                        style={styles.gradientBorder}
-                    >
-                        <View style={[styles.tabBox, { backgroundColor: activeTab === 'Others' ? 'transparent' : '#000' }]}>
-                            <Text className="text-white font-questrial">Others</Text>
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-            </View>
-
-            {/* FlatList */}
-            <View>
                 <FlatList
-                    data={filteredData}
-                    renderItem={({ item }) => (
-                        <IndicatorCard id={item.id} name={item.name} imageuri={item.imageuri} />
-                    )}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.listContainer}
-                    showsVerticalScrollIndicator={false}
-                    numColumns={2}
-                    columnWrapperStyle={styles.columnWrapper}
+                    data={TABS}
+                    renderItem={renderTabItem}
+                    keyExtractor={(item) => item}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tabList}
                 />
             </View>
+
+            {/* Scrollable Indicator Cards */}
+            <FlatList
+                data={filteredData}
+                renderItem={({ item }) => (
+                    <IndicatorCard id={item.id} name={item.name} imageuri={item.imageuri} />
+                )}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContainer}
+                showsVerticalScrollIndicator={false}
+                numColumns={2}
+                columnWrapperStyle={styles.columnWrapper}
+            />
         </View>
     );
 };
@@ -104,27 +80,33 @@ export default IndicatorBased;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1e1e1e',
+        backgroundColor: '#000',
+    },
+    fixedContainer: {
         paddingHorizontal: 10,
-        paddingBottom: 20,
     },
     gradientBorder: {
         borderRadius: 100,
         padding: 1,
-    },
-    gradientBox: {
-        borderRadius: 100,
+        marginRight: 10,
     },
     tabBox: {
         paddingHorizontal: 18,
         paddingVertical: 10,
         borderRadius: 100,
+        minWidth: 100,
+        alignItems: 'center',
+    },
+    tabList: {
+        paddingVertical: 5,
     },
     listContainer: {
+        paddingHorizontal: 10,
         paddingVertical: 10,
         paddingBottom: 20,
     },
     columnWrapper: {
         justifyContent: 'space-between',
+        marginBottom: 15,
     },
 });

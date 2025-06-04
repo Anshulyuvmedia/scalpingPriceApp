@@ -1,6 +1,7 @@
 import { Text, View, FlatList, TouchableOpacity, Image } from 'react-native';
 import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
+import images from '@/constants/images';
 
 const NewsListing = () => {
     const [selectedFilter, setSelectedFilter] = useState('All');
@@ -21,7 +22,7 @@ const NewsListing = () => {
             title: 'Market Hits Record Highs Amid Tech Surge',
             source: 'Economic Times',
             timestamp: '2h ago',
-            image: 'https://via.placeholder.com/100x60',
+            image: images.courseimg,
         },
         {
             id: '2',
@@ -29,7 +30,7 @@ const NewsListing = () => {
             title: 'Bitcoin Surges Past $70K',
             source: 'CoinDesk',
             timestamp: '3h ago',
-            image: 'https://via.placeholder.com/100x60',
+            image: images.courseimg,
         },
         {
             id: '3',
@@ -37,7 +38,7 @@ const NewsListing = () => {
             title: 'Major Merger Announced in Retail Sector',
             source: 'Business Insider',
             timestamp: '5h ago',
-            image: 'https://via.placeholder.com/100x60',
+            image: images.courseimg,
         },
         {
             id: '4',
@@ -45,7 +46,7 @@ const NewsListing = () => {
             title: 'AI Startup Raises $100M in Funding',
             source: 'TechCrunch',
             timestamp: '1d ago',
-            image: 'https://via.placeholder.com/100x60',
+            image: images.courseimg,
         },
         {
             id: '5',
@@ -53,7 +54,7 @@ const NewsListing = () => {
             title: 'Federal Reserve Hints at Rate Cut',
             source: 'Bloomberg',
             timestamp: '2d ago',
-            image: 'https://via.placeholder.com/100x60',
+            image: images.courseimg,
         },
         {
             id: '6',
@@ -61,7 +62,7 @@ const NewsListing = () => {
             title: 'Tech Stocks Lead Market Rally',
             source: 'Reuters',
             timestamp: '3d ago',
-            image: 'https://via.placeholder.com/100x60',
+            image: images.courseimg,
         },
     ];
 
@@ -71,9 +72,9 @@ const NewsListing = () => {
 
     const renderFilter = ({ item }) => (
         <TouchableOpacity
-            className={`mr-2 px-4 py-1 rounded-full ${selectedFilter === item
+            className={`mr-2 px-5 py-3 rounded-full border  ${selectedFilter === item
                 ? 'bg-purple-600'
-                : 'bg-gray-700'
+                : 'bg-gray-900 border-white'
                 }`}
             onPress={() => setSelectedFilter(item)}
         >
@@ -82,9 +83,9 @@ const NewsListing = () => {
     );
 
     const renderNewsCard = ({ item }) => (
-        <View className="flex-row bg-gray-800 rounded-lg p-3 mb-3">
+        <View className="flex-row bg-black rounded-lg p-3 mb-3">
             <Image
-                source={{ uri: item.image }}
+                source={item.image}
                 className="w-20 h-12 rounded mr-3"
                 resizeMode="cover"
             />
