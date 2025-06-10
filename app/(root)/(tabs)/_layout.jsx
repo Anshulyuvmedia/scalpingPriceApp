@@ -1,185 +1,251 @@
 // app/(root)/(tabs)/_layout.jsx
 import { Tabs } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, Animated, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import LinearGradient from 'react-native-linear-gradient';
 
-import { HapticTab } from '@/components/HapticTab';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+// Get screen width
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+// TabItem Component
+const TabItem = ({ route, index, isFocused, options, navigation }) => {
+  const iconScale = useRef(new Animated.Value(isFocused ? 1 : 0.84)).current;
+  const iconTranslateY = useRef(new Animated.Value(isFocused ? -24 : 0)).current;
+  const labelOpacity = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
+  const labelTranslateY = useRef(new Animated.Value(isFocused ? -14 : -8)).current;
+  const labelScale = useRef(new Animated.Value(isFocused ? 1 : 0.92)).current;
 
-  // Custom TabBarIcon component with animation
-  const AnimatedTabBarIcon = ({ iconName, color, focused }) => {
-    const scaleAnim = useRef(new Animated.Value(focused ? 1.2 : 1)).current;
-    const translateYAnim = useRef(new Animated.Value(focused ? -10 : 0)).current;
-    const iconOpacityAnim = useRef(new Animated.Value(focused ? 1 : 0.5)).current;
-    const labelOpacityAnim = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(iconScale, {
+        toValue: isFocused ? 1 : 0.84,
+        friction: 6,
+        tension: 50,
+        useNativeDriver: true,
+      }),
+      Animated.spring(iconTranslateY, {
+        toValue: isFocused ? -24 : 0,
+        friction: 6,
+        tension: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(labelOpacity, {
+        toValue: isFocused ? 1 : 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(labelTranslateY, {
+        toValue: isFocused ? -14 : -8,
+        friction: 6,
+        tension: 50,
+        useNativeDriver: true,
+      }),
+      Animated.spring(labelScale, {
+        toValue: isFocused ? 1 : 0.92,
+        friction: 6,
+        tension: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [isFocused]);
 
-    useEffect(() => {
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: focused ? 1.2 : 1,
-          friction: 6,
-          tension: 50,
-          useNativeDriver: true,
-        }),
-        Animated.spring(translateYAnim, {
-          toValue: focused ? -10 : 0,
-          friction: 6,
-          tension: 50,
-          useNativeDriver: true,
-        }),
-        Animated.timing(iconOpacityAnim, {
-          toValue: focused ? 1 : 0.5,
-          duration: 200,
-          delay: focused ? 100 : 0,
-          useNativeDriver: true,
-        }),
-        Animated.timing(labelOpacityAnim, {
-          toValue: focused ? 1 : 0,
-          duration: 200,
-          delay: focused ? 100 : 0,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, [focused]);
+  const onPress = () => {
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: route.key,
+      canPreventDefault: true,
+    });
 
-    // Map iconName to Ionicons for active and inactive states
-    const getIconName = () => {
-      const iconMap = {
-        home: focused ? 'home' : 'home-outline',
-        chatbot: focused ? 'chatbox-ellipses' : 'chatbox-ellipses-outline',
-        course: focused ? 'book' : 'book-outline',
-        algo: focused ? 'hardware-chip-sharp' : 'hardware-chip-outline',
-        screener: focused ? 'search' : 'search-outline',
-      };
-      return iconMap[iconName] || 'circle';
-    };
-
-    return (
-      <Animated.View
-        style={{
-          transform: [{ scale: scaleAnim }, { translateY: translateYAnim }],
-          opacity: iconOpacityAnim,
-          width: 50,
-          height: 50,
-          borderRadius: 40,
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginTop: focused ? 0 : 20,
-        }}
-      >
-        <LinearGradient
-          colors={focused ? ['#723CDF', '#FAC1EC'] : ['transparent', 'transparent']}
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: 40,
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderWidth: focused ? 6 : 0,
-            borderColor: '#25242F',
-          }}
-        >
-          <Ionicons
-            name={getIconName()}
-            size={22}
-            color={focused ? '#fff' : color}
-          />
-        </LinearGradient>
-        <Animated.Text
-          className={`text-xs font-questrial ${focused ? 'text-white' : 'text-gray-100'}`}
-          style={{ opacity: labelOpacityAnim }}
-        >
-          {iconName.charAt(0).toUpperCase() + iconName.slice(1)}
-        </Animated.Text>
-      </Animated.View>
-    );
+    if (!isFocused && !event.defaultPrevented) {
+      navigation.navigate(route.name);
+    }
   };
 
+  const getIconName = (routeName, focused) => {
+    const iconMap = {
+      index: focused ? 'home' : 'home-outline',
+      chatbot: focused ? 'chatbox-ellipses' : 'chatbox-ellipses-outline',
+      course: focused ? 'book' : 'book-outline',
+      algoscreens: focused ? 'hardware-chip-sharp' : 'hardware-chip-outline',
+      screener: focused ? 'search' : 'search-outline',
+    };
+    return iconMap[routeName] || 'circle';
+  };
+
+  const iconColor = isFocused ? Colors.iconActive : Colors.iconInactive;
+
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.tabItem} activeOpacity={1}>
+      <Animated.View
+        style={{
+          transform: [{ scale: iconScale }, { translateY: iconTranslateY }],
+        }}
+      >
+        <Ionicons
+          name={getIconName(route.name, isFocused)}
+          size={24}
+          color={iconColor}
+        />
+      </Animated.View>
+      <Animated.Text
+        style={[
+          styles.label,
+          {
+            opacity: labelOpacity,
+            transform: [{ translateY: labelTranslateY }, { scale: labelScale }],
+          },
+        ]}
+      >
+        {options.title}
+      </Animated.Text>
+    </TouchableOpacity>
+  );
+};
+
+// Custom TabBar Component
+const CustomTabBar = ({ state, descriptors, navigation }) => {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const tabWidth = SCREEN_WIDTH / 5; // Full screen width / 5 tabs
+  const circlePosition = state.index * tabWidth;
+
+  useEffect(() => {
+    Animated.timing(translateX, {
+      toValue: circlePosition,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, [state.index]);
+
+  return (
+    <View style={[styles.tabBar, { width: SCREEN_WIDTH }]}>
+      <Animated.View
+        style={[
+          styles.indicator,
+          {
+            transform: [{ translateX }],
+            left: tabWidth / 2 - 22, // Center indicator in tab
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={['#723CDF', '#FAC1EC']}
+          style={styles.indicatorGradient}
+        />
+      </Animated.View>
+      {state.routes.map((route, index) => (
+        <TabItem
+          key={route.key}
+          route={route}
+          index={index}
+          isFocused={state.index === index}
+          options={descriptors[route.key].options}
+          navigation={navigation}
+        />
+      ))}
+    </View>
+  );
+};
+
+// Colors from CSS variables
+const Colors = {
+  iconActive: '#fff',
+  iconInactive: '#6C7486',
+  iconHover: '#99A3BA', // Not used in touch-based UI
+  text: '#E4ECFA',
+  circle: '#E4ECFA',
+  background: '#25242F',
+  shadow: 'rgba(18, 22, 33, 0.1)',
+};
+
+// Styles
+const styles = StyleSheet.create({
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: Colors.background,
+    height: 68,
+    borderRadius: 0,
+    // paddingHorizontal: 0,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 5,
+    alignSelf: 'center',
+  },
+  tabItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  indicator: {
+    position: 'absolute',
+    width: 44,
+    height: 44,
+    borderRadius: 100,
+    top: -12,
+  },
+  indicatorGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 100,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  label: {
+    position: 'absolute',
+    bottom: 5,
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.text,
+    textAlign: 'center',
+  },
+});
+
+export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].tabIconDefault,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: {
-          borderTopWidth: 0,
-          paddingTop: 10,
-          height: 70,
-          elevation: 5,
-          backgroundColor: Colors[colorScheme ?? 'light'].tabBarBackground,
-        },
-        tabBarLabelStyle: {
-          marginBottom: 4,
-          fontFamily: 'SpaceMono',
-        },
-        unmountOnBlur: true,
+        tabBarStyle: { display: 'none' }, // Hide default tab bar
       }}
+      tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen
         name="index"
         options={{
-          headerShown: false,
           title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <AnimatedTabBarIcon iconName="home" color={color} focused={focused} />
-          ),
-          tabBarLabel: () => null,
           lazy: true,
         }}
       />
       <Tabs.Screen
         name="chatbot"
         options={{
-          headerShown: false,
           title: 'Chatbot',
-          tabBarIcon: ({ color, focused }) => (
-            <AnimatedTabBarIcon iconName="chatbot" color={color} focused={focused} />
-          ),
-          tabBarLabel: () => null,
           lazy: true,
         }}
       />
       <Tabs.Screen
         name="course"
         options={{
-          headerShown: false,
           title: 'Course',
-          tabBarIcon: ({ color, focused }) => (
-            <AnimatedTabBarIcon iconName="course" color={color} focused={focused} />
-          ),
-          tabBarLabel: () => null,
           lazy: true,
         }}
       />
       <Tabs.Screen
         name="algoscreens"
         options={{
-          headerShown: false,
           title: 'Algo',
-          tabBarIcon: ({ color, focused }) => (
-            <AnimatedTabBarIcon iconName="algo" color={color} focused={focused} />
-          ),
-          tabBarLabel: () => null,
           lazy: true,
         }}
       />
       <Tabs.Screen
         name="screener"
         options={{
-          headerShown: false,
           title: 'Screener',
-          tabBarIcon: ({ color, focused }) => (
-            <AnimatedTabBarIcon iconName="screener" color={color} focused={focused} />
-          ),
-          tabBarLabel: () => null,
           lazy: true,
         }}
       />
