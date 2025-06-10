@@ -190,6 +190,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#000',
         padding: 10,
+        paddingBottom: 0,
     },
     carousel: {
         borderRadius: 10,
@@ -251,8 +252,8 @@ const styles = StyleSheet.create({
     thumbnail: {
         width: '100%',
         height: 100,
-        borderTopLeftRadius: 25,
-        borderTopRightRadius: 25,
+        borderTopLeftRadius: 10,
+        borderTopRightRadius: 10,
     },
     playButton: {
         position: 'absolute',

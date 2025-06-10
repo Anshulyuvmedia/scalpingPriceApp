@@ -128,8 +128,7 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     tabViewContainer: {
-        height: 'auto',
-        minHeight: 600,
+        flex: 1, // Use flex: 1 for better responsiveness instead of fixed minHeight
     },
     tabBar: {
         backgroundColor: '#000000',
@@ -137,11 +136,12 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     tabContainer: {
-        paddingHorizontal: 5, // Reduced from 10 to make tabs narrower
+        paddingHorizontal: 15,
         paddingVertical: 5,
+        
     },
     tab: {
-        paddingHorizontal: 8, // Reduced from 12 to make tabs narrower
+        paddingHorizontal: 8,
         paddingVertical: 8,
         borderRadius: 15,
     },
@@ -153,14 +153,14 @@ const styles = StyleSheet.create({
     },
     tabIndicator: {
         height: 4,
-        backgroundColor: '#00FF00', // Green bottom indicator
+        backgroundColor: '#00FF00',
         borderRadius: 2,
     },
     pillIndicator: {
         position: 'absolute',
         bottom: 0,
         height: 4,
-        backgroundColor: '#00FF00', // Green bottom indicator
+        backgroundColor: '#00FF00',
         borderRadius: 2,
         zIndex: -1,
     },

@@ -145,13 +145,8 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 10,
+        paddingBottom: 0,
         backgroundColor: '#000',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 20,
     },
     gradientBoxBorder: {
         borderRadius: 25,

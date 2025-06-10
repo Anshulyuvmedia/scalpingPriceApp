@@ -66,12 +66,12 @@ export default function TabLayout() {
         style={{
           transform: [{ scale: scaleAnim }, { translateY: translateYAnim }],
           opacity: iconOpacityAnim,
-          width: 60,
-          height: 60,
+          width: 50,
+          height: 50,
           borderRadius: 40,
           justifyContent: 'center',
           alignItems: 'center',
-          marginTop: focused ? -24 : 24,
+          marginTop: focused ? 0 : 20,
         }}
       >
         <LinearGradient
@@ -88,12 +88,12 @@ export default function TabLayout() {
         >
           <Ionicons
             name={getIconName()}
-            size={26}
+            size={22}
             color={focused ? '#fff' : color}
           />
         </LinearGradient>
         <Animated.Text
-          className={`text-sm mt-1 font-questrial ${focused ? 'text-white' : 'text-gray-100'}`}
+          className={`text-xs font-questrial ${focused ? 'text-white' : 'text-gray-100'}`}
           style={{ opacity: labelOpacityAnim }}
         >
           {iconName.charAt(0).toUpperCase() + iconName.slice(1)}
@@ -112,7 +112,7 @@ export default function TabLayout() {
         tabBarStyle: {
           borderTopWidth: 0,
           paddingTop: 10,
-          height: 80,
+          height: 70,
           elevation: 5,
           backgroundColor: Colors[colorScheme ?? 'light'].tabBarBackground,
         },

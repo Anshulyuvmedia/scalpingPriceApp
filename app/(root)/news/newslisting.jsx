@@ -1,7 +1,8 @@
-import { Text, View, FlatList, TouchableOpacity, Image } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import images from '@/constants/images';
+import LinearGradient from 'react-native-linear-gradient';
 
 const NewsListing = () => {
     const [selectedFilter, setSelectedFilter] = useState('All');
@@ -83,24 +84,31 @@ const NewsListing = () => {
     );
 
     const renderNewsCard = ({ item }) => (
-        <View className="flex-row bg-black rounded-lg p-3 mb-3">
-            <Image
-                source={item.image}
-                className="w-20 h-12 rounded mr-3"
-                resizeMode="cover"
-            />
-            <View className="flex-1">
-                <Text className="text-white text-sm font-bold mb-1">{item.title}</Text>
-                <View className="flex-row justify-between">
-                    <Text className="text-gray-400 text-xs">{item.source}</Text>
-                    <Text className="text-gray-400 text-xs">{item.timestamp}</Text>
+        <LinearGradient
+            colors={['#222', '#AEAED4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 2, y: 0 }}
+            style={styles.gradientBoxBorder}
+        >
+            <View style={styles.newsbox} className="flex-row bg-black">
+                <Image
+                    source={item.image}
+                    className="w-20 h-12 rounded mr-3"
+                    resizeMode="cover"
+                />
+                <View className="flex-1">
+                    <Text className="text-white text-sm font-bold mb-1">{item.title}</Text>
+                    <View className="flex-row justify-between">
+                        <Text className="text-gray-400 text-xs">{item.source}</Text>
+                        <Text className="text-gray-400 text-xs">{item.timestamp}</Text>
+                    </View>
                 </View>
             </View>
-        </View>
+        </LinearGradient>
     );
 
     return (
-        <View className="flex-1 bg-gray-900 px-2">
+        <View style={styles.container}>
             <HomeHeader page={'news'} />
 
             <View className="mb-4">
@@ -128,3 +136,22 @@ const NewsListing = () => {
 };
 
 export default NewsListing;
+
+const styles = StyleSheet.create({ 
+    container: {
+        flex: 1,
+        padding: 10,
+        backgroundColor: '#000',
+    },
+    gradientBoxBorder: {
+        borderRadius: 10,
+        padding: 1,
+        marginHorizontal: 0,
+        marginBottom: 15,
+    },
+    newsbox: {
+        padding: 10,
+        borderRadius: 10,
+
+    }
+})

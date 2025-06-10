@@ -24,7 +24,7 @@ const Algo = () => {
         : ALGO_DATA.filter(item => item.status === 'Active');
 
     return (
-        <View className="flex-1 bg-black">
+        <View className="flex-1 bg-black pt-3">
             {/* Fixed Content */}
             <View style={styles.fixedContainer}>
                 <HomeHeader page="algo" />
@@ -151,10 +151,6 @@ const Algo = () => {
 export default Algo;
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#000',
-    },
     fixedContainer: {
         paddingHorizontal: 10,
     },

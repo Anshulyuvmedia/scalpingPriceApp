@@ -98,7 +98,7 @@ const IndexStrategies = () => {
   );
 
   return (
-    <View className="flex-1 mt-3">
+    <View className="flex-1 mt-3 pe-3">
       <View className="my-2">
         <FlatList
           data={options}

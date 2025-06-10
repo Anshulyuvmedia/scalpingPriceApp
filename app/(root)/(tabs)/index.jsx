@@ -15,7 +15,7 @@ const Index = () => {
   return (
     <View style={styles.container}>
       <HomeHeader page={'home'} />
-      <ScrollView >
+      <ScrollView>
 
 
         {/* News and FX Signal Buttons */}
@@ -160,6 +160,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
     padding: 10,
+    paddingBottom: 0,
   },
   gradientBorder: {
     borderRadius: 100,

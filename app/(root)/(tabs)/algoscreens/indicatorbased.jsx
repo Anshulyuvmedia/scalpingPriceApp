@@ -44,7 +44,7 @@ const IndicatorBased = () => {
     );
 
     return (
-        <View className="flex-1 bg-black">
+        <View className="flex-1 bg-black pt-3">
             {/* Fixed Header and Tabs */}
             <View style={styles.fixedContainer}>
                 <HomeHeader page="algo" />
@@ -78,10 +78,6 @@ const IndicatorBased = () => {
 export default IndicatorBased;
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#000',
-    },
     fixedContainer: {
         paddingHorizontal: 10,
     },
