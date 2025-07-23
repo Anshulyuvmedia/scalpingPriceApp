@@ -1,23 +1,32 @@
 import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
-import React from 'react'
+import React from 'react';
 import images from '@/constants/images';
 import LinearGradient from 'react-native-linear-gradient';
 import { FontAwesome, Feather } from '@expo/vector-icons';
 import SearchBar from '@/components/SearchBar';
-import { router } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router'; // Import useNavigation
 
 const HomeHeader = ({ page, title, action }) => {
+    const router = useRouter();
+    const navigation = useNavigation(); // Get navigation object
+
+    const handleBackPress = () => {
+        if (page === 'home') {
+            router.push('/(root)/dashboard/');
+        } else {
+            // Check if there’s a previous screen before going back
+            if (navigation.canGoBack()) {
+                router.back();
+            } else {
+                // Fallback: Navigate to home or do nothing
+                router.push('/(root)'); // Navigate to home if no back stack
+            }
+        }
+    };
+
     return (
         <View style={styles.header}>
-            <TouchableOpacity
-                onPress={() => {
-                    if (page === 'home') {
-                        router.push('/(auth)/login');
-                    } else {
-                        router.back();
-                    }
-                }}
-            >
+            <TouchableOpacity onPress={handleBackPress}>
                 <LinearGradient
                     colors={['#AEAED4', '#000', '#AEAED4']}
                     start={{ x: 0, y: 0 }}
@@ -25,24 +34,24 @@ const HomeHeader = ({ page, title, action }) => {
                     style={styles.gradientBorder}
                 >
                     <View style={styles.innerContainer}>
-                        {page === 'home' ?
+                        {page === 'home' ? (
                             <FontAwesome name="user-circle" size={24} color="#FFD700" />
-                            :
+                        ) : (
                             <Feather name="arrow-left" size={24} color="#999" />
-                        }
+                        )}
                     </View>
                 </LinearGradient>
             </TouchableOpacity>
 
             <View style={styles.searchBarContainer}>
-                {page === 'chatbot' ?
+                {page === 'chatbot' ? (
                     <Text style={styles.title}>{title}</Text>
-                    :
+                ) : (
                     <SearchBar />
-                }
+                )}
             </View>
 
-            {action === 'refresh' ?
+            {action === 'refresh' ? (
                 <TouchableOpacity>
                     <LinearGradient
                         colors={['#AEAED4', '#000', '#AEAED4']}
@@ -55,7 +64,7 @@ const HomeHeader = ({ page, title, action }) => {
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
-                :
+            ) : (
                 <TouchableOpacity>
                     <LinearGradient
                         colors={['#444', '#AEAED4']}
@@ -69,12 +78,12 @@ const HomeHeader = ({ page, title, action }) => {
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
-            }
+            )}
         </View>
-    )
-}
+    );
+};
 
-export default HomeHeader
+export default HomeHeader;
 
 const styles = StyleSheet.create({
     header: {
@@ -96,7 +105,6 @@ const styles = StyleSheet.create({
     },
     searchBarContainer: {
         flex: 1,
-        // marginHorizontal: 10,
     },
     coinContainer: {
         flexDirection: 'row',
@@ -121,4 +129,4 @@ const styles = StyleSheet.create({
         fontFamily: 'Sora-Bold',
         textAlign: 'center',
     },
-})
+});

@@ -1,29 +1,28 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Alert, Image } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 import images from '@/constants/images';
 
 const Login = () => {
-    const navigation = useNavigation();
     const DUMMY_EMAIL = 'user@example.com';
     const DUMMY_PASSWORD = 'password123';
-    const [email, setEmail] = useState(DUMMY_EMAIL); // Prefill email
-    const [password, setPassword] = useState(DUMMY_PASSWORD); // Prefill password
+    const [email, setEmail] = useState(DUMMY_EMAIL);
+    const [password, setPassword] = useState(DUMMY_PASSWORD);
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const buttonScaleAnim = useRef(new Animated.Value(1)).current;
 
-    // Fade-in animation on mount
+    // Fade-in animation
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 500,
             useNativeDriver: true,
         }).start();
-    }, []);
+    }, [fadeAnim]);
 
     // Handle button press animation
     const handleButtonPressIn = () => {
@@ -50,8 +49,23 @@ const Login = () => {
         return emailRegex.test(email);
     };
 
-    // Handle login submission with dummy validation
-    const handleLogin = () => {
+    // Save session to AsyncStorage
+    const saveSession = async (email) => {
+        try {
+            const token = 'dummy-token-' + Math.random().toString(36).slice(2); // Replace with real token from backend
+            const userData = { id: 'user-' + email, email }; // Ensure id is included
+            await AsyncStorage.setItem('userToken', token);
+            await AsyncStorage.setItem('userData', JSON.stringify(userData));
+            await AsyncStorage.setItem('lastRoute', '(root)/(tabs)'); // Set default route after login
+            // console.log('Saved to AsyncStorage:', { token, userData, lastRoute: '(root)/(tabs)' });
+        } catch (error) {
+            console.error('Error saving session:', error);
+            Alert.alert('Error', 'Failed to save session. Please try again.');
+        }
+    };
+
+    // Handle login submission
+    const handleLogin = async () => {
         let valid = true;
         setEmailError('');
         setPasswordError('');
@@ -76,8 +90,9 @@ const Login = () => {
         // Dummy credential validation
         if (valid) {
             if (email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
-                Alert.alert('Success', 'Login successful!', [
-                    { text: 'OK', onPress: () => navigation.navigate('(root)') },
+                await saveSession(email);
+                Alert.alert('Success', 'Logged in successfully!', [
+                    { text: 'OK', onPress: () => router.replace('/(root)/(tabs)') },
                 ]);
             } else {
                 Alert.alert('Error', 'Invalid email or password. Please use the credentials shown above.');
@@ -100,7 +115,6 @@ const Login = () => {
                 </View>
                 <Text style={styles.title}>Welcome Back</Text>
 
-                {/* Display dummy credentials */}
                 <View style={styles.credentialsContainer}>
                     <Text style={styles.credentialsText}>
                         Use these credentials to login:
@@ -115,7 +129,7 @@ const Login = () => {
 
                 <View style={styles.inputContainer}>
                     <LinearGradient
-                        colors={['#00FF00', '#00000000']} // Green gradient border
+                        colors={['#00FF00', '#00000000']}
                         start={{ x: 0, y: 1 }}
                         end={{ x: 0.5, y: 0 }}
                         style={styles.inputGradient}
@@ -135,7 +149,7 @@ const Login = () => {
 
                 <View style={styles.inputContainer}>
                     <LinearGradient
-                        colors={['#00FF00', '#00000000']} // Green gradient border
+                        colors={['#00FF00', '#00000000']}
                         start={{ x: 0, y: 1 }}
                         end={{ x: 0.5, y: 0 }}
                         style={styles.inputGradient}
@@ -161,7 +175,7 @@ const Login = () => {
                 >
                     <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
                         <LinearGradient
-                            colors={['#00FF00', '#00000000']} // Green gradient border
+                            colors={['#00FF00', '#00000000']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.buttonGradient}
@@ -172,19 +186,6 @@ const Login = () => {
                         </LinearGradient>
                     </Animated.View>
                 </TouchableOpacity>
-
-                {/* <TouchableOpacity
-                    onPress={() => Alert.alert('Info', 'Forgot Password feature coming soon!')}
-                >
-                    <LinearGradient
-                        colors={['#00FF00', '#00000000']} // Green gradient for forgot password
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.forgotPasswordButton}
-                    >
-                        <Text style={styles.forgotPassword}>Forgot Password?</Text>
-                    </LinearGradient>
-                </TouchableOpacity> */}
             </Animated.View>
         </LinearGradient>
     );
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
     },
     inputGradient: {
         borderRadius: 80,
-        padding: 1, // Acts as border width
+        padding: 1,
     },
     input: {
         height: 50,
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     },
     buttonGradient: {
         borderRadius: 8,
-        padding: 1, // Acts as border width
+        padding: 1,
         marginTop: 10,
     },
     button: {
@@ -265,25 +266,12 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#000', // Solid black background
+        backgroundColor: '#000',
     },
     buttonText: {
-        color: '#FFFFFF', // White text for contrast
+        color: '#FFFFFF',
         fontSize: 18,
         fontWeight: '600',
-        fontFamily: 'Questrial-Regular',
-    },
-    forgotPasswordButton: {
-        marginTop: 15,
-        borderRadius: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-    },
-    forgotPassword: {
-        fontSize: 14,
-        textAlign: 'center',
-        textDecorationLine: 'underline',
-        color: '#000000', // Black for contrast on green gradient
         fontFamily: 'Questrial-Regular',
     },
 });

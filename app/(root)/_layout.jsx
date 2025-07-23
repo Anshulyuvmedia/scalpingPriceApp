@@ -5,8 +5,8 @@ export default function RootMainStackLayout() {
     return (
         <Stack screenOptions={{ headerShown: false }} >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            {/* <Stack.Screen name="news" options={{ headerShown: false }} /> */}
-            {/* <Stack.Screen name="(drawer)" options={{ headerShown: false }} /> */}
+            <Stack.Screen name="algostrategybuilder" options={{ headerShown: false }} />
+            <Stack.Screen name="dashboard" options={{ headerShown: false }} />
         </Stack>
     );
 }
