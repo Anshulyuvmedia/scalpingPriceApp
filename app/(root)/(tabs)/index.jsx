@@ -15,7 +15,9 @@ const Index = () => {
   return (
     <View style={styles.container}>
       <HomeHeader page={'home'} />
-      <ScrollView>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+      >
 
 
         {/* News and FX Signal Buttons */}
@@ -49,78 +51,82 @@ const Index = () => {
 
         {/* NIFTY 50 Index Section */}
         <View style={styles.indexSection}>
-          <LinearGradient
-            colors={['#000', '#AEAED4']}
-            start={{ x: 0.3, y: 0.6 }}
-            end={{ x: 0, y: 0 }}
-            style={styles.gradientBoxBorder}
-          >
+          <TouchableOpacity style={styles.indexBox} onPress={() => router.push('/stockdiscovery/searchdiscovery')}>
             <LinearGradient
-              colors={['#000', '#1A3B76']}
-              start={{ x: 0.4, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.innerGradient}
+              colors={['#000', '#AEAED4']}
+              start={{ x: 0.3, y: 0.6 }}
+              end={{ x: 0, y: 0 }}
+              style={styles.gradientBoxBorder}
             >
-              <View style={styles.indexCard}>
-                <View style={styles.indexHeader}>
-                  <Text style={styles.indexTitle}>Nifty 50</Text>
-                  <View style={styles.indexChangeContainer}>
-                    <Feather name="arrow-up-right" size={16} color="#34C759" style={styles.iconMargin} />
-                    <Text style={styles.indexChangePositive}>1.2%</Text>
+              <LinearGradient
+                colors={['#000', '#1A3B76']}
+                start={{ x: 0.4, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.innerGradient}
+              >
+                <View style={styles.indexCard}>
+                  <View style={styles.indexHeader}>
+                    <Text style={styles.indexTitle}>Nifty 50</Text>
+                    <View style={styles.indexChangeContainer}>
+                      <Feather name="arrow-up-right" size={16} color="#34C759" style={styles.iconMargin} />
+                      <Text style={styles.indexChangePositive}>1.2%</Text>
+                    </View>
                   </View>
-                </View>
-                {/* Gradient Text */}
-                <MaskedView
-                  maskElement={<Text style={styles.indexValue}>18,245.32</Text>}
-                >
-                  <LinearGradient
-                    colors={['#C6DBF8', '#609DF9']}
-                    start={{ x: 1, y: 0.5 }}
-                    end={{ x: 0, y: 0 }}
-                  // style={{ flex: 1 }}
+                  {/* Gradient Text */}
+                  <MaskedView
+                    maskElement={<Text style={styles.indexValue}>18,245.32</Text>}
                   >
-                    <Text style={[styles.indexValue, { opacity: 0 }]}>18,245.32</Text>
-                  </LinearGradient>
-                </MaskedView>
-              </View>
+                    <LinearGradient
+                      colors={['#C6DBF8', '#609DF9']}
+                      start={{ x: 1, y: 0.5 }}
+                      end={{ x: 0, y: 0 }}
+                    // style={{ flex: 1 }}
+                    >
+                      <Text style={[styles.indexValue, { opacity: 0 }]}>18,245.32</Text>
+                    </LinearGradient>
+                  </MaskedView>
+                </View>
+              </LinearGradient>
             </LinearGradient>
-          </LinearGradient>
+          </TouchableOpacity>
 
-          <LinearGradient
-            colors={['#000', '#AEAED4']}
-            start={{ x: 0.3, y: 0.6 }}
-            end={{ x: 0, y: 0 }}
-            style={styles.gradientBoxBorder}
-          >
+          <TouchableOpacity style={styles.indexBox} >
             <LinearGradient
-              colors={['#000', '#7A2C3F']}
-              start={{ x: 1, y: 0 }}
-              end={{ x: 1.5, y: 1 }}
-              style={styles.innerGradient}
+              colors={['#000', '#AEAED4']}
+              start={{ x: 0.3, y: 0.6 }}
+              end={{ x: 0, y: 0 }}
+              style={styles.gradientBoxBorder}
             >
-              <View style={styles.indexCard}>
-                <View style={styles.indexHeader}>
-                  <Text style={styles.indexTitle}>Sensex</Text>
-                  <View style={styles.indexChangeContainer}>
-                    <Feather name="arrow-down-right" size={16} color="#FF3B30" style={styles.iconMargin} />
-                    <Text style={styles.indexChangeNegative}> 0.8%</Text>
+              <LinearGradient
+                colors={['#000', '#7A2C3F']}
+                start={{ x: 1, y: 0 }}
+                end={{ x: 1.5, y: 1 }}
+                style={styles.innerGradient}
+              >
+                <View style={styles.indexCard}>
+                  <View style={styles.indexHeader}>
+                    <Text style={styles.indexTitle}>Sensex</Text>
+                    <View style={styles.indexChangeContainer}>
+                      <Feather name="arrow-down-right" size={16} color="#FF3B30" style={styles.iconMargin} />
+                      <Text style={styles.indexChangeNegative}> 0.8%</Text>
+                    </View>
                   </View>
-                </View>
-                <MaskedView
-                  maskElement={<Text style={styles.indexValue}>61,232.45</Text>}
-                >
-                  <LinearGradient
-                    colors={['#F3DF65', '#FF5D57']}
-                    start={{ x: 1, y: 0.5 }}
-                    end={{ x: 0, y: 0 }}
-                  // style={{ flex: 1 }}
+                  <MaskedView
+                    maskElement={<Text style={styles.indexValue}>61,232.45</Text>}
                   >
-                    <Text style={[styles.indexValue, { opacity: 0 }]}>61,232.45</Text>
-                  </LinearGradient>
-                </MaskedView>
-              </View>
+                    <LinearGradient
+                      colors={['#F3DF65', '#FF5D57']}
+                      start={{ x: 1, y: 0.5 }}
+                      end={{ x: 0, y: 0 }}
+                    // style={{ flex: 1 }}
+                    >
+                      <Text style={[styles.indexValue, { opacity: 0 }]}>61,232.45</Text>
+                    </LinearGradient>
+                  </MaskedView>
+                </View>
+              </LinearGradient>
             </LinearGradient>
-          </LinearGradient>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.sliderSection}>
@@ -208,6 +214,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
+
+  },
+  indexBox: {
+    width: '50%',
   },
   indexCard: {
     // backgroundColor: '#000',

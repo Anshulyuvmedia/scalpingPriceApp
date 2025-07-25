@@ -54,13 +54,15 @@ export default function AppLayout() {
 
 function SafeAreaViewWrapper({ statusBarColor }) {
     const insets = useSafeAreaInsets();
+
     return (
         <SafeAreaView
             style={{
                 flex: 1,
                 backgroundColor: '#000', // Set global black background for all screens
+                paddingBottom: insets.bottom, // Add padding to account for bottom navigation bar
             }}
-            edges={['top', 'left', 'right']}
+            edges={['top', 'left', 'right']} // Exclude bottom edge to manually handle insets.bottom
         >
             {/* View to simulate the status bar background */}
             <View
@@ -74,9 +76,17 @@ function SafeAreaViewWrapper({ statusBarColor }) {
                 }}
             />
             <StatusBar style="light" />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000' } }}>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack
+                screenOptions={{
+                    headerShown: false,
+                    contentStyle: {
+                        backgroundColor: '#000',
+                        paddingBottom: insets.bottom, // Ensure Stack content respects bottom inset
+                    },
+                }}
+            >
                 <Stack.Screen name="(root)" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             </Stack>
         </SafeAreaView>
     );

@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import AlgoNavigation from '../../components/AlgoNavigation';
 
 const AlgoStrategyBuilder = () => {
     const indicators = ['RSI', 'Moving Average', 'MACD', 'Bollinger Bands', 'Stochastic Oscillator'];
@@ -42,32 +43,11 @@ const AlgoStrategyBuilder = () => {
                 <HomeHeader />
             </View>
 
-            {/* News and FX Signal Buttons */}
-            <View style={styles.buttonRow}>
-                <LinearGradient
-                    colors={['#9E68E4', '#723CDF']}
-                    start={{ x: 0.2, y: 1.2 }}
-                    end={{ x: 0, y: 0 }}
-                    style={styles.buttonGradientBorder}
-                >
-                    <TouchableOpacity style={styles.button} onPress={() => router.push('/algodashboard')}>
-                        <Text style={styles.buttonText}>Algo Dashboard</Text>
-                    </TouchableOpacity>
-                </LinearGradient>
+            <AlgoNavigation />
 
-                <LinearGradient
-                    colors={['#9E68E4', '#723CDF']}
-                    start={{ x: 0.2, y: 1.2 }}
-                    end={{ x: 0, y: 0 }}
-                    style={styles.buttonGradientBorder}
-                >
-                    <TouchableOpacity style={styles.button} onPress={() => router.push('/algostrategybuilder')}>
-                        <Text style={styles.buttonText}>Strategy Builder</Text>
-                    </TouchableOpacity>
-                </LinearGradient>
-            </View>
-
-            <ScrollView style={styles.scollerbox}>
+            <ScrollView style={styles.scollerbox}
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.mainbox}>
                     <LinearGradient
                         colors={['#3E3E4580', '#0C0C1800', '#706F72']}
@@ -503,13 +483,10 @@ const styles = StyleSheet.create({
     actionText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: 'bold',
     },
     actionButtonText: {
         color: '#000',
         fontSize: 16,
-        fontFamily: 'Questrial-Regular',
-        fontWeight: 'bold',
     },
     detailsContainer: {
         padding: 15,

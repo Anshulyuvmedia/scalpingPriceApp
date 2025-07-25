@@ -41,6 +41,24 @@ const Dashboard = () => {
                         <Text style={styles.buttonText}>Algo Strategy Builder</Text>
                     </View>
                 </TouchableOpacity>
+                <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => navigateToScreen('algodashboard')}
+                    style={styles.menuButtonContainer}
+                >
+                    <View style={styles.menuButton}>
+                        <Text style={styles.buttonText}>Algo Dashbaord</Text>
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => navigateToScreen('foxstrategybuilder')}
+                    style={styles.menuButtonContainer}
+                >
+                    <View style={styles.menuButton}>
+                        <Text style={styles.buttonText}>FOX Strategy Builder</Text>
+                    </View>
+                </TouchableOpacity>
 
 
                 {/* Logout Button */}

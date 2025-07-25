@@ -91,9 +91,10 @@ const Login = () => {
         if (valid) {
             if (email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
                 await saveSession(email);
-                Alert.alert('Success', 'Logged in successfully!', [
-                    { text: 'OK', onPress: () => router.replace('/(root)/(tabs)') },
-                ]);
+                router.replace('/(root)/(tabs)')
+                // Alert.alert('Success', 'Logged in successfully!', [
+                //     { text: 'OK', onPress: () => router.replace('/(root)/(tabs)') },
+                // ]);
             } else {
                 Alert.alert('Error', 'Invalid email or password. Please use the credentials shown above.');
             }
