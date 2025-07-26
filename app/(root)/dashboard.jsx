@@ -1,18 +1,76 @@
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import React from 'react';
-import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import HomeHeader from '@/components/HomeHeader';
 import { router } from 'expo-router';
+import HomeHeader from '@/components/HomeHeader';
+import LinearGradient from 'react-native-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'react-native-haptic-feedback';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+
+const { width } = Dimensions.get('window');
+const BUTTON_WIDTH = Math.min(width * 0.9, 400);
+
+const menuItems = [
+    { name: 'Algo Strategy Builder', route: 'algostrategybuilder', icon: 'cog' },
+    { name: 'Algo Dashboard', route: 'algodashboard', icon: 'chart-line' },
+    { name: 'FOX Strategy Builder', route: 'foxstrategybuilder', icon: 'rocket' },
+    { name: 'Detailed Metrics', route: 'detailedmatrics', icon: 'chart-bar' },
+    { name: 'Strategy Backtesting', route: 'strategybacktesting', icon: 'history' },
+    { name: 'AI Generated Trade', route: 'aigeneratedtrade', icon: 'robot' },
+];
+
+const MenuButton = ({ item, onPress, isLogout = false }) => {
+    const scale = useSharedValue(1);
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: withSpring(scale.value) }],
+    }));
+
+    return (
+        <Animated.View style={[styles.menuButtonContainer, animatedStyle]}>
+            <TouchableOpacity
+                activeOpacity={0.7}
+                onPressIn={() => (scale.value = 0.95)}
+                onPressOut={() => (scale.value = 1)}
+                onPress={onPress}
+                style={styles.touchable}
+                accessibilityLabel={item.name}
+            >
+                <LinearGradient
+                    colors={isLogout ? ['#FF4E50', '#F70808'] : ['#000', '#666666']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={styles.buttonBorder}
+                >
+                    <LinearGradient
+                        colors={isLogout ? ['#FF4E50', '#F70808'] : ['#191922', '#000']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.buttonGradient}
+                    >
+                        <View style={styles.menuButton}>
+                            <MaterialCommunityIcons
+                                name={isLogout ? 'logout' : item.icon}
+                                size={24}
+                                color={isLogout ? '#fff' : '#05FF93'}
+                                style={styles.buttonIcon}
+                            />
+                            <Text style={styles.buttonText}>{isLogout ? 'Logout' : item.name}</Text>
+                        </View>
+                    </LinearGradient>
+                </LinearGradient>
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
 
 const Dashboard = () => {
-    const navigation = useNavigation();
-
     // Handle logout
     const handleLogout = async () => {
         try {
             await AsyncStorage.removeItem('userSession');
-            router.push('/(auth)');
+            Haptics.trigger('impactMedium');
+            router.push('/(auth)/login');
         } catch (error) {
             console.error('Error clearing session:', error);
             Alert.alert('Error', 'Failed to log out. Please try again.');
@@ -21,56 +79,28 @@ const Dashboard = () => {
 
     // Handle navigation to different screens
     const navigateToScreen = (screenName) => {
-        // Replace with actual screen names in your navigation stack
-        navigation.navigate(screenName);
+        Haptics.trigger('impactLight');
+        router.push(`/${screenName}`);
     };
 
     return (
         <View style={styles.container}>
-            <HomeHeader page={'chatbot'} title={'Dashboard'} />
-
-            <View style={styles.menuContainer}>
-
-                {/* Navigation Buttons */}
-                <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => navigateToScreen('algostrategybuilder')}
-                    style={styles.menuButtonContainer}
-                >
-                    <View style={styles.menuButton}>
-                        <Text style={styles.buttonText}>Algo Strategy Builder</Text>
-                    </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => navigateToScreen('algodashboard')}
-                    style={styles.menuButtonContainer}
-                >
-                    <View style={styles.menuButton}>
-                        <Text style={styles.buttonText}>Algo Dashbaord</Text>
-                    </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => navigateToScreen('foxstrategybuilder')}
-                    style={styles.menuButtonContainer}
-                >
-                    <View style={styles.menuButton}>
-                        <Text style={styles.buttonText}>FOX Strategy Builder</Text>
-                    </View>
-                </TouchableOpacity>
-
-
-                {/* Logout Button */}
-                <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={handleLogout}
-                    style={styles.menuButtonContainer}
-                >
-                    <View style={styles.menuButton}>
-                        <Text style={styles.buttonText}>Logout</Text>
-                    </View>
-                </TouchableOpacity>
+            <HomeHeader page={'chatbot'} title={'Menu'} />
+            <View style={styles.content}>
+                <View style={styles.menuContainer}>
+                    {menuItems.map((item, index) => (
+                        <MenuButton
+                            key={index}
+                            item={item}
+                            onPress={() => navigateToScreen(item.route)}
+                        />
+                    ))}
+                    <MenuButton
+                        item={{ name: 'Logout' }}
+                        onPress={handleLogout}
+                        isLogout={true}
+                    />
+                </View>
             </View>
         </View>
     );
@@ -82,44 +112,54 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
-        padding: 10,
+        paddingHorizontal: 10,
     },
-    menuContainer: {
+    content: {
         flex: 1,
-        justifyContent: 'start',
-        alignItems: 'start',
+        // paddingHorizontal: 16,
+        alignItems: 'center',
         paddingVertical: 20,
     },
-    welcomeText: {
-        fontSize: 24,
-        fontWeight: '600',
-        color: '#FFFFFF',
-        textAlign: 'center',
-        marginBottom: 30,
-        fontFamily: 'Questrial-Regular',
+    menuContainer: {
+        width: '100%',
+        maxWidth: BUTTON_WIDTH,
+        alignItems: 'center',
     },
     menuButtonContainer: {
         width: '100%',
-        maxWidth: 400,
-        marginBottom: 15,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 8,
+    },
+    touchable: {
+        width: '100%',
     },
     buttonGradient: {
-        borderRadius: 8,
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    buttonBorder: {
+        borderRadius: 16,
+        overflow: 'hidden',
         padding: 1,
     },
     menuButton: {
-        borderWidth: 1,
-        borderColor: '#fff',
-        borderRadius: 18,
-        paddingBlock: 10,
-        justifyContent: 'center',
+        flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#191922',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        justifyContent: 'flex-start',
+    },
+    buttonIcon: {
+        marginRight: 12,
     },
     buttonText: {
         color: '#FFFFFF',
         fontSize: 18,
         fontWeight: '600',
-        fontFamily: 'Questrial-Regular',
+        fontFamily: 'Sora-SemiBold',
     },
 });
