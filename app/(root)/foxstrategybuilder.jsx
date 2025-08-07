@@ -1,10 +1,13 @@
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, TextInput, Switch } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, TextInput, Switch, Dimensions } from 'react-native';
 import React, { useState, useRef } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import AlgoNavigation from '@/components/AlgoNavigation';
 import RBSheet from 'react-native-raw-bottom-sheet';
+import { router } from 'expo-router';
+
+const { width, height } = Dimensions.get('window');
 
 const FoxStrategyBuilder = () => {
     const [strategyName, setStrategyName] = useState('');
@@ -60,18 +63,18 @@ const FoxStrategyBuilder = () => {
                             style={styles.gradientBorder}
                         >
                             <View style={styles.algobox}>
-                                <Text className="font-sora-bold mb-3 text-white text-xl">FOX Strategy Builder</Text>
+                                <Text style={styles.headerText}>FOX Strategy Builder</Text>
                                 <View style={styles.actionRow}>
                                     <TouchableOpacity
                                         style={styles.backtestButton}
-                                        onPress={() => refRBSheet.current?.open()} // Open RBSheet on backtest click
+                                        onPress={() => refRBSheet.current?.open()}
                                     >
-                                        <Feather name="play" size={20} color="black" />
-                                        <Text className="font-Questrial-Regular" style={styles.actionButtonText}> Backtest</Text>
+                                        <Feather name="play" size={width * 0.05} color="black" />
+                                        <Text style={styles.actionButtonText}> Backtest</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.strategyButton}>
-                                        <Feather name="save" size={20} color="white" />
-                                        <Text className="font-Questrial-Regular" style={styles.actionText}> Save Strategy</Text>
+                                        <Feather name="save" size={width * 0.05} color="white" />
+                                        <Text style={styles.actionText}> Save Strategy</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -123,7 +126,7 @@ const FoxStrategyBuilder = () => {
                                             onValueChange={() => toggleIndicator(indicator)}
                                             value={indicators[indicator]}
                                             trackColor={{ false: '#767676', true: '#05FF93' }}
-                                            thumbColor={indicators[indicator] ? '#000' : '#fff'}
+                                            thumbColor={indicators[indicator] ? '#05FF93' : '#fff'} // Fixed thumb color to green when active
                                         />
                                         <Text style={styles.checkboxLabel}>
                                             {indicator
@@ -241,7 +244,7 @@ const FoxStrategyBuilder = () => {
                                 <Text style={styles.detailsTitle}>Strategy Preview</Text>
                                 <View style={styles.previewBox}>
                                     <Text style={styles.previewText}>{strategyName || 'Untitled Strategy'}</Text>
-                                    <Text style={styles.previewSubText}>Risk Level: 50% (Moderate)</Text>
+                                    <Text style={styles.previewSubText}>Risk Level: {riskLevel}% ({riskLevel < 33 ? 'Conservative' : riskLevel < 66 ? 'Moderate' : 'Aggressive'})</Text>
                                     <Text style={styles.previewSubText}>Selected Indicators: {Object.values(indicators).filter(Boolean).length}</Text>
                                     <Text style={styles.previewSubText}>Status: Draft</Text>
                                 </View>
@@ -282,7 +285,7 @@ const FoxStrategyBuilder = () => {
                         backgroundColor: '#12121c',
                         borderTopLeftRadius: 20,
                         borderTopRightRadius: 20,
-                        padding: 20,
+                        padding: width * 0.05,
                     },
                 }}
             >
@@ -340,8 +343,8 @@ const FoxStrategyBuilder = () => {
                             </LinearGradient>
                         </View>
                     </View>
-                    <TouchableOpacity style={styles.backtestRunButton}>
-                        <Feather name="play" size={20} color="#000" />
+                    <TouchableOpacity style={styles.backtestRunButton} onPress={() => router.push('strategybacktesting')}>
+                        <Feather name="play" size={width * 0.05} color="#000" />
                         <Text style={styles.actionButtonText}> Run Backtest</Text>
                     </TouchableOpacity>
                 </View>
@@ -358,23 +361,23 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
     },
     headerbox: {
-        paddingHorizontal: 15,
+        paddingHorizontal: width * 0.04,
     },
     scrollerbox: {
-        paddingHorizontal: 15,
-        marginBottom: 25,
-        paddingBottom: 20,
+        paddingHorizontal: width * 0.04,
+        marginBottom: height * 0.03,
+        paddingBottom: height * 0.025,
     },
     section: {
-        marginTop: 20,
+        marginTop: height * 0.025,
     },
     buttonRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingHorizontal: 15,
+        paddingHorizontal: width * 0.04,
         borderBottomColor: '#3C3B40',
         borderWidth: 1,
-        paddingBottom: 15,
+        paddingBottom: height * 0.02,
         borderRadius: 20,
     },
     buttonGradientBorder: {
@@ -387,7 +390,7 @@ const styles = StyleSheet.create({
     },
     button: {
         flexDirection: 'row',
-        paddingVertical: 15,
+        paddingVertical: height * 0.02,
         borderRadius: 100,
         alignItems: 'center',
         justifyContent: 'center',
@@ -399,19 +402,19 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: width * 0.04,
         fontFamily: 'Questrial-Regular',
         fontWeight: '500',
     },
     algobox: {
         backgroundColor: '#12121c',
-        padding: 15,
+        padding: width * 0.04,
         borderRadius: 20,
     },
     actionRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 10,
+        gap: width * 0.025,
     },
     backtestButton: {
         flexDirection: 'row',
@@ -420,7 +423,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#05FF93',
         flexGrow: 1,
-        paddingVertical: 10,
+        paddingVertical: height * 0.015,
     },
     strategyButton: {
         flexDirection: 'row',
@@ -429,89 +432,97 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#0057FF',
         flexGrow: 1,
-        paddingVertical: 10,
+        paddingVertical: height * 0.015,
     },
     actionText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: width * 0.04,
     },
     actionButtonText: {
         color: '#000',
-        fontSize: 16,
+        fontSize: width * 0.04,
+    },
+    headerText: {
+        fontFamily: 'Sora-Bold',
+        color: '#FFF',
+        fontSize: width * 0.05,
+        marginBottom: height * 0.015,
     },
     detailsContainer: {
-        padding: 15,
+        padding: width * 0.04,
         backgroundColor: '#12121c',
         borderRadius: 20,
     },
     detailsTitle: {
         color: '#FFF',
-        fontSize: 18,
+        fontSize: width * 0.045,
         fontWeight: 'light',
-        marginBottom: 10,
+        marginBottom: height * 0.015,
     },
     inputRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 10,
+        marginBottom: height * 0.015,
+        flexWrap: 'wrap',
     },
     profitRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 10,
+        marginTop: height * 0.015,
     },
     inputGroup: {
         width: '100%',
     },
     inputBox: {
         width: '48%',
+        minWidth: width * 0.4,
     },
     title: {
         color: '#fff',
-        fontSize: 14,
-        marginBottom: 10,
-        marginRight: 5,
+        fontSize: width * 0.035,
+        marginBottom: height * 0.015,
+        marginRight: width * 0.015,
     },
     label: {
         color: '#A9A9A9',
-        fontSize: 14,
-        marginBottom: 10,
-        marginRight: 5,
+        fontSize: width * 0.035,
+        marginBottom: height * 0.015,
+        marginRight: width * 0.015,
     },
     inputText: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: width * 0.04,
         backgroundColor: '#1d1d26',
-        padding: 10,
+        padding: width * 0.025,
         borderRadius: 20,
         textAlign: 'start',
     },
     textarea: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: width * 0.04,
         backgroundColor: '#1d1d26',
-        padding: 10,
+        padding: width * 0.025,
         borderRadius: 20,
         textAlignVertical: 'top',
         textAlign: 'start',
-        height: 120, // Increased height for better textarea appearance
+        height: height * 0.15,
         width: '100%',
     },
     sliderContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 10,
+        marginBottom: height * 0.015,
     },
     sliderLabel: {
         color: '#A9A9A9',
-        fontSize: 12,
+        fontSize: width * 0.03,
     },
     slider: {
         width: '100%',
-        height: 10,
+        height: height * 0.012,
         backgroundColor: '#1d1d26',
         borderRadius: 5,
-        marginBottom: 10,
+        marginBottom: height * 0.015,
     },
     sliderTrack: {
         height: '100%',
@@ -521,27 +532,27 @@ const styles = StyleSheet.create({
     checkboxRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 5,
+        marginBottom: height * 0.01,
     },
     checkboxLabel: {
         color: '#FFF',
-        fontSize: 14,
-        marginLeft: 10,
+        fontSize: width * 0.035,
+        marginLeft: width * 0.025,
     },
     previewBox: {
-        padding: 10,
+        padding: width * 0.025,
         backgroundColor: '#1d1d26',
         borderRadius: 10,
     },
     previewText: {
         color: '#FFF',
-        fontSize: 14,
+        fontSize: width * 0.035,
         fontWeight: 'bold',
     },
     previewSubText: {
         color: '#A9A9A9',
-        fontSize: 12,
-        marginTop: 5,
+        fontSize: width * 0.03,
+        marginTop: height * 0.01,
     },
     backtestRunButton: {
         flexDirection: 'row',
@@ -549,8 +560,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#05FF93',
-        paddingVertical: 5,
-        paddingHorizontal: 10,
-        marginTop: 30,
+        paddingVertical: height * 0.015,
+        paddingHorizontal: width * 0.025,
+        marginTop: height * 0.03,
     },
 });

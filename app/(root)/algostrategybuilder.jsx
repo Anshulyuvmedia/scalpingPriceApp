@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, Dimensions } from 'react-native';
 import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import { router } from 'expo-router';
@@ -6,6 +6,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import AlgoNavigation from '../../components/AlgoNavigation';
+
+const { width, height } = Dimensions.get('window');
 
 const AlgoStrategyBuilder = () => {
     const indicators = ['RSI', 'Moving Average', 'MACD', 'Bollinger Bands', 'Stochastic Oscillator'];
@@ -18,6 +20,12 @@ const AlgoStrategyBuilder = () => {
     const [exitRules, setExitRules] = useState([
         { id: 1, indicator: 'RSI', operator: '>', value: '70' },
     ]);
+    const [strategyName, setStrategyName] = useState('Rsi with EMA');
+    const [description, setDescription] = useState('RSI');
+    const [stopLoss, setStopLoss] = useState('2');
+    const [takeProfit, setTakeProfit] = useState('5');
+    const [maxPositionSize, setMaxPositionSize] = useState('10');
+    const [maxDailyLoss, setMaxDailyLoss] = useState('5');
 
     const addEntryRule = () => {
         const newId = entryRules.length > 0 ? Math.max(...entryRules.map(rule => rule.id)) + 1 : 1;
@@ -45,9 +53,7 @@ const AlgoStrategyBuilder = () => {
 
             <AlgoNavigation />
 
-            <ScrollView style={styles.scollerbox}
-                showsVerticalScrollIndicator={false}
-            >
+            <ScrollView style={styles.scollerbox} showsVerticalScrollIndicator={false}>
                 <View style={styles.mainbox}>
                     <LinearGradient
                         colors={['#3E3E4580', '#0C0C1800', '#706F72']}
@@ -56,19 +62,17 @@ const AlgoStrategyBuilder = () => {
                         style={styles.gradientBorder}
                     >
                         <View style={styles.algobox}>
-                            <Text className='font-sora-bold mb-3 text-white text-xl'>
+                            <Text style={styles.titleText}>
                                 Algo Strategy Builder
                             </Text>
-                            {/* Backtest and Save Strategy Buttons */}
                             <View style={styles.actionRow}>
-                                <TouchableOpacity style={styles.backtextButton}>
-                                    <Feather name="play" size={20} color="black" />
-                                    <Text className="font-Questrial-Regular" style={styles.actionButtonText}> Backtest</Text>
+                                <TouchableOpacity style={styles.backtextButton} onPress={() => router.push('strategybacktesting')}>
+                                    <Feather name="play" size={width * 0.05} color="black" />
+                                    <Text style={styles.actionButtonText}> Backtest</Text>
                                 </TouchableOpacity>
-
                                 <TouchableOpacity style={styles.strategyButton}>
-                                    <Feather name="save" size={20} color="white" />
-                                    <Text className="font-Questrial-Regular" style={styles.actionText}> Save Strategy</Text>
+                                    <Feather name="save" size={width * 0.05} color="white" />
+                                    <Text style={styles.actionText}> Save Strategy</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -76,7 +80,6 @@ const AlgoStrategyBuilder = () => {
                 </View>
 
                 <View style={styles.mainbox}>
-                    {/* Strategy Details */}
                     <LinearGradient
                         colors={['#3E3E4580', '#0C0C1800', '#706F72']}
                         start={{ x: 0.2, y: 1.2 }}
@@ -94,7 +97,13 @@ const AlgoStrategyBuilder = () => {
                                         end={{ x: 0, y: 0 }}
                                         style={styles.gradientBorder}
                                     >
-                                        <Text style={styles.inputText}>Rsi with EMA</Text>
+                                        <TextInput
+                                            style={styles.inputText}
+                                            value={strategyName}
+                                            onChangeText={setStrategyName}
+                                            placeholder="Enter strategy name"
+                                            placeholderTextColor="#A9A9A9"
+                                        />
                                     </LinearGradient>
                                 </View>
                                 <View style={styles.inputGroup}>
@@ -105,7 +114,13 @@ const AlgoStrategyBuilder = () => {
                                         end={{ x: 0, y: 0 }}
                                         style={styles.gradientBorder}
                                     >
-                                        <Text style={styles.inputText}>RSI</Text>
+                                        <TextInput
+                                            style={styles.inputText}
+                                            value={description}
+                                            onChangeText={setDescription}
+                                            placeholder="Enter description"
+                                            placeholderTextColor="#A9A9A9"
+                                        />
                                     </LinearGradient>
                                 </View>
                             </View>
@@ -114,7 +129,6 @@ const AlgoStrategyBuilder = () => {
                 </View>
 
                 <View style={styles.mainbox}>
-                    {/* Entry Rules */}
                     <LinearGradient
                         colors={['#3E3E4580', '#0C0C1800', '#706F72']}
                         start={{ x: 0.2, y: 1.2 }}
@@ -133,20 +147,20 @@ const AlgoStrategyBuilder = () => {
                                     colors={['#3E3E4580', '#0C0C1800', '#706F72']}
                                     start={{ x: 0.2, y: 1.2 }}
                                     end={{ x: 0, y: 0 }}
-                                    style={[styles.gradientBorder, { padding: 1, marginBottom: 10, }]}
+                                    style={[styles.gradientBorder, { padding: 1, marginBottom: width * 0.025 }]}
                                     key={rule.id}
                                 >
-                                    <View style={styles.ruleRow} >
+                                    <View style={styles.ruleRow}>
                                         <View style={styles.conditionGroup}>
                                             <Text style={styles.label}>{rule.id === 1 ? 'IF' : 'AND'}</Text>
-                                            <View className="flex-column">
-                                                <View className="flex-row mb-2 gap-2">
+                                            <View style={styles.dropdownWrapper}>
+                                                <View style={styles.dropdownRow}>
                                                     <View style={styles.dropdownContainer}>
                                                         <LinearGradient
                                                             colors={['#3E3E4580', '#0C0C1800', '#706F72']}
                                                             start={{ x: 0.2, y: 1.2 }}
                                                             end={{ x: 0, y: 0 }}
-                                                            style={styles.gradientBorder}
+                                                            style={styles.gradientBorderInput}
                                                         >
                                                             <Picker
                                                                 selectedValue={rule.indicator}
@@ -169,7 +183,7 @@ const AlgoStrategyBuilder = () => {
                                                             colors={['#3E3E4580', '#0C0C1800', '#706F72']}
                                                             start={{ x: 0.2, y: 1.2 }}
                                                             end={{ x: 0, y: 0 }}
-                                                            style={styles.gradientBorder}
+                                                            style={styles.gradientBorderInput}
                                                         >
                                                             <Picker
                                                                 selectedValue={rule.operator}
@@ -188,34 +202,39 @@ const AlgoStrategyBuilder = () => {
                                                         </LinearGradient>
                                                     </View>
                                                 </View>
-                                                <View style={styles.dropdownContainer}>
-                                                    <LinearGradient
-                                                        colors={['#3E3E4580', '#0C0C1800', '#706F72']}
-                                                        start={{ x: 0.2, y: 1.2 }}
-                                                        end={{ x: 0, y: 0 }}
-                                                        style={styles.gradientBorder}
-                                                    >
-                                                        <Picker
-                                                            selectedValue={rule.value}
-                                                            onValueChange={(itemValue) => {
-                                                                setEntryRules(entryRules.map(r =>
-                                                                    r.id === rule.id ? { ...r, value: itemValue } : r
-                                                                ));
-                                                            }}
-                                                            style={styles.picker}
-                                                            itemStyle={styles.pickerItem}
+                                                <View style={styles.dropdownRow}>
+                                                    <View style={styles.dropdownContainer}>
+                                                        <LinearGradient
+                                                            colors={['#3E3E4580', '#0C0C1800', '#706F72']}
+                                                            start={{ x: 0.2, y: 1.2 }}
+                                                            end={{ x: 0, y: 0 }}
+                                                            style={styles.gradientBorderInput}
                                                         >
-                                                            {values.map((item) => (
-                                                                <Picker.Item label={item} value={item} key={item} />
-                                                            ))}
-                                                        </Picker>
-                                                    </LinearGradient>
+                                                            <Picker
+                                                                selectedValue={rule.value}
+                                                                onValueChange={(itemValue) => {
+                                                                    setEntryRules(entryRules.map(r =>
+                                                                        r.id === rule.id ? { ...r, value: itemValue } : r
+                                                                    ));
+                                                                }}
+                                                                style={styles.picker}
+                                                                itemStyle={styles.pickerItem}
+                                                            >
+                                                                {values.map((item) => (
+                                                                    <Picker.Item label={item} value={item} key={item} />
+                                                                ))}
+                                                            </Picker>
+                                                        </LinearGradient>
+                                                    </View>
+                                                    <View style={styles.dropdownContainer}>
+                                                        <TouchableOpacity style={styles.deleteButton} onPress={() => deleteEntryRule(rule.id)}>
+                                                            <Feather name="trash-2" size={width * 0.05} color="white" />
+                                                            <Text className="text-white"> Delete</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
                                                 </View>
                                             </View>
                                         </View>
-                                        <TouchableOpacity style={styles.deleteButton} onPress={() => deleteEntryRule(rule.id)}>
-                                            <Feather name="trash-2" size={20} color="white" />
-                                        </TouchableOpacity>
                                     </View>
                                 </LinearGradient>
                             ))}
@@ -224,7 +243,6 @@ const AlgoStrategyBuilder = () => {
                 </View>
 
                 <View style={styles.mainbox}>
-                    {/* Exit Rules */}
                     <LinearGradient
                         colors={['#3E3E4580', '#0C0C1800', '#706F72']}
                         start={{ x: 0.2, y: 1.2 }}
@@ -239,25 +257,24 @@ const AlgoStrategyBuilder = () => {
                                 </TouchableOpacity>
                             </View>
                             {exitRules.map((rule) => (
-
                                 <LinearGradient
                                     colors={['#3E3E4580', '#0C0C1800', '#706F72']}
                                     start={{ x: 0.2, y: 1.2 }}
                                     end={{ x: 0, y: 0 }}
-                                    style={[styles.gradientBorder, { padding: 1, marginBottom: 10, }]}
+                                    style={[styles.gradientBorder, { padding: 1, marginBottom: width * 0.025 }]}
                                     key={rule.id}
                                 >
                                     <View style={styles.ruleRow}>
                                         <View style={styles.conditionGroup}>
                                             <Text style={styles.label}>{rule.id === 1 ? 'IF' : 'AND'}</Text>
-                                            <View className="flex-column">
-                                                <View className="flex-row mb-2 gap-2">
+                                            <View style={styles.dropdownWrapper}>
+                                                <View style={styles.dropdownRow}>
                                                     <View style={styles.dropdownContainer}>
                                                         <LinearGradient
                                                             colors={['#3E3E4580', '#0C0C1800', '#706F72']}
                                                             start={{ x: 0.2, y: 1.2 }}
                                                             end={{ x: 0, y: 0 }}
-                                                            style={styles.gradientBorder}
+                                                            style={styles.gradientBorderInput}
                                                         >
                                                             <Picker
                                                                 selectedValue={rule.indicator}
@@ -280,7 +297,7 @@ const AlgoStrategyBuilder = () => {
                                                             colors={['#3E3E4580', '#0C0C1800', '#706F72']}
                                                             start={{ x: 0.2, y: 1.2 }}
                                                             end={{ x: 0, y: 0 }}
-                                                            style={styles.gradientBorder}
+                                                            style={styles.gradientBorderInput}
                                                         >
                                                             <Picker
                                                                 selectedValue={rule.operator}
@@ -299,34 +316,39 @@ const AlgoStrategyBuilder = () => {
                                                         </LinearGradient>
                                                     </View>
                                                 </View>
-                                                <View style={styles.dropdownContainer}>
-                                                    <LinearGradient
-                                                        colors={['#3E3E4580', '#0C0C1800', '#706F72']}
-                                                        start={{ x: 0.2, y: 1.2 }}
-                                                        end={{ x: 0, y: 0 }}
-                                                        style={styles.gradientBorder}
-                                                    >
-                                                        <Picker
-                                                            selectedValue={rule.value}
-                                                            onValueChange={(itemValue) => {
-                                                                setExitRules(exitRules.map(r =>
-                                                                    r.id === rule.id ? { ...r, value: itemValue } : r
-                                                                ));
-                                                            }}
-                                                            style={styles.picker}
-                                                            itemStyle={styles.pickerItem}
+                                                <View style={styles.dropdownRow}>
+                                                    <View style={styles.dropdownContainer}>
+                                                        <LinearGradient
+                                                            colors={['#3E3E4580', '#0C0C1800', '#706F72']}
+                                                            start={{ x: 0.2, y: 1.2 }}
+                                                            end={{ x: 0, y: 0 }}
+                                                            style={styles.gradientBorderInput}
                                                         >
-                                                            {values.map((item) => (
-                                                                <Picker.Item label={item} value={item} key={item} />
-                                                            ))}
-                                                        </Picker>
-                                                    </LinearGradient>
+                                                            <Picker
+                                                                selectedValue={rule.value}
+                                                                onValueChange={(itemValue) => {
+                                                                    setExitRules(exitRules.map(r =>
+                                                                        r.id === rule.id ? { ...r, value: itemValue } : r
+                                                                    ));
+                                                                }}
+                                                                style={styles.picker}
+                                                                itemStyle={styles.pickerItem}
+                                                            >
+                                                                {values.map((item) => (
+                                                                    <Picker.Item label={item} value={item} key={item} />
+                                                                ))}
+                                                            </Picker>
+                                                        </LinearGradient>
+                                                    </View>
+                                                    <View style={styles.dropdownContainer}>
+                                                        <TouchableOpacity style={styles.deleteButton} onPress={() => deleteExitRule(rule.id)}>
+                                                            <Feather name="trash-2" size={width * 0.05} color="white" />
+                                                            <Text className="text-white"> Delete</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
                                                 </View>
                                             </View>
                                         </View>
-                                        <TouchableOpacity style={styles.deleteButton} onPress={() => deleteExitRule(rule.id)}>
-                                            <Feather name="trash-2" size={20} color="white" />
-                                        </TouchableOpacity>
                                     </View>
                                 </LinearGradient>
                             ))}
@@ -335,7 +357,6 @@ const AlgoStrategyBuilder = () => {
                 </View>
 
                 <View style={styles.mainbox}>
-                    {/* Risk Management */}
                     <LinearGradient
                         colors={['#3E3E4580', '#0C0C1800', '#706F72']}
                         start={{ x: 0.2, y: 1.2 }}
@@ -353,7 +374,14 @@ const AlgoStrategyBuilder = () => {
                                         end={{ x: 0, y: 0 }}
                                         style={styles.gradientBorder}
                                     >
-                                        <Text style={styles.inputText}>2</Text>
+                                        <TextInput
+                                            style={styles.inputText}
+                                            value={stopLoss}
+                                            onChangeText={setStopLoss}
+                                            placeholder="Enter stop loss"
+                                            placeholderTextColor="#A9A9A9"
+                                            keyboardType="numeric"
+                                        />
                                     </LinearGradient>
                                 </View>
                                 <View style={styles.inputGroup}>
@@ -364,7 +392,14 @@ const AlgoStrategyBuilder = () => {
                                         end={{ x: 0, y: 0 }}
                                         style={styles.gradientBorder}
                                     >
-                                        <Text style={styles.inputText}>5</Text>
+                                        <TextInput
+                                            style={styles.inputText}
+                                            value={takeProfit}
+                                            onChangeText={setTakeProfit}
+                                            placeholder="Enter take profit"
+                                            placeholderTextColor="#A9A9A9"
+                                            keyboardType="numeric"
+                                        />
                                     </LinearGradient>
                                 </View>
                             </View>
@@ -377,7 +412,14 @@ const AlgoStrategyBuilder = () => {
                                         end={{ x: 0, y: 0 }}
                                         style={styles.gradientBorder}
                                     >
-                                        <Text style={styles.inputText}>10</Text>
+                                        <TextInput
+                                            style={styles.inputText}
+                                            value={maxPositionSize}
+                                            onChangeText={setMaxPositionSize}
+                                            placeholder="Enter max position size"
+                                            placeholderTextColor="#A9A9A9"
+                                            keyboardType="numeric"
+                                        />
                                     </LinearGradient>
                                 </View>
                                 <View style={styles.inputGroup}>
@@ -388,15 +430,22 @@ const AlgoStrategyBuilder = () => {
                                         end={{ x: 0, y: 0 }}
                                         style={styles.gradientBorder}
                                     >
-                                        <Text style={styles.inputText}>5</Text>
+                                        <TextInput
+                                            style={styles.inputText}
+                                            value={maxDailyLoss}
+                                            onChangeText={setMaxDailyLoss}
+                                            placeholder="Enter max daily loss"
+                                            placeholderTextColor="#A9A9A9"
+                                            keyboardType="numeric"
+                                        />
                                     </LinearGradient>
                                 </View>
                             </View>
                         </View>
                     </LinearGradient>
                 </View>
-            </ScrollView>
-        </View>
+            </ScrollView >
+        </View >
     );
 };
 
@@ -408,59 +457,38 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
     },
     headerbox: {
-        paddingHorizontal: 15,
+        paddingHorizontal: width * 0.04,
     },
     scollerbox: {
-        paddingHorizontal: 15,
-        marginBottom: 25,
+        paddingHorizontal: width * 0.04,
+        marginBottom: height * 0.03,
     },
     mainbox: {
-        marginTop: 20,
-    },
-    buttonRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 15,
-        borderBottomColor: '#3C3B40',
-        borderWidth: 1,
-        paddingBottom: 15,
-        borderRadius: 20,
-    },
-    buttonGradientBorder: {
-        borderRadius: 100,
-        width: '48%',
+        marginTop: height * 0.025,
     },
     gradientBorder: {
         borderRadius: 20,
         padding: 1,
     },
-    button: {
-        flexDirection: 'row',
-        paddingVertical: 15,
-        borderRadius: 100,
-        alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-    },
-    buttonText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontFamily: 'Questrial-Regular',
-        fontWeight: '500',
+    gradientBorderInput: {
+        borderRadius: 0,
+        padding: 1,
     },
     algobox: {
         backgroundColor: '#12121c',
-        padding: 15,
+        padding: width * 0.04,
         borderRadius: 20,
+    },
+    titleText: {
+        fontFamily: 'Sora-Bold',
+        marginBottom: height * 0.015,
+        color: '#FFF',
+        fontSize: width * 0.05,
     },
     actionRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 10,
+        gap: width * 0.025,
     },
     backtextButton: {
         flexDirection: 'row',
@@ -469,7 +497,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#05FF93',
         flexGrow: 1,
-        paddingVertical: 10,
+        paddingVertical: height * 0.015,
     },
     strategyButton: {
         flexDirection: 'row',
@@ -478,46 +506,50 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#0057FF',
         flexGrow: 1,
-        paddingVertical: 10,
+        paddingVertical: height * 0.015,
     },
     actionText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: width * 0.04,
+        fontFamily: 'Questrial-Regular',
     },
     actionButtonText: {
         color: '#000',
-        fontSize: 16,
+        fontSize: width * 0.04,
+        fontFamily: 'Questrial-Regular',
     },
     detailsContainer: {
-        padding: 15,
+        padding: width * 0.04,
         backgroundColor: '#12121c',
         borderRadius: 20,
     },
     detailsTitle: {
         color: '#FFF',
-        fontSize: 18,
+        fontSize: width * 0.045,
         fontWeight: 'light',
-        marginBottom: 10,
+        marginBottom: height * 0.015,
     },
     inputRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 10,
+        marginBottom: height * 0.015,
+        flexWrap: 'wrap',
     },
     inputGroup: {
         width: '48%',
+        minWidth: width * 0.4,
     },
     label: {
         color: '#A9A9A9',
-        fontSize: 14,
-        marginBottom: 10,
-        marginRight: 5,
+        fontSize: width * 0.035,
+        marginBottom: height * 0.01,
+        marginRight: width * 0.01,
     },
     inputText: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: width * 0.04,
         backgroundColor: '#1d1d26',
-        padding: 10,
+        padding: width * 0.025,
         borderRadius: 20,
         textAlign: 'center',
     },
@@ -525,63 +557,77 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: height * 0.015,
     },
     addRuleButton: {
         backgroundColor: '#05FF93',
         borderRadius: 12,
-        paddingVertical: 5,
-        paddingHorizontal: 10,
+        paddingVertical: height * 0.01,
+        paddingHorizontal: width * 0.025,
     },
     addRuleButtonRed: {
         backgroundColor: '#ff0505',
         borderRadius: 12,
-        paddingVertical: 5,
-        paddingHorizontal: 10,
+        paddingVertical: height * 0.01,
+        paddingHorizontal: width * 0.025,
     },
     addRuleText: {
         color: '#000',
-        fontSize: 14,
+        fontSize: width * 0.035,
         fontWeight: 'bold',
     },
     exitRuleText: {
         color: '#fff',
-        fontSize: 14,
+        fontSize: width * 0.035,
         fontWeight: 'bold',
     },
     ruleRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        // marginBottom: 10,
-        // borderWidth: 1,
-        // borderColor: 'white',
         backgroundColor: '#1d1d26',
-        padding: 10,
+        padding: width * 0.025,
         borderRadius: 20,
     },
     conditionGroup: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 5,
+        gap: width * 0.015,
+        flex: 1,
     },
-    deleteButton: {
-        backgroundColor: '#ff0505',
-        borderRadius: 10,
-        padding: 5,
+    dropdownWrapper: {
+        flexDirection: 'column',
+        flex: 1,
+    },
+    dropdownRow: {
+        flexDirection: 'row',
+        gap: width * 0.015,
+        marginBottom: height * 0.01,
     },
     dropdownContainer: {
-        width: 125,
+        flex: 1,
+        minWidth: width * 0.25,
+        // alignItems: 'center',
+        // flexDirection: 'row'
     },
     picker: {
         backgroundColor: '#1d1d26',
         color: '#FFF',
-        borderRadius: 20,
-        paddingHorizontal: 10,
+        borderRadius: 0,
+        paddingHorizontal: width * 0.025,
     },
     pickerItem: {
         color: '#FFF',
-        fontSize: 14,
-        // backgroundColor: '#1d1d26',
+        fontSize: width * 0.035,
+    },
+    deleteButton: {
+        borderColor: '#ff0505',
+        borderWidth: 1,
+        borderRadius: 10,
+        padding: width * 0.015,
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginVertical: 'auto',
     },
 });

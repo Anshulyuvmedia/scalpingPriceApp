@@ -1,8 +1,10 @@
-import { StyleSheet, Text, View, TouchableOpacity, FlatList } from 'react-native'
-import React from 'react'
-import HomeHeader from '@/components/HomeHeader'
-import LinearGradient from 'react-native-linear-gradient'
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, Dimensions } from 'react-native';
+import React from 'react';
+import HomeHeader from '@/components/HomeHeader';
+import LinearGradient from 'react-native-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+const { width, height } = Dimensions.get('window');
 
 const trades = [
     {
@@ -52,11 +54,11 @@ const trades = [
         detailsBg: '#222',
         detailsText: '#fff',
         textColor: '#FF0505',
-    }
-]
+    },
+];
 
 const TradeCard = ({
-    type, color, border, boxborder, tagBg, tagText, label, labelBg, labelText, time, timeframe, price, confidence, target, stoploss, analysis, analysisColor, btnBg, btnText, detailsBg, detailsText, textColor
+    type, color, border, boxborder, tagBg, tagText, label, labelBg, labelText, time, timeframe, price, confidence, target, stoploss, analysis, analysisColor, btnBg, btnText, detailsBg, detailsText, textColor,
 }) => (
     <LinearGradient colors={border} style={styles.cardBorder}
         start={{ x: 0, y: 0 }}
@@ -105,7 +107,7 @@ const TradeCard = ({
                     end={{ x: 1, y: 0.5 }}
                 >
                     <View style={styles.statBox}>
-                        <Text style={[styles.statValue]}>{confidence}</Text>
+                        <Text style={styles.statValue}>{confidence}</Text>
                         <Text style={styles.statLabel}>Confidence</Text>
                     </View>
                 </LinearGradient>
@@ -140,7 +142,7 @@ const TradeCard = ({
             </View>
         </LinearGradient>
     </LinearGradient>
-)
+);
 
 const AIGeneratedTrade = () => {
     return (
@@ -148,7 +150,7 @@ const AIGeneratedTrade = () => {
             <HomeHeader page={'chatbot'} title={'AI Trades'} />
             <View style={styles.headerRow}>
                 <View style={styles.headerTitle}>
-                    <MaterialCommunityIcons name="robot" size={24} color="#05FF93" />
+                    <MaterialCommunityIcons name="robot" size={width * 0.06} color="#05FF93" />
                     <Text style={styles.headerText}>AI Generated Trades</Text>
                 </View>
                 <View style={styles.headerTags}>
@@ -168,191 +170,192 @@ const AIGeneratedTrade = () => {
                 showsVerticalScrollIndicator={false}
             />
         </View>
-    )
-}
+    );
+};
 
-export default AIGeneratedTrade
+export default AIGeneratedTrade;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
-        paddingHorizontal: 12,
-        paddingTop: 12,
+        paddingHorizontal: width * 0.03,
+        paddingTop: height * 0.015,
     },
     headerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: height * 0.015,
     },
     headerTitle: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: width * 0.02,
     },
     headerText: {
         color: '#fff',
         fontFamily: 'Sora-Bold',
-        fontSize: 20,
+        fontSize: width * 0.05,
         fontWeight: 'bold',
     },
     headerTags: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: width * 0.02,
     },
     liveTag: {
         backgroundColor: '#05FF93',
         borderRadius: 12,
-        paddingHorizontal: 14,
-        paddingVertical: 4,
+        paddingHorizontal: width * 0.035,
+        paddingVertical: height * 0.005,
     },
     liveTagText: {
         color: '#000',
-        fontSize: 14,
+        fontSize: width * 0.035,
         fontWeight: '600',
     },
     dailyTag: {
         borderColor: '#0057FF',
         borderWidth: 1,
         borderRadius: 12,
-        paddingHorizontal: 14,
-        paddingVertical: 4,
+        paddingHorizontal: width * 0.035,
+        paddingVertical: height * 0.005,
     },
     dailyTagText: {
         color: '#7CA9FF',
-        fontSize: 14,
+        fontSize: width * 0.035,
         fontWeight: '600',
     },
     flatListContent: {
-        paddingBottom: 24,
+        paddingBottom: height * 0.03,
     },
     cardBorder: {
         borderRadius: 18,
         padding: 1,
-        marginVertical: 12,
+        marginVertical: height * 0.015,
     },
     cardBg: {
         borderRadius: 16,
-        padding: 16,
+        padding: width * 0.04,
     },
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 12,
+        marginBottom: height * 0.015,
     },
     labelContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: width * 0.02,
     },
     label: {
         borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
+        paddingHorizontal: width * 0.03,
+        paddingVertical: height * 0.015,
     },
     labelText: {
         fontWeight: '600',
-        fontSize: 14,
+        fontSize: width * 0.035,
     },
     tag: {
         borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+        paddingHorizontal: width * 0.02,
+        paddingVertical: height * 0.005,
         borderWidth: 1,
     },
     tagText: {
         fontWeight: '600',
-        fontSize: 12,
+        fontSize: width * 0.03,
     },
     timeText: {
         color: '#fff',
-        fontSize: 12,
-        marginTop: 4,
+        fontSize: width * 0.03,
+        marginTop: height * 0.005,
     },
     priceBlock: {
         alignItems: 'flex-end',
     },
     price: {
         fontWeight: '700',
-        fontSize: 20,
-        marginBottom: 2,
+        fontSize: width * 0.05,
+        marginBottom: height * 0.005,
     },
     entryLabel: {
         color: '#fff',
-        fontSize: 12,
+        fontSize: width * 0.03,
     },
     boxBorder: {
         borderRadius: 12,
         padding: 1,
-        marginBottom: 12,
+        marginBottom: height * 0.015,
     },
     analysisBox: {
         backgroundColor: '#181c1e',
         borderRadius: 12,
-        padding: 12,
+        padding: width * 0.03,
     },
     analysisTitle: {
         fontWeight: '400',
-        fontSize: 14,
-        marginBottom: 4,
+        fontSize: width * 0.035,
+        marginBottom: height * 0.005,
     },
     analysisText: {
         color: '#fff',
-        fontSize: 12,
-        lineHeight: 18,
+        fontSize: width * 0.03,
+        lineHeight: width * 0.045,
     },
     cardStats: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 8,
+        gap: width * 0.02,
+        flexWrap: 'nowrap', // Ensure stats stay in one line
     },
     statBox: {
         flex: 1,
         backgroundColor: '#181c1e',
-        paddingHorizontal: 22,
-        paddingVertical: 10,
+        paddingHorizontal: width * 0.03, // Reduced padding for tighter fit
+        paddingVertical: height * 0.01,
         borderRadius: 12,
         alignItems: 'center',
+        minWidth: width * 0.22, // Slightly reduced minWidth to fit all stats
     },
     statValue: {
         fontWeight: '700',
-        fontSize: 18,
-        marginBottom: 2,
+        fontSize: width * 0.04, // Slightly reduced font size
+        marginBottom: height * 0.005,
         color: 'white',
     },
     statLabel: {
         color: '#aaa',
-        fontSize: 12,
+        fontSize: width * 0.028, // Slightly reduced font size
     },
     cardActions: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 8,
+        gap: width * 0.02,
     },
     executeBtn: {
         flex: 1.2,
         borderRadius: 10,
-        paddingVertical: 12,
+        paddingVertical: height * 0.015,
         alignItems: 'center',
         borderWidth: 1,
-
     },
     executeBtnText: {
         fontWeight: '600',
-        fontSize: 16,
+        fontSize: width * 0.04,
     },
     detailsBtn: {
         flex: 1,
         borderRadius: 10,
-        paddingVertical: 12,
+        paddingVertical: height * 0.015,
         alignItems: 'center',
         borderWidth: 1,
     },
     detailsBtnText: {
         fontWeight: '600',
-        fontSize: 16,
+        fontSize: width * 0.04,
     },
-})
+});

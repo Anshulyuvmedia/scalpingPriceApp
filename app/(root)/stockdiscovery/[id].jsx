@@ -33,7 +33,7 @@ const StockDetails = () => {
     const [fundamentalsData, setFundamentalsData] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
     const [action, setAction] = useState('');
-    const [quantity, setQuantity] = useState('');
+    const [quantity, setQuantity] = useState(1);
     const [orderType, setOrderType] = useState('Market');
 
     // Memoize stock to prevent unnecessary re-renders
@@ -222,7 +222,7 @@ const StockDetails = () => {
                     style={[styles.actionButton, styles.sellButton]}
                 >
                     <View>
-                        <Text style={styles.buttonText}>Sell</Text>
+                        <Text style={styles.buttonsellText}>Sell</Text>
                     </View>
                 </TouchableOpacity>
             </View>
@@ -259,7 +259,7 @@ const StockDetails = () => {
                                 style={[styles.toggleButton, orderType === 'Market' ? styles.toggleButtonActive : null]}
                                 onPress={() => handleToggleOrderType('Market')}
                             >
-                                <Text style={[styles.confirmButtonText, orderType === 'Market' ? styles.activeButtonText : null]}>
+                                <Text style={[styles.orderbuttonText, orderType === 'Market' ? styles.activeButtonText : null]}>
                                     Market
                                 </Text>
                             </TouchableOpacity>
@@ -267,7 +267,7 @@ const StockDetails = () => {
                                 style={[styles.toggleButton, orderType === 'Limit' ? styles.toggleButtonActive : null]}
                                 onPress={() => handleToggleOrderType('Limit')}
                             >
-                                <Text style={[styles.confirmButtonText, orderType === 'Limit' ? styles.activeButtonText : null]}>
+                                <Text style={[styles.orderbuttonText, orderType === 'Limit' ? styles.activeButtonText : null]}>
                                     Limit
                                 </Text>
                             </TouchableOpacity>
@@ -313,7 +313,8 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
-        padding: 20,
+        padding: 10,
+
     },
     headerSection: {
         marginBottom: 20,
@@ -409,7 +410,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#FF0505',
     },
     buttonText: {
-        color: '#FFF',
+        color: '#000',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    buttonsellText: {
+        color: '#fffc',
         fontSize: 16,
         fontWeight: '600',
     },
@@ -486,8 +492,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 10,
     },
+    orderbuttonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
     confirmButtonText: {
-        color: '#FFF',
+        color: '#000',
         fontSize: 16,
         fontWeight: '600',
     },

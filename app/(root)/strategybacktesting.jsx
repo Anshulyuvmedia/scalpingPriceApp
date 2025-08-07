@@ -5,6 +5,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import { LineChart } from 'react-native-chart-kit';
 import { Ionicons, Foundation } from '@expo/vector-icons';
 
+const { width, height } = Dimensions.get('window');
+
 const StrategyBacktesting = () => {
     const [parameters, setParameters] = useState({
         timePeriod: '1',
@@ -26,7 +28,6 @@ const StrategyBacktesting = () => {
     };
 
     const handleRunBacktest = () => {
-        // Simulate backtest logic
         setResults({
             totalReturn: (Math.random() * 20).toFixed(1),
             sharpeRatio: (Math.random() * 2).toFixed(1),
@@ -61,28 +62,28 @@ const StrategyBacktesting = () => {
     const renderCardItem = ({ item }) => {
         const cardMeta = {
             totalReturn: {
-                icon: <Ionicons name="trending-up" size={28} color="#000" />,
+                icon: <Ionicons name="trending-up" size={width * 0.06} color="#000" />,
                 gradient: ['#1A2E23', '#0C0C18'],
                 iconBg: '#05ff93',
                 valueColor: '#05FF93',
                 format: (v) => parseFloat(v).toFixed(2),
             },
             sharpeRatio: {
-                icon: <Ionicons name="bar-chart-outline" size={28} color="#fff" />,
+                icon: <Ionicons name="bar-chart-outline" size={width * 0.06} color="#fff" />,
                 gradient: ['#1A1A2E', '#16213E'],
                 iconBg: '#0057ff',
                 valueColor: '#4F8CFF',
                 format: (v) => parseFloat(v).toFixed(2),
             },
             maxDrawdown: {
-                icon: <Ionicons name="trending-down" size={28} color="#fff" />,
+                icon: <Ionicons name="trending-down" size={width * 0.06} color="#fff" />,
                 gradient: ['#2E1A1A', '#180C0C'],
                 iconBg: '#ff0505',
                 valueColor: '#FF3B3B',
                 format: (v) => `${parseFloat(v).toFixed(1)}%`,
             },
             winRate: {
-                icon: <Foundation name="target-two" size={28} color="#fff" />,
+                icon: <Foundation name="target-two" size={width * 0.06} color="#fff" />,
                 gradient: ['#241A2E', '#1B1022'],
                 iconBg: '#7709ff',
                 valueColor: '#B97AFF',
@@ -140,10 +141,15 @@ const StrategyBacktesting = () => {
                                             columnWrapperStyle={styles.cardsGrid}
                                         />
                                         <TouchableOpacity style={styles.runButton} onPress={handleRunBacktest}>
-                                            <View style={styles.runButtonGradient}>
-                                                <Ionicons name="play-outline" size={24} color="white" style={styles.runButtonIcon} />
+                                            <LinearGradient
+                                                colors={['#0057ff', '#003087']}
+                                                start={{ x: 0, y: 0 }}
+                                                end={{ x: 1, y: 0 }}
+                                                style={styles.runButtonGradient}
+                                            >
+                                                <Ionicons name="play-outline" size={width * 0.06} color="white" style={styles.runButtonIcon} />
                                                 <Text style={styles.runButtonText}>Run Backtest</Text>
-                                            </View>
+                                            </LinearGradient>
                                         </TouchableOpacity>
                                     </View>
                                 );
@@ -170,12 +176,10 @@ const StrategyBacktesting = () => {
                                                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
                                                 datasets: [{ data: [10, 20, 15, 25, 22, 30, 18] }],
                                             }}
-                                            width={Dimensions.get('window').width - 40}
-                                            height={220}
+                                            width={width * 0.9} // Responsive chart width
+                                            height={height * 0.25} // Responsive chart height
                                             yAxisLabel=""
                                             chartConfig={{
-                                                // backgroundGradientFrom: '#1A1A2E',
-                                                // backgroundGradientTo: '#16213E',
                                                 decimalPlaces: 0,
                                                 color: (opacity = 1) => `rgba(5, 255, 147, ${opacity})`,
                                                 labelColor: (opacity = 1) => `rgba(169, 169, 169, ${opacity})`,
@@ -193,6 +197,7 @@ const StrategyBacktesting = () => {
                     }}
                     keyExtractor={(item) => item.type}
                     contentContainerStyle={styles.content}
+                    showsVerticalScrollIndicator={false}
                 />
             </View>
         </View>
@@ -205,8 +210,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
-        paddingHorizontal: 10,
-
+        paddingHorizontal: width * 0.025,
     },
     gradientBackground: {
         flex: 1,
@@ -216,78 +220,81 @@ const styles = StyleSheet.create({
         padding: 1,
     },
     content: {
-        padding: 20,
-        paddingBottom: 20,
+        padding: width * 0.05,
+        paddingBottom: height * 0.025,
     },
     sectionTitle: {
         color: '#FFF',
-        fontSize: 20,
+        fontSize: width * 0.05,
         fontWeight: '600',
-        marginBottom: 10,
+        marginBottom: height * 0.015,
     },
     configsContainer: {
-        marginBottom: 20,
+        marginBottom: height * 0.025,
     },
     configsList: {
-        paddingBottom: 10,
+        paddingBottom: height * 0.015,
     },
     configItem: {
         flexDirection: 'column',
         justifyContent: 'space-between',
-        paddingVertical: 10,
+        paddingVertical: height * 0.015,
         width: '48%',
+        minWidth: width * 0.4,
     },
     configLabel: {
         color: '#A9A9A9',
-        fontSize: 16,
+        fontSize: width * 0.04,
         textTransform: 'capitalize',
-        marginBottom: 5,
+        marginBottom: height * 0.01,
     },
     configInput: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: width * 0.04,
         borderWidth: 1,
         borderColor: 'gray',
         width: '100%',
         borderRadius: 15,
-        paddingLeft: 10,
+        paddingLeft: width * 0.025,
+        paddingVertical: height * 0.01,
     },
     runButton: {
-        marginTop: 15,
+        marginTop: height * 0.02,
         borderRadius: 12,
         overflow: 'hidden',
     },
     runButtonGradient: {
-        paddingVertical: 12,
+        paddingVertical: height * 0.015,
         alignItems: 'center',
         flexDirection: 'row',
         justifyContent: 'center',
-        backgroundColor: '#0057ff',
     },
     runButtonIcon: {
-        marginRight: 8,
+        marginRight: width * 0.02,
     },
     runButtonText: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: width * 0.04,
         fontWeight: '600',
     },
     cardsContainer: {
-        marginBottom: 20,
+        marginBottom: height * 0.025,
     },
     cardsGrid: {
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
     },
     cardsList: {
-        paddingBottom: 10,
+        paddingBottom: height * 0.015,
     },
     card: {
         width: '48%',
-        marginBottom: 15,
+        minWidth: width * 0.4,
+        marginBottom: height * 0.02,
     },
     cardGradient: {
         borderRadius: 20,
-        padding: 15,
+        padding: width * 0.04,
     },
     cardContent: {
         flexDirection: 'row',
@@ -296,23 +303,24 @@ const styles = StyleSheet.create({
     },
     cardTitle: {
         color: '#A9A9A9',
-        fontSize: 14,
-        marginBottom: 5,
+        fontSize: width * 0.035,
+        marginBottom: height * 0.01,
         textTransform: 'capitalize',
     },
     cardValue: {
         color: '#FFF',
-        fontSize: 28,
+        fontSize: width * 0.07,
         fontWeight: '400',
     },
     cardIcon: {
         borderRadius: 12,
-        padding: 8,
+        padding: width * 0.015,
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: 'auto',
     },
     chartContainer: {
-        marginBottom: 20,
+        marginBottom: height * 0.025,
     },
     chart: {
         borderRadius: 16,

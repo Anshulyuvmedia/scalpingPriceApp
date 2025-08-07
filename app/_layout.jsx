@@ -60,7 +60,7 @@ function SafeAreaViewWrapper({ statusBarColor }) {
             style={{
                 flex: 1,
                 backgroundColor: '#000', // Set global black background for all screens
-                paddingBottom: insets.bottom, // Add padding to account for bottom navigation bar
+                // paddingBottom: insets.bottom, // Add padding to account for bottom navigation bar
             }}
             edges={['top', 'left', 'right']} // Exclude bottom edge to manually handle insets.bottom
         >

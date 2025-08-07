@@ -113,10 +113,10 @@ const SwingTrade = () => {
       <View className="flex-row justify-between items-center my-2">
         <Text className="text-white text-lg font-sora-bold">Performance Ratio</Text>
         <View className="flex-row">
-          <View className="p-3 bg-green-500 rounded-l-lg">
+          <View className="p-2 bg-green-500 rounded-l-lg">
             <Text className="text-white text-base mr-2">↑ 74.58%</Text>
           </View>
-          <View className="p-3 bg-red-500 rounded-r-lg ">
+          <View className="p-2 bg-red-500 rounded-r-lg ">
             <Text className="text-white text-base">↓ 25.42%</Text>
           </View>
         </View>

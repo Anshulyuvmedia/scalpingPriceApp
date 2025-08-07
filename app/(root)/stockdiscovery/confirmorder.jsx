@@ -22,7 +22,7 @@ const ConfirmOrder = () => {
                 >
                     <View style={styles.detailsContainer}>
 
-                        <Text style={styles.title}>Order Confirmation</Text>
+                        <Text style={styles.title}>Order Summary</Text>
                         <View style={styles.detailRow}>
                             <Text style={styles.label}>Stock:</Text>
                             <Text style={styles.value}>{stock}</Text>
@@ -52,7 +52,7 @@ const ConfirmOrder = () => {
                                 <Text style={styles.buttonText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.confirmButton} onPress={() => console.log('Order confirmed')}>
-                                <Text style={styles.buttonText}>Confirm Order</Text>
+                                <Text style={styles.cfnbuttonText}>Confirm Order</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -68,8 +68,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
-
-        padding: 20,
+        padding: 10,
         // borderRadius: 20,
         alignItems: 'center',
 
@@ -141,6 +140,12 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#FFF',
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    cfnbuttonText: {
+        color: '#000',
         fontSize: 16,
         fontWeight: '600',
         textAlign: 'center',

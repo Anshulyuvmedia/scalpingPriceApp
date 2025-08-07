@@ -1,10 +1,11 @@
-import { StyleSheet, Text, View, TouchableOpacity, FlatList } from 'react-native';
-import React, { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, Dimensions } from 'react-native';
+import React from 'react';
 import HomeHeader from '@/components/HomeHeader';
-import { router } from 'expo-router';
 import LinearGradient from 'react-native-linear-gradient';
-import { Feather, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons, Octicons, Ionicons, FontAwesome } from '@expo/vector-icons';
 import AlgoNavigation from '../../components/AlgoNavigation';
+
+const { width, height } = Dimensions.get('window');
 
 const AlgoDashboard = () => {
     const topOversoldData = [
@@ -61,16 +62,43 @@ const AlgoDashboard = () => {
         },
     ];
 
+    const cardMeta = {
+        'Active Strategies': {
+            icon: <MaterialCommunityIcons name="robot" size={width * 0.05} color="white" />,
+            gradient: ['#0155fa', '#000'],
+            bgGradient: ['#0155fa', '#181822'],
+            iconBg: '#095dff',
+        },
+        'Total P&L': {
+            icon: <Ionicons name="trending-up" size={width * 0.05} color="#000" />,
+            gradient: ['#1A2E23', '#0C0C18'],
+            bgGradient: ['#05ff93', '#181822'],
+            iconBg: '#05ff93',
+        },
+        'Avg Win Rate': {
+            icon: <FontAwesome name="percent" size={width * 0.05} color="white" />,
+            gradient: ['#241A2E', '#1B1022'],
+            bgGradient: ['#7709ff', '#181822'],
+            iconBg: '#7709ff',
+        },
+        'Free Stocks': {
+            icon: <Ionicons name="cube" size={width * 0.05} color="white" />,
+            gradient: ['#2E1A1A', '#180C0C'],
+            bgGradient: ['#ff0505', '#181822'],
+            iconBg: '#ff0505',
+        },
+    };
+
     const renderItem = ({ item }) => {
         switch (item.type) {
             case 'header':
                 return (
                     <View style={styles.section}>
                         <View style={styles.actionRow}>
-                            <Text className="font-sora-bold text-white text-xl">Algo Trading Dashboard</Text>
+                            <Text style={styles.titleText}>Algo Dashboard</Text>
                             <TouchableOpacity style={styles.strategyButton}>
-                                <MaterialCommunityIcons name="robot" size={20} color="white" />
-                                <Text className="font-Questrial-Regular" style={styles.actionText}> Create Strategy</Text>
+                                <MaterialCommunityIcons name="robot" size={width * 0.05} color="white" />
+                                <Text style={styles.actionText}> Create Strategy</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -84,6 +112,7 @@ const AlgoDashboard = () => {
                             keyExtractor={(item) => item.id}
                             horizontal={true}
                             showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.oversoldList}
                         />
                     </View>
                 );
@@ -103,6 +132,7 @@ const AlgoDashboard = () => {
                                     renderItem={renderStrategyCard}
                                     keyExtractor={(item) => item.id}
                                     showsVerticalScrollIndicator={false}
+                                    contentContainerStyle={styles.strategyList}
                                 />
                             </View>
                         </LinearGradient>
@@ -113,27 +143,38 @@ const AlgoDashboard = () => {
         }
     };
 
-    const renderOversoldCard = ({ item }) => (
-        <LinearGradient
-            colors={['#0155fa', '#000']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.5, y: 0.5 }}
-            style={styles.cardBorderGradient}
-        >
+    const renderOversoldCard = ({ item }) => {
+        const meta = cardMeta[item.label] || {
+            icon: <MaterialCommunityIcons name="robot" size={width * 0.05} color="white" />,
+            gradient: ['#0155fa', '#000'],
+            bgGradient: ['#0155fa', '#181822'],
+            iconBg: '#095dff',
+        };
+
+        return (
             <LinearGradient
-                colors={['#0155fa', '#181822']}
-                start={{ x: 2, y: 1 }}
-                end={{ x: 0.5, y: 0 }}
-                style={styles.cardBgGradient}
+                colors={meta.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0.5, y: 0.5 }}
+                style={styles.cardBorderGradient}
             >
-                <View style={styles.otherCard}>
-                    <MaterialCommunityIcons name="robot" size={20} color="white" style={styles.iconbox} />
-                    <Text style={styles.cardLabel}>{item.label}</Text>
-                    <Text style={styles.cardText}>{item.value}</Text>
-                </View>
+                <LinearGradient
+                    colors={meta.bgGradient}
+                    start={{ x: 2, y: 1 }}
+                    end={{ x: 0.5, y: 0 }}
+                    style={styles.cardBgGradient}
+                >
+                    <View style={styles.otherCard}>
+                        <View style={[styles.iconbox, { backgroundColor: meta.iconBg }]}>
+                            {meta.icon}
+                        </View>
+                        <Text style={styles.cardLabel}>{item.label}</Text>
+                        <Text style={styles.cardText}>{item.value}</Text>
+                    </View>
+                </LinearGradient>
             </LinearGradient>
-        </LinearGradient>
-    );
+        );
+    };
 
     const renderStrategyCard = ({ item }) => (
         <LinearGradient
@@ -165,13 +206,13 @@ const AlgoDashboard = () => {
                     <View style={styles.strategyActions}>
                         <TouchableOpacity style={styles.actionButton}>
                             {item.status === 'paused' ? (
-                                <Feather name="play-circle" size={24} color="#000" className="bg-[#05ff93] p-2 rounded-lg" />
+                                <Feather name="play-circle" size={width * 0.06} color="#000" style={styles.actionIcon} />
                             ) : (
-                                <Feather name="pause-circle" size={24} color="#fff" className="bg-[#FF0505] p-2 rounded-lg" />
+                                <Feather name="pause-circle" size={width * 0.06} color="#fff" style={styles.pauseIcon} />
                             )}
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.actionButton}>
-                            <Octicons name="gear" size={24} color="#fff" className="bg-[#242431] p-2 rounded-lg" />
+                            <Octicons name="gear" size={width * 0.06} color="#fff" style={styles.gearIcon} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -206,65 +247,27 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
     },
     headerbox: {
-        paddingHorizontal: 15,
+        paddingHorizontal: width * 0.04,
     },
     scrollerbox: {
-        // paddingHorizontal: 15,
-        marginBottom: 25,
-        // paddingTop: 20,
-        paddingBottom: 20,
+        paddingBottom: height * 0.025,
     },
     section: {
-        marginTop: 20,
-        paddingHorizontal: 15,
+        marginTop: height * 0.025,
+        paddingHorizontal: width * 0.04,
     },
     bottomsection: {
-        marginTop: 20,
+        marginTop: height * 0.025,
         backgroundColor: '#191922',
         borderRadius: 25,
-        paddingHorizontal: 15,
-        paddingTop: 20,
-    },
-    buttonRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 15,
-        borderBottomColor: '#3C3B40',
-        borderWidth: 1,
-        paddingBottom: 15,
-        borderRadius: 20,
-    },
-    buttonGradientBorder: {
-        borderRadius: 100,
-        width: '48%',
-    },
-    gradientBorder: {
-        borderRadius: 20,
-        padding: 1,
-    },
-    button: {
-        flexDirection: 'row',
-        paddingVertical: 15,
-        borderRadius: 100,
-        alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-    },
-    buttonText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontFamily: 'Questrial-Regular',
-        fontWeight: '500',
+        paddingHorizontal: width * 0.04,
+        paddingTop: height * 0.025,
     },
     actionRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        gap: 10,
+        gap: width * 0.025,
     },
     strategyButton: {
         flexDirection: 'row',
@@ -273,134 +276,128 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#0057FF',
         flexGrow: 1,
-        paddingVertical: 10,
+        paddingVertical: height * 0.015,
     },
     actionText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: width * 0.04,
+        fontFamily: 'Questrial-Regular',
     },
-    detailsContainer: {
-        padding: 15,
-        backgroundColor: '#12121c',
-        borderRadius: 20,
-    },
-    detailsTitle: {
+    titleText: {
+        fontFamily: 'Sora-Bold',
         color: '#FFF',
-        fontSize: 18,
-        fontWeight: 'light',
-        marginBottom: 10,
-    },
-    inputRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 10,
-    },
-    inputGroup: {
-        width: '48%',
-    },
-    label: {
-        color: '#A9A9A9',
-        fontSize: 14,
-        marginBottom: 10,
-        marginRight: 5,
-    },
-    inputText: {
-        color: '#FFF',
-        fontSize: 16,
-        backgroundColor: '#1d1d26',
-        padding: 10,
-        borderRadius: 20,
-        textAlign: 'center',
+        fontSize: width * 0.05,
     },
     sectionTitle: {
         color: '#FFFFFF',
-        fontSize: 18,
-        marginBottom: 8,
+        fontSize: width * 0.045,
+        marginBottom: height * 0.01,
+    },
+    oversoldList: {
+        paddingHorizontal: width * 0.04,
+    },
+    strategyList: {
+        paddingBottom: height * 0.02,
     },
     cardBorderGradient: {
         borderRadius: 20,
         padding: 1,
-        marginRight: 12,
+        marginRight: width * 0.03,
     },
     cardBgGradient: {
         borderRadius: 20,
     },
     otherCard: {
         borderRadius: 20,
-        padding: 16,
-        width: 175,
-        height: 130,
+        padding: width * 0.04,
+        width: width * 0.4,
+        height: height * 0.15,
         justifyContent: 'center',
-        alignItems: 'start',
+        alignItems: 'flex-start',
     },
     iconbox: {
-        backgroundColor: '#095dff',
         borderRadius: 20,
-        padding: 5,
-        width: 30,
+        padding: width * 0.015,
+        width: width * 0.08,
     },
     cardLabel: {
         color: '#81818A',
-        fontSize: 16,
-        marginTop: 8,
+        fontSize: width * 0.04,
+        marginTop: height * 0.01,
     },
     cardText: {
         color: '#FFFFFF',
-        fontSize: 18,
+        fontSize: width * 0.045,
         fontWeight: 'bold',
-        marginTop: 8,
+        marginTop: height * 0.01,
     },
     strategyCardBorderGradient: {
         borderRadius: 20,
         padding: 1,
-        marginBottom: 15,
+        marginBottom: height * 0.02,
     },
     strategyCard: {
         backgroundColor: '#12121c',
         borderRadius: 20,
-        padding: 15,
+        padding: width * 0.04,
     },
     strategyHeader: {
-        marginBottom: 10,
+        marginBottom: height * 0.015,
     },
     strategyName: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: width * 0.04,
     },
     strategyDescription: {
         color: '#A9A9A9',
-        fontSize: 12,
+        fontSize: width * 0.035,
     },
     strategyStats: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
-        marginBottom: 10,
+        marginBottom: height * 0.015,
+        flexWrap: 'wrap',
     },
     statItem: {
-        alignItems: 'start',
+        alignItems: 'flex-start',
         borderWidth: 1,
         borderColor: '#292930',
-        padding: 7,
+        padding: width * 0.02,
         borderRadius: 13,
         backgroundColor: '#202029',
+        minWidth: width * 0.2,
+        marginBottom: height * 0.01,
     },
     statLabel: {
         color: '#A9A9A9',
-        fontSize: 12,
+        fontSize: width * 0.035,
     },
     statValue: {
         color: '#FFF',
-        fontSize: 14,
-        // fontWeight: 'bold',
+        fontSize: width * 0.04,
     },
     strategyActions: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        gap: 10,
+        gap: width * 0.025,
     },
     actionButton: {
-        // padding: 5,
-        // borderRadius: 10,
+        alignItems: 'center',
+    },
+    actionIcon: {
+        backgroundColor: '#05ff93',
+        padding: width * 0.015,
+        borderRadius: 8,
+    },
+    pauseIcon: {
+        backgroundColor: '#FF0505',
+        padding: width * 0.015,
+        borderRadius: 8,
+    },
+    gearIcon: {
+        backgroundColor: '#242431',
+        padding: width * 0.015,
+        borderRadius: 8,
     },
 });

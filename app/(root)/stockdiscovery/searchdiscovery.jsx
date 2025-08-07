@@ -184,7 +184,7 @@ const SearchDiscovery = () => {
                     renderItem={renderStockItem}
                     keyExtractor={(item) => item.id}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={[styles.stockListContent, { paddingBottom: insets.bottom + 20 }]}
+                    contentContainerStyle={[styles.stockListContent]}
                     ListEmptyComponent={() => (
                         <Text style={styles.emptyText}>No stocks found</Text>
                     )}
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
-        paddingHorizontal: 10,
+        padding: 10,
     },
     niftyGrid: {
         marginBottom: 20,
@@ -224,7 +224,8 @@ const styles = StyleSheet.create({
         padding: 1,
     },
     niftyCard: {
-        padding: 15,
+        paddingVertical: 10,
+        paddingHorizontal: 15,
         alignItems: 'flex-start', // Changed from 'start' to 'flex-start' for consistency
     },
     niftyTitle: {
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     niftyChangeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 5,
+        // marginTop: 5,
     },
     niftyChangePositive: {
         color: '#05FF93',
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 5,
     },
     flatListContent: {
-        paddingBottom: 10,
+        // paddingBottom: 10,
     },
     searchSection: {
         marginBottom: 10,
@@ -331,7 +332,7 @@ const styles = StyleSheet.create({
         flex: 1, // Allow TextInput to take remaining space
     },
     stockListContent: {
-        paddingBottom: 20, // Increased default padding
+        // paddingBottom: 20, // Increased default padding
     },
     emptyText: {
         color: '#A9A9A9',
