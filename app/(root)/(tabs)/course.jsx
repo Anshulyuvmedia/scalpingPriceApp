@@ -42,8 +42,8 @@ const Course = () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
             const publishedCourses = response.data.filter(course => course.isPublished);
-            console.log('API Response:', response.data);
-            console.log('Published Courses:', publishedCourses);
+            // console.log('API Response:', response.data);
+            // console.log('Published Courses:', publishedCourses);
             setCourses(publishedCourses);
         } catch (err) {
             console.error('Fetch Error:', err.message, err.code);
@@ -69,7 +69,7 @@ const Course = () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
             const publishedCourses = response.data.filter(course => course.isPublished);
-            console.log('Refresh API Response:', response.data);
+            // console.log('Refresh API Response:', response.data);
             setCourses(publishedCourses);
             setError(null);
         } catch (err) {
@@ -133,7 +133,7 @@ const Course = () => {
                 <TouchableOpacity
                     style={styles.courseCard}
                     onPress={() => {
-                        console.log('Navigating to CourseListScreen with ID:', item.id);
+                        // console.log('Navigating to CourseListScreen with ID:', item.id);
                         router.push({
                             pathname: '/coursescreen/CourseListScreen',
                             params: { id: item.id },
@@ -182,7 +182,9 @@ const Course = () => {
                     <HomeHeader page="course" />
                     <View className="flex-row justify-between items-center mb-4">
                         <Text className="text-white font-sora-bold text-xl">Courses</Text>
-                        <Feather name="bell" size={24} color="#fff" />
+                        <TouchableOpacity onPress={() => router.push('/(root)/notifications')}>
+                            <Feather name="bell" size={24} color="#fff" />
+                        </TouchableOpacity>
                     </View>
                 </View>
 

@@ -86,7 +86,7 @@ const VideosPlayers = () => {
         setIsLoading(true);
         try {
             const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
-            console.log('API Response:', response.data);
+            // console.log('API Response:', response.data);
             const selectedCourse = response.data.find(course => course.id === courseId && course.isPublished);
             if (!selectedCourse) {
                 console.error('Course not found for ID:', courseId);
@@ -94,7 +94,7 @@ const VideosPlayers = () => {
                 setIsLoading(false);
                 return;
             }
-            console.log('Selected Course:', selectedCourse);
+            // console.log('Selected Course:', selectedCourse);
             setCourse(selectedCourse);
             const allVideos = selectedCourse.modules.flatMap(module => module.videos);
             const video = allVideos.find(v => v.videoUrl === videoId);
@@ -104,7 +104,7 @@ const VideosPlayers = () => {
                 setIsLoading(false);
                 return;
             }
-            console.log('Selected Video:', video);
+            // console.log('Selected Video:', video);
             setSelectedVideo(video);
             const initialStatus = allVideos.reduce((acc, v) => ({ ...acc, [v.videoUrl]: false }), {});
             setVideoStatus(initialStatus);
@@ -118,8 +118,8 @@ const VideosPlayers = () => {
 
     // Initial fetch
     useEffect(() => {
-        console.log('VideosPlayers - Route params:', { courseId, videoId });
-        console.log('VideosPlayers - API_BASE_URL:', API_BASE_URL);
+        // console.log('VideosPlayers - Route params:', { courseId, videoId });
+        // console.log('VideosPlayers - API_BASE_URL:', API_BASE_URL);
         fetchCourseAndVideo();
     }, [courseId, videoId]);
 
@@ -133,7 +133,7 @@ const VideosPlayers = () => {
         setRefreshing(true);
         try {
             const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
-            console.log('Refresh API Response:', response.data);
+            // console.log('Refresh API Response:', response.data);
             const selectedCourse = response.data.find(course => course.id === courseId && course.isPublished);
             if (!selectedCourse) {
                 setError('Course not found. Please check the course ID.');
@@ -228,7 +228,7 @@ const VideosPlayers = () => {
     }
 
     const videoSourceType = getVideoSourceType(selectedVideo.videoUrl);
-    console.log('Rendering player for video:', selectedVideo.videoUrl, 'Type:', videoSourceType);
+    // console.log('Rendering player for video:', selectedVideo.videoUrl, 'Type:', videoSourceType);
 
     return (
         <ErrorBoundary>

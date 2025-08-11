@@ -75,6 +75,7 @@ const HomeHeader = ({ page, title, action }) => {
                         <View style={styles.coinContainer}>
                             <Image source={images.rupee} style={styles.coinImage} resizeMode="contain" />
                             <Text style={styles.coinText}>400</Text>
+                            {/* <Feather name="bell" size={24} color="#fff" /> */}
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>

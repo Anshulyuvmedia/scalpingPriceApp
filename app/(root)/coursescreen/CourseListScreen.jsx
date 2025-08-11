@@ -19,11 +19,11 @@ const CourseListScreen = () => {
     const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://192.168.1.215:3000/api';
 
     // Debug logging
-    useEffect(() => {
-        console.log('CourseListScreen - Constants.expoConfig', Constants.expoConfig);
-        console.log('CourseListScreen - API_BASE_URL', API_BASE_URL);
-        console.log('CourseListScreen - Course ID:', id);
-    }, [id]);
+    // useEffect(() => {
+    //     console.log('CourseListScreen - Constants.expoConfig', Constants.expoConfig);
+    //     console.log('CourseListScreen - API_BASE_URL', API_BASE_URL);
+    //     console.log('CourseListScreen - Course ID:', id);
+    // }, [id]);
 
     // Function to fetch course data
     const fetchCourse = useCallback(async () => {
@@ -43,10 +43,10 @@ const CourseListScreen = () => {
         setIsLoading(true);
         try {
             const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
-            console.log('API Response:', response.data);
+            // console.log('API Response:', response.data);
             const selectedCourse = response.data.find(course => course.id === id && course.isPublished);
             if (selectedCourse) {
-                console.log('Selected Course:', selectedCourse);
+                // console.log('Selected Course:', selectedCourse);
                 // Check for duplicate video URLs
                 const allVideos = selectedCourse.modules.flatMap(module => module.videos);
                 const videoUrlCounts = allVideos.reduce((acc, video) => {
@@ -86,10 +86,10 @@ const CourseListScreen = () => {
         setRefreshing(true);
         try {
             const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
-            console.log('Refresh API Response:', response.data);
+            // console.log('Refresh API Response:', response.data);
             const selectedCourse = response.data.find(course => course.id === id && course.isPublished);
             if (selectedCourse) {
-                console.log('Selected Course:', selectedCourse);
+                // console.log('Selected Course:', selectedCourse);
                 // Check for duplicate video URLs
                 const allVideos = selectedCourse.modules.flatMap(module => module.videos);
                 const videoUrlCounts = allVideos.reduce((acc, video) => {
@@ -123,7 +123,7 @@ const CourseListScreen = () => {
     }, [fadeAnim]);
 
     const handleLessonPress = (videoUrl, videoIndex, moduleIndex) => {
-        console.log('Navigating to VideosPlayers with:', { courseId: id, videoId: videoUrl, videoIndex, moduleIndex });
+        // console.log('Navigating to VideosPlayers with:', { courseId: id, videoId: videoUrl, videoIndex, moduleIndex });
         if (!id || !videoUrl) {
             console.error('Invalid navigation parameters:', { courseId: id, videoId: videoUrl });
             setError('Invalid course or video selection.');
