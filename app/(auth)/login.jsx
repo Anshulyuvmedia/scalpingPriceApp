@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons'; // For social login icons
 import images from '@/constants/images';
 
 const Login = () => {
@@ -19,7 +20,7 @@ const Login = () => {
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
-            duration: 500,
+            duration: 600,
             useNativeDriver: true,
         }).start();
     }, [fadeAnim]);
@@ -27,9 +28,9 @@ const Login = () => {
     // Handle button press animation
     const handleButtonPressIn = () => {
         Animated.spring(buttonScaleAnim, {
-            toValue: 0.95,
-            friction: 5,
-            tension: 40,
+            toValue: 0.97,
+            friction: 6,
+            tension: 50,
             useNativeDriver: true,
         }).start();
     };
@@ -37,8 +38,8 @@ const Login = () => {
     const handleButtonPressOut = () => {
         Animated.spring(buttonScaleAnim, {
             toValue: 1,
-            friction: 5,
-            tension: 40,
+            friction: 6,
+            tension: 50,
             useNativeDriver: true,
         }).start();
     };
@@ -50,14 +51,13 @@ const Login = () => {
     };
 
     // Save session to AsyncStorage
-    const saveSession = async (email) => {
+    const saveSession = async (email, provider = 'email') => {
         try {
-            const token = 'dummy-token-' + Math.random().toString(36).slice(2); // Replace with real token from backend
-            const userData = { id: 'user-' + email, email }; // Ensure id is included
+            const token = `dummy-token-${provider}-` + Math.random().toString(36).slice(2);
+            const userData = { id: `user-${email}-${provider}`, email, provider };
             await AsyncStorage.setItem('userToken', token);
             await AsyncStorage.setItem('userData', JSON.stringify(userData));
-            await AsyncStorage.setItem('lastRoute', '(root)/(tabs)'); // Set default route after login
-            // console.log('Saved to AsyncStorage:', { token, userData, lastRoute: '(root)/(tabs)' });
+            await AsyncStorage.setItem('lastRoute', '(root)/(tabs)');
         } catch (error) {
             console.error('Error saving session:', error);
             Alert.alert('Error', 'Failed to save session. Please try again.');
@@ -70,7 +70,6 @@ const Login = () => {
         setEmailError('');
         setPasswordError('');
 
-        // Basic input validation
         if (!email) {
             setEmailError('Email is required');
             valid = false;
@@ -87,23 +86,30 @@ const Login = () => {
             valid = false;
         }
 
-        // Dummy credential validation
-        if (valid) {
-            if (email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
-                await saveSession(email);
-                router.replace('/(root)/(tabs)')
-                // Alert.alert('Success', 'Logged in successfully!', [
-                //     { text: 'OK', onPress: () => router.replace('/(root)/(tabs)') },
-                // ]);
-            } else {
-                Alert.alert('Error', 'Invalid email or password. Please use the credentials shown above.');
-            }
+        if (valid && email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
+            await saveSession(email);
+            router.replace('/(root)/(tabs)');
+        } else if (valid) {
+            Alert.alert('Error', 'Invalid email or password. Please use the credentials shown above.');
+        }
+    };
+
+    // Handle social login (placeholder for Upstox, Zerodha, Angel One)
+    const handleSocialLogin = async (provider) => {
+        try {
+            // Placeholder for actual OAuth flow
+            await saveSession(`${provider.toLowerCase()}@example.com`, provider.toLowerCase());
+            router.replace('/(root)/(tabs)');
+            Alert.alert('Success', `Logged in with ${provider} successfully!`);
+        } catch (error) {
+            console.error(`Error with ${provider} login:`, error);
+            Alert.alert('Error', `Failed to login with ${provider}. Please try again.`);
         }
     };
 
     return (
         <LinearGradient
-            colors={['#25242F', '#151718']}
+            colors={['#1A1E2E', '#2E3A59']}
             style={styles.container}
         >
             <Animated.View style={[styles.formContainer, { opacity: fadeAnim }]}>
@@ -113,10 +119,10 @@ const Login = () => {
                         style={styles.logo}
                         resizeMode="contain"
                     />
+                    <Text style={styles.title}>Welcome Back</Text>
                 </View>
-                <Text style={styles.title}>Welcome Back</Text>
 
-                <View style={styles.credentialsContainer}>
+                {/* <View style={styles.credentialsContainer}>
                     <Text style={styles.credentialsText}>
                         Use these credentials to login:
                     </Text>
@@ -126,45 +132,37 @@ const Login = () => {
                     <Text style={styles.credentialsText}>
                         Password: {DUMMY_PASSWORD}
                     </Text>
-                </View>
+                </View> */}
 
                 <View style={styles.inputContainer}>
-                    <LinearGradient
-                        colors={['#00FF00', '#00000000']}
-                        start={{ x: 0, y: 1 }}
-                        end={{ x: 0.5, y: 0 }}
-                        style={styles.inputGradient}
-                    >
+                    <View style={styles.inputWrapper}>
+                        <Ionicons name="mail-outline" size={20} color="#A0AEC0" style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
                             placeholder="Email"
-                            placeholderTextColor="gray"
+                            placeholderTextColor="#A0AEC0"
                             value={email}
                             onChangeText={setEmail}
                             keyboardType="email-address"
                             autoCapitalize="none"
                         />
-                    </LinearGradient>
+                    </View>
                     {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                 </View>
 
                 <View style={styles.inputContainer}>
-                    <LinearGradient
-                        colors={['#00FF00', '#00000000']}
-                        start={{ x: 0, y: 1 }}
-                        end={{ x: 0.5, y: 0 }}
-                        style={styles.inputGradient}
-                    >
+                    <View style={styles.inputWrapper}>
+                        <Ionicons name="lock-closed-outline" size={20} color="#A0AEC0" style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
                             placeholder="Password"
-                            placeholderTextColor="gray"
+                            placeholderTextColor="#A0AEC0"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
                             autoCapitalize="none"
                         />
-                    </LinearGradient>
+                    </View>
                     {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
                 </View>
 
@@ -174,19 +172,47 @@ const Login = () => {
                     onPressOut={handleButtonPressOut}
                     onPress={handleLogin}
                 >
-                    <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
+                    <Animated.View style={[styles.button, { transform: [{ scale: buttonScaleAnim }] }]}>
                         <LinearGradient
-                            colors={['#00FF00', '#00000000']}
+                            colors={['#2B6BFD', '#1E4ED8']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.buttonGradient}
                         >
-                            <View style={styles.button}>
-                                <Text style={styles.buttonText}>Login</Text>
-                            </View>
+                            <Text style={styles.buttonText}>Sign In</Text>
                         </LinearGradient>
                     </Animated.View>
                 </TouchableOpacity>
+
+                <View style={styles.dividerContainer}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>Or sign in with</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+
+                <View style={styles.socialButtonsContainer}>
+                    <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={() => handleSocialLogin('Upstox')}
+                    >
+                        <Ionicons name="rocket-outline" size={24} color="#FFFFFF" />
+                        <Text style={styles.socialButtonText}>Upstox</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={() => handleSocialLogin('Zerodha')}
+                    >
+                        <Ionicons name="leaf-outline" size={24} color="#FFFFFF" />
+                        <Text style={styles.socialButtonText}>Zerodha</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={() => handleSocialLogin('AngelOne')}
+                    >
+                        <Ionicons name="star-outline" size={24} color="#FFFFFF" />
+                        <Text style={styles.socialButtonText}>Angel One</Text>
+                    </TouchableOpacity>
+                </View>
             </Animated.View>
         </LinearGradient>
     );
@@ -199,80 +225,131 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#1A1E2E',
     },
     formContainer: {
         width: '90%',
         maxWidth: 400,
-        padding: 20,
-        borderRadius: 12,
-        backgroundColor: '#000',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        padding: 24,
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 5,
     },
     logoContainer: {
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 24,
     },
     logo: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
+        width: 100,
+        height: 100,
+        borderRadius: 32,
+        marginBottom: 12,
     },
     title: {
-        fontSize: 28,
-        fontWeight: '700',
-        marginBottom: 20,
+        fontSize: 24,
+        fontWeight: '600',
+        color: '#1A1E2E',
         textAlign: 'center',
-        color: '#FFFFFF',
         fontFamily: 'Questrial-Regular',
     },
     credentialsContainer: {
-        marginBottom: 20,
+        marginBottom: 24,
+        padding: 12,
+        backgroundColor: '#F7FAFC',
+        borderRadius: 8,
     },
     credentialsText: {
-        color: '#fff',
+        color: '#4A5568',
         fontSize: 14,
         textAlign: 'center',
         fontFamily: 'Questrial-Regular',
+        lineHeight: 20,
     },
     inputContainer: {
-        marginBottom: 15,
+        marginBottom: 16,
     },
-    inputGradient: {
-        borderRadius: 80,
-        padding: 1,
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 8,
+        backgroundColor: '#F7FAFC',
+    },
+    inputIcon: {
+        marginLeft: 12,
     },
     input: {
-        height: 50,
-        borderRadius: 80,
-        paddingHorizontal: 15,
+        flex: 1,
+        height: 48,
+        paddingHorizontal: 12,
         fontSize: 16,
-        backgroundColor: '#000',
-        color: '#FFFFFF',
+        color: '#1A1E2E',
         fontFamily: 'Questrial-Regular',
     },
     errorText: {
-        color: '#FF4D4F',
+        color: '#E53E3E',
         fontSize: 12,
-        marginTop: 5,
+        marginTop: 4,
         fontFamily: 'Questrial-Regular',
     },
-    buttonGradient: {
-        borderRadius: 8,
-        padding: 1,
-        marginTop: 10,
-    },
     button: {
-        height: 48,
         borderRadius: 8,
+        overflow: 'hidden',
+        marginTop: 16,
+    },
+    buttonGradient: {
+        paddingVertical: 12,
+        paddingHorizontal: 24,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#000',
     },
     buttonText: {
         color: '#FFFFFF',
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '600',
+        fontFamily: 'Questrial-Regular',
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 20,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#E2E8F0',
+    },
+    dividerText: {
+        color: '#4A5568',
+        fontSize: 14,
+        marginHorizontal: 12,
+        fontFamily: 'Questrial-Regular',
+    },
+    socialButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 8,
+    },
+    socialButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#2D3748',
+        borderRadius: 8,
+        paddingVertical: 10,
+        marginHorizontal: 4,
+    },
+    socialButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '500',
+        marginLeft: 8,
         fontFamily: 'Questrial-Regular',
     },
 });

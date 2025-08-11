@@ -1,51 +1,13 @@
-// app/(root)/course.jsx
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image, Dimensions } from 'react-native';
-import React, { useState } from 'react';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image, Dimensions, RefreshControl, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { FontAwesome, Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import images from '@/constants/images';
 import HomeHeader from '@/components/HomeHeader';
 import ReanimatedCarousel from 'react-native-reanimated-carousel';
-
-// Dummy data for courses
-const COURSES = [
-    {
-        id: '1',
-        title: 'Introduction to Stock Trading',
-        category: 'Course',
-        tag: 'Beginner',
-        thumbnail: images.courseimg,
-    },
-    {
-        id: '2',
-        title: 'Live Market Analysis',
-        category: 'Live Session',
-        tag: 'Advanced',
-        thumbnail: images.courseimg,
-    },
-    {
-        id: '3',
-        title: 'Crypto Investing 101',
-        category: 'Stock',
-        tag: 'Crypto',
-        thumbnail: images.courseimg,
-    },
-    {
-        id: '4',
-        title: 'Technical Analysis Basics',
-        category: 'Course',
-        tag: 'Beginner',
-        thumbnail: images.courseimg,
-    },
-    {
-        id: '5',
-        title: 'Live Q&A with Experts',
-        category: 'Live Session',
-        tag: 'Advanced',
-        thumbnail: images.courseimg,
-    },
-];
+import Constants from 'expo-constants';
+import axios from 'axios';
 
 // Dummy data for banner carousel
 const BANNERS = [
@@ -55,16 +17,73 @@ const BANNERS = [
 ];
 
 // Filter options
-const FILTERS = ['All', 'Course', 'Live Session', 'Stock'];
+const FILTERS = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
 const Course = () => {
     const [selectedFilter, setSelectedFilter] = useState('All');
+    const [courses, setCourses] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
     const screenWidth = Dimensions.get('window').width;
+
+    // Get API base URL from app.json with fallback
+    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://192.168.1.215:3000/api';
+
+    // Function to fetch courses
+    const fetchCourses = useCallback(async () => {
+        if (!API_BASE_URL) {
+            setError('API base URL is not defined. Please check app.json configuration.');
+            setIsLoading(false);
+            return;
+        }
+        setError(null);
+        setIsLoading(true);
+        try {
+            const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
+            const publishedCourses = response.data.filter(course => course.isPublished);
+            console.log('API Response:', response.data);
+            console.log('Published Courses:', publishedCourses);
+            setCourses(publishedCourses);
+        } catch (err) {
+            console.error('Fetch Error:', err.message, err.code);
+            setError('Failed to load courses. Please check your network or server and try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [API_BASE_URL]);
+
+    // Initial fetch
+    useEffect(() => {
+        fetchCourses();
+    }, [fetchCourses]);
+
+    // Handle pull-to-refresh
+    const onRefresh = useCallback(async () => {
+        if (!API_BASE_URL) {
+            setError('API base URL is not defined. Please check app.json configuration.');
+            setRefreshing(false);
+            return;
+        }
+        setRefreshing(true);
+        try {
+            const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
+            const publishedCourses = response.data.filter(course => course.isPublished);
+            console.log('Refresh API Response:', response.data);
+            setCourses(publishedCourses);
+            setError(null);
+        } catch (err) {
+            console.error('Refresh Error:', err.message, err.code);
+            setError('Failed to refresh courses. Please try again.');
+        } finally {
+            setRefreshing(false);
+        }
+    }, [API_BASE_URL]);
 
     // Filter courses based on selected filter
     const filteredCourses = selectedFilter === 'All'
-        ? COURSES
-        : COURSES.filter(course => course.category === selectedFilter);
+        ? courses
+        : courses.filter(course => course.level === selectedFilter);
 
     const renderBannerItem = ({ item }) => (
         <View style={styles.bannerContainer}>
@@ -96,43 +115,68 @@ const Course = () => {
         </LinearGradient>
     );
 
-    const renderCourseCard = ({ item }) => (
-        <LinearGradient
-            colors={['#AEAED4', '#000']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.5, y: 0.6 }}
-            style={styles.cardGradientBorder}
-        >
-            <TouchableOpacity
-                style={styles.courseCard}
-                onPress={() => router.push(`../coursescreen/${item.id}`)}
+    const renderCourseCard = ({ item }) => {
+        // Construct image URL
+        let imageUrl = item.coverImage;
+        if (!imageUrl.startsWith('http')) {
+            // Remove leading slash if present and prepend API base URL
+            imageUrl = `${API_BASE_URL.replace(/\/api$/, '')}/${imageUrl.startsWith('/') ? imageUrl.slice(1) : imageUrl}`;
+        }
+
+        return (
+            <LinearGradient
+                colors={['#AEAED4', '#000']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0.5, y: 0.6 }}
+                style={styles.cardGradientBorder}
             >
-                <View style={styles.thumbnailContainer}>
-                    <Image
-                        source={item.thumbnail}
-                        style={styles.thumbnail}
-                        resizeMode="cover"
-                    />
-                    <View style={styles.playButton}>
-                        <FontAwesome name="play" size={20} color="#FFF" />
+                <TouchableOpacity
+                    style={styles.courseCard}
+                    onPress={() => {
+                        console.log('Navigating to CourseListScreen with ID:', item.id);
+                        router.push({
+                            pathname: '/coursescreen/CourseListScreen',
+                            params: { id: item.id },
+                        });
+                    }}
+                >
+                    <View style={styles.thumbnailContainer}>
+                        <Image
+                            source={{ uri: imageUrl }}
+                            style={styles.thumbnail}
+                            resizeMode="cover"
+                            onError={(e) => console.log('Image Load Error:', e.nativeEvent.error, 'for URL:', imageUrl)}
+                        />
+                        <View style={styles.playButton}>
+                            <FontAwesome name="play" size={20} color="#FFF" />
+                        </View>
+                        <View style={[styles.tagContainer, { backgroundColor: '#733DDF' }]}>
+                            <Text className="text-white font-questrial text-xs">{item.level}</Text>
+                        </View>
                     </View>
-                    <View style={[styles.tagContainer, { backgroundColor: '#733DDF' }]}>
-                        <Text className="text-white font-questrial text-xs">{item.tag}</Text>
+                    <View style={styles.courseInfo}>
+                        <Text className="text-white font-questrial text-sm flex-1 mr-2" numberOfLines={2}>
+                            {item.courseName}
+                        </Text>
+                        <Text className="text-[#AEAED4] font-questrial text-xs">{item.subTitle}</Text>
                     </View>
-                </View>
-                <View style={styles.courseInfo}>
-                    <Text className="text-white font-questrial text-sm flex-1 mr-2" numberOfLines={2}>
-                        {item.title}
-                    </Text>
-                    <Text className="text-[#AEAED4] font-questrial text-xs">{item.category}</Text>
-                </View>
+                </TouchableOpacity>
+            </LinearGradient>
+        );
+    };
+
+    // Render error state with retry button
+    const renderErrorState = () => (
+        <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchCourses}>
+                <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
-        </LinearGradient>
+        </View>
     );
 
     return (
         <View style={styles.container}>
-            {/* Fixed Header, Carousel, and Filters */}
             <View style={styles.fixedContainer}>
                 <View style={styles.header}>
                     <HomeHeader page="course" />
@@ -169,16 +213,32 @@ const Course = () => {
                 />
             </View>
 
-            {/* Scrollable Course Cards */}
-            <FlatList
-                data={filteredCourses}
-                renderItem={renderCourseCard}
-                keyExtractor={(item) => item.id}
-                numColumns={2}
-                columnWrapperStyle={styles.columnWrapper}
-                contentContainerStyle={styles.courseList}
-                showsVerticalScrollIndicator={false}
-            />
+            {isLoading && !refreshing ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#723CDF" />
+                    <Text style={styles.loadingText}>Loading courses...</Text>
+                </View>
+            ) : error ? (
+                renderErrorState()
+            ) : (
+                <FlatList
+                    data={filteredCourses}
+                    renderItem={renderCourseCard}
+                    keyExtractor={(item) => item.id}
+                    numColumns={2}
+                    columnWrapperStyle={styles.columnWrapper}
+                    contentContainerStyle={styles.courseList}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={['#723CDF']}
+                            tintColor="#723CDF"
+                        />
+                    }
+                />
+            )}
         </View>
     );
 };
@@ -244,7 +304,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         backgroundColor: '#000',
         overflow: 'hidden',
-
     },
     thumbnailContainer: {
         position: 'relative',
@@ -278,5 +337,40 @@ const styles = StyleSheet.create({
         paddingVertical: 3,
         paddingHorizontal: 6,
         borderRadius: 10,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        color: '#AEAED4',
+        fontSize: 16,
+        marginTop: 10,
+        fontFamily: 'Questrial-Regular',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    errorText: {
+        color: '#FF4D4D',
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 20,
+        fontFamily: 'Questrial-Regular',
+    },
+    retryButton: {
+        backgroundColor: '#723CDF',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+    },
+    retryButtonText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontFamily: 'Questrial-Regular',
     },
 });

@@ -14,7 +14,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/wealthwalklogo.png",
-        "backgroundColor": "#000"
+        "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.wealth.walk"
@@ -32,11 +32,13 @@
           "image": "./assets/images/wealthwalklogo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000"
+          "backgroundColor": "#000000"
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-audio",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true
@@ -45,7 +47,8 @@
       "router": {},
       "eas": {
         "projectId": "11834245-fd6c-4f9b-b94f-917ade2267d1"
-      }
+      },
+      "apiBaseUrl": "http://192.168.1.215:3000/api"
     }
   }
 }
