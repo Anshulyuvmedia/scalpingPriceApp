@@ -1,18 +1,24 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Alert, Image } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Image, Modal } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons'; // For social login icons
+import { Ionicons } from '@expo/vector-icons';
 import images from '@/constants/images';
 
 const Login = () => {
-    const DUMMY_EMAIL = 'user@example.com';
-    const DUMMY_PASSWORD = 'password123';
-    const [email, setEmail] = useState(DUMMY_EMAIL);
-    const [password, setPassword] = useState(DUMMY_PASSWORD);
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [otp, setOtp] = useState('');
     const [emailError, setEmailError] = useState('');
-    const [passwordError, setPasswordError] = useState('');
+    const [phoneError, setPhoneError] = useState('');
+    const [otpError, setOtpError] = useState('');
+    const [isOtpSent, setIsOtpSent] = useState(false);
+    const [generatedOtp, setGeneratedOtp] = useState('');
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalContent, setModalContent] = useState('');
+    const [isError, setIsError] = useState(true);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const buttonScaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -44,31 +50,53 @@ const Login = () => {
         }).start();
     };
 
+    const showModal = (title, content, error = true) => {
+        setModalTitle(title);
+        setModalContent(content);
+        setIsError(error);
+        setModalVisible(true);
+    };
+
     // Basic email validation
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     };
 
+    // Basic phone validation
+    const validatePhone = (phone) => {
+        const phoneRegex = /^\d{10,15}$/;
+        return phoneRegex.test(phone);
+    };
+
+    const getRegisteredUsers = async () => {
+        try {
+            const usersJson = await AsyncStorage.getItem('registeredUsers');
+            return usersJson ? JSON.parse(usersJson) : [];
+        } catch (e) {
+            console.error('Error getting users:', e);
+            return [];
+        }
+    };
+
     // Save session to AsyncStorage
-    const saveSession = async (email, provider = 'email') => {
+    const saveSession = async (email, phone, provider = 'otp') => {
         try {
             const token = `dummy-token-${provider}-` + Math.random().toString(36).slice(2);
-            const userData = { id: `user-${email}-${provider}`, email, provider };
+            const userData = { id: `user-${email}-${provider}`, email, phone, provider };
             await AsyncStorage.setItem('userToken', token);
             await AsyncStorage.setItem('userData', JSON.stringify(userData));
             await AsyncStorage.setItem('lastRoute', '(root)/(tabs)');
         } catch (error) {
             console.error('Error saving session:', error);
-            Alert.alert('Error', 'Failed to save session. Please try again.');
+            showModal('Error', 'Failed to save session. Please try again.');
         }
     };
 
-    // Handle login submission
-    const handleLogin = async () => {
+    const handleSendOtp = async () => {
         let valid = true;
         setEmailError('');
-        setPasswordError('');
+        setPhoneError('');
 
         if (!email) {
             setEmailError('Email is required');
@@ -78,69 +106,66 @@ const Login = () => {
             valid = false;
         }
 
-        if (!password) {
-            setPasswordError('Password is required');
+        if (!phone) {
+            setPhoneError('Phone number is required');
             valid = false;
-        } else if (password.length < 6) {
-            setPasswordError('Password must be at least 6 characters');
+        } else if (!validatePhone(phone)) {
+            setPhoneError('Please enter a valid phone number (10-15 digits)');
             valid = false;
         }
 
-        if (valid && email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
-            await saveSession(email);
-            router.replace('/(root)/(tabs)');
-        } else if (valid) {
-            Alert.alert('Error', 'Invalid email or password. Please use the credentials shown above.');
+        if (valid) {
+            const users = await getRegisteredUsers();
+            const user = users.find((u) => u.email === email && u.phone === phone);
+            if (!user) {
+                showModal('Error', 'No account found with this email and phone');
+                return;
+            }
+            const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            setGeneratedOtp(newOtp);
+            console.log(`OTP sent to phone: ${newOtp}`);
+            setIsOtpSent(true);
+            showModal('Info', 'OTP sent to your phone', false);
         }
     };
 
-    // Handle social login (placeholder for Upstox, Zerodha, Angel One)
-    const handleSocialLogin = async (provider) => {
-        try {
-            // Placeholder for actual OAuth flow
-            await saveSession(`${provider.toLowerCase()}@example.com`, provider.toLowerCase());
-            router.replace('/(root)/(tabs)');
-            Alert.alert('Success', `Logged in with ${provider} successfully!`);
-        } catch (error) {
-            console.error(`Error with ${provider} login:`, error);
-            Alert.alert('Error', `Failed to login with ${provider}. Please try again.`);
+    const handleVerify = async () => {
+        setOtpError('');
+        if (!otp || otp.length !== 6) {
+            setOtpError('Please enter a valid 6-digit OTP');
+            return;
+        }
+        if (otp === generatedOtp) {
+            await saveSession(email, phone);
+            showModal('Success', 'Logged in successfully', false);
+        } else {
+            setOtpError('Invalid OTP');
+        }
+    };
+
+    const handleSubmit = () => {
+        if (isOtpSent) {
+            handleVerify();
+        } else {
+            handleSendOtp();
         }
     };
 
     return (
-        <LinearGradient
-            colors={['#1A1E2E', '#2E3A59']}
-            style={styles.container}
-        >
+        <LinearGradient colors={['#0D1117', '#1F2937']} style={styles.container}>
             <Animated.View style={[styles.formContainer, { opacity: fadeAnim }]}>
                 <View style={styles.logoContainer}>
-                    <Image
-                        source={images.mainlogo}
-                        style={styles.logo}
-                        resizeMode="contain"
-                    />
+                    <Image source={images.mainlogo} style={styles.logo} resizeMode="contain" />
                     <Text style={styles.title}>Welcome Back</Text>
                 </View>
 
-                {/* <View style={styles.credentialsContainer}>
-                    <Text style={styles.credentialsText}>
-                        Use these credentials to login:
-                    </Text>
-                    <Text style={styles.credentialsText}>
-                        Email: {DUMMY_EMAIL}
-                    </Text>
-                    <Text style={styles.credentialsText}>
-                        Password: {DUMMY_PASSWORD}
-                    </Text>
-                </View> */}
-
                 <View style={styles.inputContainer}>
                     <View style={styles.inputWrapper}>
-                        <Ionicons name="mail-outline" size={20} color="#A0AEC0" style={styles.inputIcon} />
+                        <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
                             placeholder="Email"
-                            placeholderTextColor="#A0AEC0"
+                            placeholderTextColor="#9CA3AF"
                             value={email}
                             onChangeText={setEmail}
                             keyboardType="email-address"
@@ -152,68 +177,92 @@ const Login = () => {
 
                 <View style={styles.inputContainer}>
                     <View style={styles.inputWrapper}>
-                        <Ionicons name="lock-closed-outline" size={20} color="#A0AEC0" style={styles.inputIcon} />
+                        <Ionicons name="call-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Password"
-                            placeholderTextColor="#A0AEC0"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
+                            placeholder="Phone Number"
+                            placeholderTextColor="#9CA3AF"
+                            value={phone}
+                            onChangeText={setPhone}
+                            keyboardType="phone-pad"
                             autoCapitalize="none"
                         />
                     </View>
-                    {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+                    {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
                 </View>
+
+                {isOtpSent && (
+                    <View style={styles.inputContainer}>
+                        <View style={styles.inputWrapper}>
+                            <Ionicons name="key-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter 6-digit OTP"
+                                placeholderTextColor="#9CA3AF"
+                                value={otp}
+                                onChangeText={setOtp}
+                                keyboardType="numeric"
+                                maxLength={6}
+                            />
+                        </View>
+                        {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
+                    </View>
+                )}
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPressIn={handleButtonPressIn}
                     onPressOut={handleButtonPressOut}
-                    onPress={handleLogin}
+                    onPress={handleSubmit}
                 >
                     <Animated.View style={[styles.button, { transform: [{ scale: buttonScaleAnim }] }]}>
                         <LinearGradient
-                            colors={['#2B6BFD', '#1E4ED8']}
+                            colors={['#3B82F6', '#1D4ED8']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.buttonGradient}
                         >
-                            <Text style={styles.buttonText}>Sign In</Text>
+                            <Text style={styles.buttonText}>{isOtpSent ? 'Verify' : 'Send OTP'}</Text>
                         </LinearGradient>
                     </Animated.View>
                 </TouchableOpacity>
 
                 <View style={styles.dividerContainer}>
                     <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>Or sign in with</Text>
+                    <Text style={styles.dividerText}>OR</Text>
                     <View style={styles.dividerLine} />
                 </View>
 
                 <View style={styles.socialButtonsContainer}>
-                    <TouchableOpacity
-                        style={styles.socialButton}
-                        onPress={() => handleSocialLogin('Upstox')}
-                    >
-                        <Ionicons name="rocket-outline" size={24} color="#FFFFFF" />
-                        <Text style={styles.socialButtonText}>Upstox</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.socialButton}
-                        onPress={() => handleSocialLogin('Zerodha')}
-                    >
-                        <Ionicons name="leaf-outline" size={24} color="#FFFFFF" />
-                        <Text style={styles.socialButtonText}>Zerodha</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.socialButton}
-                        onPress={() => handleSocialLogin('AngelOne')}
-                    >
-                        <Ionicons name="star-outline" size={24} color="#FFFFFF" />
-                        <Text style={styles.socialButtonText}>Angel One</Text>
+                    <TouchableOpacity style={styles.socialButton} onPress={() => router.push('./register')}>
+                        <Text style={styles.socialButtonText}>Don&apos;t have an account? Register Now!</Text>
                     </TouchableOpacity>
                 </View>
             </Animated.View>
+
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={[styles.modalTitle, { color: isError ? '#EF4444' : '#3B82F6' }]}>{modalTitle}</Text>
+                        <Text style={styles.modalText}>{modalContent}</Text>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setModalVisible(false);
+                                if (!isError && modalTitle === 'Success') {
+                                    router.replace('/(root)/(tabs)');
+                                }
+                            }}
+                        >
+                            <Text style={styles.modalButton}>OK</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </LinearGradient>
     );
 };
@@ -225,107 +274,94 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#1A1E2E',
+        backgroundColor: '#0D1117',
     },
     formContainer: {
         width: '90%',
         maxWidth: 400,
-        padding: 24,
-        borderRadius: 16,
-        backgroundColor: '#FFFFFF',
+        padding: 32,
+        borderRadius: 24,
+        backgroundColor: '#1F2937',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
         elevation: 5,
     },
     logoContainer: {
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 32,
     },
     logo: {
-        width: 100,
-        height: 100,
-        borderRadius: 32,
-        marginBottom: 12,
+        width: 120,
+        height: 120,
+        borderRadius: 40,
+        marginBottom: 16,
     },
     title: {
-        fontSize: 24,
-        fontWeight: '600',
-        color: '#1A1E2E',
+        fontSize: 28,
+        fontWeight: '700',
+        color: '#F3F4F6',
         textAlign: 'center',
         fontFamily: 'Questrial-Regular',
-    },
-    credentialsContainer: {
-        marginBottom: 24,
-        padding: 12,
-        backgroundColor: '#F7FAFC',
-        borderRadius: 8,
-    },
-    credentialsText: {
-        color: '#4A5568',
-        fontSize: 14,
-        textAlign: 'center',
-        fontFamily: 'Questrial-Regular',
-        lineHeight: 20,
     },
     inputContainer: {
-        marginBottom: 16,
+        marginBottom: 20,
     },
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#E2E8F0',
-        borderRadius: 8,
-        backgroundColor: '#F7FAFC',
+        borderColor: '#4B5563',
+        borderRadius: 12,
+        backgroundColor: '#374151',
     },
     inputIcon: {
-        marginLeft: 12,
+        marginLeft: 16,
     },
     input: {
         flex: 1,
-        height: 48,
-        paddingHorizontal: 12,
+        height: 56,
+        paddingHorizontal: 16,
         fontSize: 16,
-        color: '#1A1E2E',
+        color: '#F3F4F6',
         fontFamily: 'Questrial-Regular',
     },
     errorText: {
-        color: '#E53E3E',
+        color: '#EF4444',
         fontSize: 12,
-        marginTop: 4,
+        marginTop: 6,
         fontFamily: 'Questrial-Regular',
     },
     button: {
-        borderRadius: 8,
+        borderRadius: 12,
         overflow: 'hidden',
-        marginTop: 16,
+        marginTop: 24,
     },
     buttonGradient: {
-        paddingVertical: 12,
+        paddingVertical: 16,
         paddingHorizontal: 24,
         justifyContent: 'center',
         alignItems: 'center',
     },
     buttonText: {
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '600',
         fontFamily: 'Questrial-Regular',
     },
     dividerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: 20,
+        marginVertical: 24,
     },
     dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: '#E2E8F0',
+        backgroundColor: '#4B5563',
     },
     dividerText: {
-        color: '#4A5568',
+        color: '#9CA3AF',
         fontSize: 14,
         marginHorizontal: 12,
         fontFamily: 'Questrial-Regular',
@@ -340,16 +376,47 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#2D3748',
-        borderRadius: 8,
-        paddingVertical: 10,
         marginHorizontal: 4,
     },
     socialButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
+        color: '#F3F4F6',
+        fontSize: 16,
         fontWeight: '500',
         marginLeft: 8,
         fontFamily: 'Questrial-Regular',
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.7)',
+    },
+    modalContent: {
+        backgroundColor: '#1F2937',
+        padding: 24,
+        borderRadius: 16,
+        alignItems: 'center',
+        width: '80%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        marginBottom: 12,
+        color: '#F3F4F6',
+    },
+    modalText: {
+        fontSize: 16,
+        marginBottom: 24,
+        textAlign: 'center',
+        color: '#D1D5DB',
+    },
+    modalButton: {
+        color: '#3B82F6',
+        fontSize: 18,
+        fontWeight: '600',
     },
 });

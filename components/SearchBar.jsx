@@ -1,7 +1,7 @@
 // components/SearchBar.jsx
 import { StyleSheet, View, TextInput } from 'react-native';
 import React from 'react';
-import { AntDesign } from '@expo/vector-icons';
+import { AntDesign, Ionicons } from '@expo/vector-icons';
 import LinearGradient from 'react-native-linear-gradient';
 
 const SearchBar = ({ color }) => {
@@ -22,7 +22,7 @@ const SearchBar = ({ color }) => {
                         style={styles.gradientBox}
                     >
                         <View style={styles.innerContainer}>
-                            <AntDesign name="search1" size={22} color="#fff" />
+                            <Ionicons name="search-outline" size={22} color="#fff" />
                             <TextInput
                                 placeholder="Search for 'Nestle'"
                                 placeholderTextColor="#fff"
@@ -47,7 +47,7 @@ const SearchBar = ({ color }) => {
                         style={styles.gradientBox}
                     >
                         <View style={[styles.innerContainer, { backgroundColor: '#000' }]}>
-                            <AntDesign name="search1" size={22} color="#AFAFAF" />
+                            <Ionicons name="search-outline" size={22} color="#AFAFAF" />
                             <TextInput
                                 placeholder="Search for 'Nestle'"
                                 placeholderTextColor="#888"

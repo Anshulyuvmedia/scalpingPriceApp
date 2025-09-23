@@ -43,7 +43,7 @@ const Course = () => {
             const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
             const publishedCourses = response.data.filter(course => course.isPublished);
             // console.log('API Response:', response.data);
-            // console.log('Published Courses:', publishedCourses);
+            console.log('Published Courses:', publishedCourses);
             setCourses(publishedCourses);
         } catch (err) {
             console.error('Fetch Error:', err.message, err.code);
