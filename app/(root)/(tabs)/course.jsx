@@ -1,13 +1,13 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image, Dimensions, RefreshControl, ActivityIndicator } from 'react-native';
-import React, { useState, useEffect, useCallback } from 'react';
-import LinearGradient from 'react-native-linear-gradient';
-import { FontAwesome, Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import images from '@/constants/images';
 import HomeHeader from '@/components/HomeHeader';
-import ReanimatedCarousel from 'react-native-reanimated-carousel';
-import Constants from 'expo-constants';
+import images from '@/constants/images';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 import axios from 'axios';
+import Constants from 'expo-constants';
+import { router } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Dimensions, FlatList, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import ReanimatedCarousel from 'react-native-reanimated-carousel';
 
 // Dummy data for banner carousel
 const BANNERS = [
@@ -28,7 +28,7 @@ const Course = () => {
     const screenWidth = Dimensions.get('window').width;
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://192.168.1.215:3000/api';
+    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000/api';
 
     // Function to fetch courses
     const fetchCourses = useCallback(async () => {

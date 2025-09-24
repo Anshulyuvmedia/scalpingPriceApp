@@ -1,13 +1,13 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Platform } from 'react-native';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import LinearGradient from 'react-native-linear-gradient';
-import Constants from 'expo-constants';
-import axios from 'axios';
-import moment from 'moment';
-import RBSheet from 'react-native-raw-bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
+import moment from 'moment';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import RBSheet from 'react-native-raw-bottom-sheet';
 
 const Notifications = () => {
     const router = useRouter();
@@ -23,7 +23,7 @@ const Notifications = () => {
     const [selectedNotification, setSelectedNotification] = useState(null);
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://192.168.1.215:3000/api';
+    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000/api';
 
     // Load read status from AsyncStorage
     const loadReadStatus = useCallback(async () => {

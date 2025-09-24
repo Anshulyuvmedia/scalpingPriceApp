@@ -1,11 +1,10 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image, Animated, RefreshControl, ActivityIndicator } from 'react-native';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import LinearGradient from 'react-native-linear-gradient';
-import images from '@/constants/images';
-import Constants from 'expo-constants';
 import axios from 'axios';
+import Constants from 'expo-constants';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, FlatList, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
 const CourseListScreen = () => {
     const { id } = useLocalSearchParams();
@@ -16,7 +15,7 @@ const CourseListScreen = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://192.168.1.215:3000/api';
+    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000/api';
 
     // Debug logging
     // useEffect(() => {

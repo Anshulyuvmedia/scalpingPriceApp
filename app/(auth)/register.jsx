@@ -1,30 +1,41 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Image, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Image, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import images from '@/constants/images';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import axios from 'axios';
+import Constants from 'expo-constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Register = () => {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [referralCode, setReferralCode] = useState('');
+    const API_BASE_URL = 'http://192.168.1.23:3000/api';
+    const insets = useSafeAreaInsets();
+
+    // State management
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        referralCode: '',
+    });
     const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
-    const [nameError, setNameError] = useState('');
-    const [emailError, setEmailError] = useState('');
-    const [phoneError, setPhoneError] = useState('');
-    const [referralError, setReferralError] = useState('');
-    const [otpError, setOtpError] = useState('');
+    const [errors, setErrors] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        referral: '',
+        otp: '',
+    });
     const [isOtpSent, setIsOtpSent] = useState(false);
-    const [generatedOtp, setGeneratedOtp] = useState('');
-    const [modalVisible, setModalVisible] = useState(false);
-    const [modalTitle, setModalTitle] = useState('');
-    const [modalContent, setModalContent] = useState('');
-    const [isError, setIsError] = useState(true);
+    const [newOtp, setNewOtp] = useState('');
+    const [modal, setModal] = useState({ visible: false, title: '', content: '', isError: true });
+    const [isLoading, setIsLoading] = useState(false);
+    const [resendCountdown, setResendCountdown] = useState(60);
+    const [canResend, setCanResend] = useState(false);
+    const [otpSentCount, setOtpSentCount] = useState(0);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const buttonScaleAnim = useRef(new Animated.Value(1)).current;
     const rbSheetRef = useRef(null);
@@ -39,7 +50,26 @@ const Register = () => {
         }).start();
     }, [fadeAnim]);
 
-    // Handle button press animation
+    // Resend countdown timer
+    useEffect(() => {
+        if (otpSentCount > 0) {
+            setCanResend(false);
+            setResendCountdown(60);
+            const timer = setInterval(() => {
+                setResendCountdown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        setCanResend(true);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [otpSentCount]);
+
+    // Button animation handlers
     const handleButtonPressIn = () => {
         Animated.spring(buttonScaleAnim, {
             toValue: 0.97,
@@ -58,143 +88,213 @@ const Register = () => {
         }).start();
     };
 
-    const showModal = (title, content, error = true) => {
-        setModalTitle(title);
-        setModalContent(content);
-        setIsError(error);
-        setModalVisible(true);
-    };
+    // Validation functions
+    const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const validatePhone = (phone) => /^\d{10,15}$/.test(phone);
 
-    // Basic email validation
-    const validateEmail = (email) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    };
-
-    // Basic phone validation
-    const validatePhone = (phone) => {
-        const phoneRegex = /^\d{10,15}$/;
-        return phoneRegex.test(phone);
-    };
-
-    const getRegisteredUsers = async () => {
-        try {
-            const usersJson = await AsyncStorage.getItem('registeredUsers');
-            return usersJson ? JSON.parse(usersJson) : [];
-        } catch (e) {
-            console.error('Error getting users:', e);
-            return [];
-        }
-    };
-
-    // const saveRegisteredUsers = async (users) => {
-    //     try {
-    //         await AsyncStorage.setItem('registeredUsers', JSON.stringify(users));
-    //     } catch (e) {
-    //         console.error('Error saving users:', e);
-    //     }
-    // };
-
-    // Save session to AsyncStorage
-    // const saveSession = async (email, phone, provider = 'otp') => {
-    //     try {
-    //         const token = `dummy-token-${provider}-` + Math.random().toString(36).slice(2);
-    //         const userData = { id: `user-${email}-${provider}`, email, phone, provider };
-    //         await AsyncStorage.setItem('userToken', token);
-    //         await AsyncStorage.setItem('userData', JSON.stringify(userData));
-    //         await AsyncStorage.setItem('lastRoute', '(root)/(tabs)');
-    //     } catch (error) {
-    //         console.error('Error saving session:', error);
-    //         showModal('Error', 'Failed to save session. Please try again.');
-    //     }
-    // };
-
-    const handleSendOtp = async () => {
+    // Form validation
+    const validateForm = () => {
+        const newErrors = { name: '', email: '', phone: '', referral: '', otp: '' };
         let valid = true;
-        setNameError('');
-        setEmailError('');
-        setPhoneError('');
-        setReferralError('');
 
-        if (!name.trim()) {
-            setNameError('Name is required');
+        if (!formData.name.trim()) {
+            newErrors.name = 'Name is required';
+            valid = false;
+        }
+        if (!formData.email) {
+            newErrors.email = 'Email is required';
+            valid = false;
+        } else if (!validateEmail(formData.email)) {
+            newErrors.email = 'Please enter a valid email';
+            valid = false;
+        }
+        if (!formData.phone) {
+            newErrors.phone = 'Phone number is required';
+            valid = false;
+        } else if (!validatePhone(formData.phone)) {
+            newErrors.phone = 'Please enter a valid phone number (10-15 digits)';
             valid = false;
         }
 
-        if (!email) {
-            setEmailError('Email is required');
-            valid = false;
-        } else if (!validateEmail(email)) {
-            setEmailError('Please enter a valid email');
-            valid = false;
-        }
+        setErrors(newErrors);
+        return valid;
+    };
 
-        if (!phone) {
-            setPhoneError('Phone number is required');
-            valid = false;
-        } else if (!validatePhone(phone)) {
-            setPhoneError('Please enter a valid phone number (10-15 digits)');
-            valid = false;
-        }
-
-        if (valid) {
-            const users = await getRegisteredUsers();
-            const existingEmail = users.find((u) => u.email === email);
-            const existingPhone = users.find((u) => u.phone === phone);
-            if (existingEmail || existingPhone) {
-                showModal('Error', 'Email or phone already registered');
-                return;
+    // API calls
+    const checkUserExists = async () => {
+        setIsLoading(true);
+        try {
+            const filter = {
+                where: {
+                    or: [{ email: formData.email }, { phone: formData.phone }],
+                    isTemporary: false,
+                }
+            };
+            const response = await axios.get(`${API_BASE_URL}/TdUsers`, {
+                params: { filter: JSON.stringify(filter) },
+                timeout: 10000,
+            });
+            // console.log('checkUserExists response:', JSON.stringify(response.data, null, 2));
+            return response.data.length > 0;
+        } catch (error) {
+            console.error('Error checking user existence:', JSON.stringify(error.response?.data || error.message, null, 2));
+            let errorMessage = 'Unable to connect to the server. Please check your network and try again.';
+            if (error.code === 'ECONNABORTED') {
+                errorMessage = 'Request timed out. Please check your network connection.';
+            } else if (error.code === 'ERR_NETWORK') {
+                errorMessage = `Network error. Please ensure the server is reachable at ${API_BASE_URL}`;
+            } else if (error.response?.data?.error?.message) {
+                errorMessage = error.response.data.error.message;
             }
-            const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-            setGeneratedOtp(newOtp);
-            console.log(`OTP sent to phone: ${newOtp}`);
-            setIsOtpSent(true);
-            rbSheetRef.current.open();
+            setModal({
+                visible: true,
+                title: 'Error',
+                content: errorMessage,
+                isError: true,
+            });
+            return false;
+        } finally {
+            setIsLoading(false);
         }
+    };
+
+    const generateOtp = async () => {
+        setIsLoading(true);
+        const payload = {
+            phone: formData.phone,
+            name: formData.name,
+            email: formData.email,
+            referralCode: formData.referralCode || null,
+        };
+        // console.log('Sending register payload:', JSON.stringify(payload, null, 2));
+        try {
+            const response = await axios.post(
+                `${API_BASE_URL}/TdUsers/generateOtp`,
+                payload,
+                { timeout: 10000 }
+            );
+            // console.log('Register response:', JSON.stringify(response.data, null, 2));
+            if (response.status === 200 && response.data?.result?.success && response.data?.result?.otp) {
+                setIsOtpSent(true);
+                setNewOtp(response.data.result.otp);
+                setOtpDigits(Array(6).fill(''));
+                setOtpSentCount((prev) => prev + 1);
+                rbSheetRef.current?.open();
+            } else {
+                throw new Error(response.data?.result?.message || 'Unexpected response from server');
+            }
+        } catch (error) {
+            console.error('Error registering user:', JSON.stringify(error.response?.data || error.message, null, 2));
+            let errorMessage = error.response?.data?.error?.message || 'Failed to register. Please try again.';
+            if (error.code === 'ERR_NETWORK') {
+                errorMessage = `Network error. Please ensure the server is reachable at ${API_BASE_URL}`;
+            }
+            setModal({
+                visible: true,
+                title: 'Error',
+                content: errorMessage,
+                isError: true,
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const verifyOtpAndRegister = async (otp) => {
+        setIsLoading(true);
+        const payload = {
+            phone: formData.phone,
+            otp,
+            name: formData.name,
+            email: formData.email,
+            referralCode: formData.referralCode || null,
+        };
+        // console.log('Sending verifyOTP payload:', JSON.stringify(payload, null, 2));
+        try {
+            const response = await axios.post(
+                `${API_BASE_URL}/TdUsers/verifyOTP`,
+                payload,
+                { timeout: 10000 }
+            );
+            // console.log('verifyOTP response:', JSON.stringify(response.data, null, 2));
+            if (response.status === 200 && response.data) {
+                rbSheetRef.current?.close();
+                setModal({
+                    visible: true,
+                    title: 'Success',
+                    content: 'Registered successfully! You can now log in.',
+                    isError: false,
+                });
+            } else {
+                throw new Error('Unexpected response from server');
+            }
+        } catch (error) {
+            console.error('Error verifying OTP:', JSON.stringify(error.response?.data || error.message, null, 2));
+            let errorMessage = error.response?.data?.error?.message || 'Invalid OTP. Please try again.';
+            if (error.response?.data?.error?.name === 'ValidationError') {
+                errorMessage = 'Email or phone already registered. Please use a different email or phone number.';
+            }
+            setErrors((prev) => ({ ...prev, otp: errorMessage }));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Handlers
+    const handleInputChange = (field, value) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        setErrors((prev) => ({ ...prev, [field]: '' }));
     };
 
     const handleOtpChange = (text, index) => {
         const newDigits = [...otpDigits];
         newDigits[index] = text;
         setOtpDigits(newDigits);
+        setErrors((prev) => ({ ...prev, otp: '' }));
 
         if (text && index < 5) {
-            otpRefs.current[index + 1].focus();
+            otpRefs.current[index + 1]?.focus();
         }
     };
 
     const handleOtpKeyPress = ({ nativeEvent }, index) => {
         if (nativeEvent.key === 'Backspace' && !otpDigits[index] && index > 0) {
-            otpRefs.current[index - 1].focus();
+            otpRefs.current[index - 1]?.focus();
+        }
+    };
+
+    const handleRegister = async () => {
+        if (isLoading) return;
+        if (!isOtpSent) {
+            if (!validateForm()) return;
+            if (await checkUserExists()) {
+                setModal({
+                    visible: true,
+                    title: 'Error',
+                    content: 'Email or phone already registered. Please use a different email or phone number.',
+                    isError: true,
+                });
+                return;
+            }
+            await generateOtp();
+        } else {
+            rbSheetRef.current?.open();
         }
     };
 
     const handleVerify = async () => {
-        setOtpError('');
+        if (isLoading) return;
         const otp = otpDigits.join('');
-        if (!otp || otp.length !== 6) {
-            setOtpError('Please enter a valid 6-digit OTP');
+        if (otp.length !== 6) {
+            setErrors((prev) => ({ ...prev, otp: 'Please enter a valid 6-digit OTP' }));
             return;
         }
-        if (otp === generatedOtp) {
-            const users = await getRegisteredUsers();
-            const newUser = { name, email, phone, referralCode: referralCode || null };
-            users.push(newUser);
-            // await saveRegisteredUsers(users);
-            // await saveSession(email, phone);
-            rbSheetRef.current.close();
-            showModal('Success', 'Registered successfully', false);
-        } else {
-            setOtpError('Invalid OTP');
-        }
+        await verifyOtpAndRegister(otp);
     };
 
-    const handleSubmit = () => {
-        if (isOtpSent) {
-            handleVerify();
-        } else {
-            handleSendOtp();
-        }
+    const handleResend = async () => {
+        if (isLoading || !canResend) return;
+        await generateOtp();
     };
 
     return (
@@ -210,75 +310,50 @@ const Register = () => {
                         <Text style={styles.title}>Register Now</Text>
                     </View>
 
-                    <View style={styles.inputContainer}>
-                        <View style={styles.inputWrapper}>
-                            <Ionicons name="person-outline" size={moderateScale(20)} color="#9CA3AF" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter Your Name"
-                                placeholderTextColor="#9CA3AF"
-                                value={name}
-                                onChangeText={setName}
-                                // keyboardType="default"
-                                autoCapitalize="words"
-                            />
+                    {['name', 'email', 'phone', 'referralCode'].map((field) => (
+                        <View key={field} style={styles.inputContainer}>
+                            <View style={[styles.inputWrapper, { borderColor: errors[field] ? '#EF4444' : '#4B5563' }]}>
+                                <Ionicons
+                                    name={
+                                        field === 'name' ? 'person-outline' :
+                                            field === 'email' ? 'mail-outline' :
+                                                field === 'phone' ? 'call-outline' : 'code-outline'
+                                    }
+                                    size={moderateScale(20)}
+                                    color="#9CA3AF"
+                                    style={styles.inputIcon}
+                                />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder={
+                                        field === 'name' ? 'Enter Your Name' :
+                                            field === 'email' ? 'Email' :
+                                                field === 'phone' ? 'Phone Number' : 'Referral Code (optional)'
+                                    }
+                                    placeholderTextColor="#9CA3AF"
+                                    value={formData[field]}
+                                    onChangeText={(text) => handleInputChange(field, text)}
+                                    keyboardType={
+                                        field === 'email' ? 'email-address' :
+                                            field === 'phone' ? 'phone-pad' : 'default'
+                                    }
+                                    autoCapitalize={field === 'name' ? 'words' : 'none'}
+                                    editable={!isLoading}
+                                />
+                                {errors[field] ? (
+                                    <MaterialIcons name="error-outline" size={24} color="#EF4444" style={styles.errorIcon} />
+                                ) : null}
+                            </View>
+                            {errors[field] ? <Text style={styles.errorText}>{errors[field]}</Text> : null}
                         </View>
-                        {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <View style={styles.inputWrapper}>
-                            <Ionicons name="mail-outline" size={moderateScale(20)} color="#9CA3AF" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Email"
-                                placeholderTextColor="#9CA3AF"
-                                value={email}
-                                onChangeText={setEmail}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                            />
-                        </View>
-                        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <View style={styles.inputWrapper}>
-                            <Ionicons name="call-outline" size={moderateScale(20)} color="#9CA3AF" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Phone Number"
-                                placeholderTextColor="#9CA3AF"
-                                value={phone}
-                                onChangeText={setPhone}
-                                keyboardType="phone-pad"
-                                autoCapitalize="none"
-                            />
-                        </View>
-                        {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <View style={styles.inputWrapper}>
-                            <Ionicons name="code-outline" size={moderateScale(20)} color="#9CA3AF" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Referral Code (optional)"
-                                placeholderTextColor="#9CA3AF"
-                                value={referralCode}
-                                onChangeText={setReferralCode}
-                                keyboardType="default"
-                                autoCapitalize="none"
-                            />
-                        </View>
-                        {referralError ? <Text style={styles.errorText}>{referralError}</Text> : null}
-                    </View>
+                    ))}
 
                     <TouchableOpacity
                         activeOpacity={0.8}
                         onPressIn={handleButtonPressIn}
                         onPressOut={handleButtonPressOut}
-                        onPress={handleSubmit}
+                        onPress={handleRegister}
+                        disabled={isLoading}
                     >
                         <Animated.View style={[styles.button, { transform: [{ scale: buttonScaleAnim }] }]}>
                             <LinearGradient
@@ -287,7 +362,11 @@ const Register = () => {
                                 end={{ x: 1, y: 1 }}
                                 style={styles.buttonGradient}
                             >
-                                <Text style={styles.buttonText}>{isOtpSent ? 'Verify' : 'Send OTP'}</Text>
+                                {isLoading ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.buttonText}>{isOtpSent ? 'Enter OTP' : 'Register'}</Text>
+                                )}
                             </LinearGradient>
                         </Animated.View>
                     </TouchableOpacity>
@@ -299,7 +378,11 @@ const Register = () => {
                     </View>
 
                     <View style={styles.socialButtonsContainer}>
-                        <TouchableOpacity style={styles.socialButton} onPress={() => router.push('./login')}>
+                        <TouchableOpacity
+                            style={styles.socialButton}
+                            onPress={() => router.push('./login')}
+                            disabled={isLoading}
+                        >
                             <Text style={styles.socialButtonText}>Already registered? Login here!</Text>
                         </TouchableOpacity>
                     </View>
@@ -308,21 +391,20 @@ const Register = () => {
 
             <RBSheet
                 ref={rbSheetRef}
-                height={verticalScale(300)}
+                height={verticalScale(350) + insets.bottom}
                 openDuration={250}
-                customStyles={{
-                    container: styles.rbSheetContainer,
-                }}
+                customStyles={{ container: styles.rbSheetContainer }}
             >
                 <View style={styles.rbSheetContent}>
                     <Text style={styles.rbSheetTitle}>Enter OTP</Text>
-                    <Text style={styles.rbSheetSubtitle}>We&apos;ve sent a 6-digit code to your phone</Text>
+                    <Text style={styles.rbSheetSubtitle}>Enter the 6-digit code sent to {formData.phone}</Text>
+                    <Text style={styles.rbSheetSubtitle}>OTP: {newOtp}</Text>
                     <View style={styles.otpContainer}>
                         {otpDigits.map((digit, index) => (
                             <TextInput
                                 key={index}
                                 ref={(el) => (otpRefs.current[index] = el)}
-                                style={styles.otpInput}
+                                style={[styles.otpInput, { borderColor: errors.otp ? '#EF4444' : '#4B5563' }]}
                                 value={digit}
                                 onChangeText={(text) => handleOtpChange(text, index)}
                                 onKeyPress={(e) => handleOtpKeyPress(e, index)}
@@ -330,14 +412,24 @@ const Register = () => {
                                 maxLength={1}
                                 autoFocus={index === 0}
                                 textAlign="center"
+                                editable={!isLoading}
                             />
                         ))}
                     </View>
-                    {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
+                    {errors.otp ? <Text style={styles.errorText}>{errors.otp}</Text> : null}
+                    <View style={styles.resendContainer}>
+                        {canResend ? (
+                            <TouchableOpacity onPress={handleResend} disabled={isLoading}>
+                                <Text style={styles.resendText}>Resend OTP</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <Text style={styles.resendTextDisabled}>Resend OTP in {resendCountdown} seconds</Text>
+                        )}
+                    </View>
                     <TouchableOpacity
-                        activeOpacity={0.8}
                         onPress={handleVerify}
                         style={styles.rbSheetButton}
+                        disabled={isLoading}
                     >
                         <LinearGradient
                             colors={['#3B82F6', '#1D4ED8']}
@@ -345,7 +437,11 @@ const Register = () => {
                             end={{ x: 1, y: 1 }}
                             style={styles.buttonGradient}
                         >
-                            <Text style={styles.buttonText}>Verify OTP</Text>
+                            {isLoading ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.buttonText}>Verify OTP</Text>
+                            )}
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
@@ -353,19 +449,21 @@ const Register = () => {
 
             <Modal
                 animationType="fade"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
+                transparent
+                visible={modal.visible}
+                onRequestClose={() => setModal((prev) => ({ ...prev, visible: false }))}
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={[styles.modalTitle, { color: isError ? '#EF4444' : '#3B82F6' }]}>{modalTitle}</Text>
-                        <Text style={styles.modalText}>{modalContent}</Text>
+                        <Text style={[styles.modalTitle, { color: modal.isError ? '#EF4444' : '#3B82F6' }]}>
+                            {modal.title}
+                        </Text>
+                        <Text style={styles.modalText}>{modal.content}</Text>
                         <TouchableOpacity
                             onPress={() => {
-                                setModalVisible(false);
-                                if (!isError && modalTitle === 'Success') {
-                                    router.replace('/(root)/(tabs)');
+                                setModal((prev) => ({ ...prev, visible: false }));
+                                if (!modal.isError && modal.title === 'Success') {
+                                    router.replace('/login');
                                 }
                             }}
                         >
@@ -378,15 +476,12 @@ const Register = () => {
     );
 };
 
-export default Register;
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#000',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#000',
-
     },
     scrollContent: {
         flexGrow: 1,
@@ -429,9 +524,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#4B5563',
         borderRadius: moderateScale(12),
-        backgroundColor: '#374151',
+        backgroundColor: '#28282B',
     },
     inputIcon: {
         marginLeft: scale(16),
@@ -443,6 +537,9 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(16),
         color: '#F3F4F6',
         fontFamily: 'Questrial-Regular',
+    },
+    errorIcon: {
+        marginRight: scale(8),
     },
     errorText: {
         color: '#EF4444',
@@ -490,7 +587,6 @@ const styles = StyleSheet.create({
     },
     socialButton: {
         flex: 1,
-        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         marginHorizontal: scale(4),
@@ -499,7 +595,6 @@ const styles = StyleSheet.create({
         color: '#F3F4F6',
         fontSize: moderateScale(16),
         fontWeight: '500',
-        marginLeft: scale(8),
         fontFamily: 'Questrial-Regular',
     },
     modalOverlay: {
@@ -523,18 +618,20 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(20),
         fontWeight: '700',
         marginBottom: verticalScale(12),
-        color: '#F3F4F6',
+        fontFamily: 'Questrial-Regular',
     },
     modalText: {
         fontSize: moderateScale(16),
         marginBottom: verticalScale(24),
         textAlign: 'center',
         color: '#D1D5DB',
+        fontFamily: 'Questrial-Regular',
     },
     modalButton: {
         color: '#3B82F6',
         fontSize: moderateScale(18),
         fontWeight: '600',
+        fontFamily: 'Questrial-Regular',
     },
     rbSheetContainer: {
         backgroundColor: '#1F2937',
@@ -550,11 +647,13 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#F3F4F6',
         marginBottom: verticalScale(8),
+        fontFamily: 'Questrial-Regular',
     },
     rbSheetSubtitle: {
         fontSize: moderateScale(16),
         color: '#D1D5DB',
         marginBottom: verticalScale(24),
+        fontFamily: 'Questrial-Regular',
     },
     rbSheetButton: {
         borderRadius: moderateScale(12),
@@ -572,12 +671,27 @@ const styles = StyleSheet.create({
         width: moderateScale(40),
         height: moderateScale(50),
         borderWidth: 1,
-        borderColor: '#4B5563',
         borderRadius: moderateScale(8),
         backgroundColor: '#374151',
         textAlign: 'center',
-        fontSize: moderateScale(24),
+        fontSize: moderateScale(20),
         color: '#F3F4F6',
         fontFamily: 'Questrial-Regular',
     },
+    resendContainer: {
+        marginBottom: verticalScale(16),
+        alignItems: 'center',
+    },
+    resendText: {
+        color: '#3B82F6',
+        fontSize: moderateScale(16),
+        fontFamily: 'Questrial-Regular',
+    },
+    resendTextDisabled: {
+        color: '#9CA3AF',
+        fontSize: moderateScale(16),
+        fontFamily: 'Questrial-Regular',
+    },
 });
+
+export default Register;
