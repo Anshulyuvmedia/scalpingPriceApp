@@ -1,26 +1,18 @@
 // app/_layout.jsx
-import { Stack, usePathname } from 'expo-router';
+import { Stack, usePathname, router } from 'expo-router';
 import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { View } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import './globals.css'
+import { useEffect, useState, useContext } from 'react';
+import './globals.css';
+import { UserContext, UserProvider } from '@/contexts/UserContext';
 
-// Prevent the splash screen from hiding until fonts are loaded
 SplashScreen.preventAutoHideAsync();
 
 export default function AppLayout() {
-    const pathname = usePathname();
-
-    // Normalize the pathname and check for the tradealerts route
-    const normalizedPath = pathname.toLowerCase().replace(/^\/|\/$/g, ''); // Remove leading/trailing slashes
-    const isTradeAlertsRoute = normalizedPath.includes('tradealertscreens/tradealerts');
-    const statusBarColor = isTradeAlertsRoute ? '#723CDF' : '#000'; // Purple for tradealerts, black for others
-
-    // Load the fonts
     const [fontsLoaded, fontError] = useFonts({
         'Questrial-Regular': require('../assets/fonts/Questrial-Regular.ttf'),
         'Sora-Regular': require('../assets/fonts/Sora-Regular.ttf'),
@@ -31,40 +23,58 @@ export default function AppLayout() {
         'Sora-SemiBold': require('../assets/fonts/Sora-SemiBold.ttf'),
     });
 
-    // Hide splash screen once fonts are loaded or if there's an error
-    useEffect(() => {
-        if (fontsLoaded || fontError) {
-            SplashScreen.hideAsync();
-        }
-    }, [fontsLoaded, fontError]);
-
-    // Render nothing until fonts are loaded and no error occurs
     if (!fontsLoaded && !fontError) {
-        return null;
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+                <ActivityIndicator size="large" color="#3B82F6" />
+            </View>
+        );
     }
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <SafeAreaProvider>
-                <SafeAreaViewWrapper statusBarColor={statusBarColor} />
+                <UserProvider>
+                    <SafeAreaViewWrapper />
+                </UserProvider>
             </SafeAreaProvider>
         </GestureHandlerRootView>
     );
 }
 
-function SafeAreaViewWrapper({ statusBarColor }) {
+function SafeAreaViewWrapper() {
     const insets = useSafeAreaInsets();
+    const pathname = usePathname();
+    const { user, token, loading } = useContext(UserContext); // Move context usage here
+    const [hasRedirected, setHasRedirected] = useState(false);
+
+    useEffect(() => {
+        if (loading) return;
+
+        const normalizedPath = pathname.toLowerCase().replace(/^\/|\/$/g, '');
+        const isLoginRoute = normalizedPath.includes('login');
+
+        if (user && token && !isLoginRoute && !hasRedirected) {
+            setHasRedirected(true);
+            router.replace('/(root)/(tabs)');
+        } else if (!user && !token && !isLoginRoute && !hasRedirected) {
+            setHasRedirected(true);
+            router.replace('/(auth)/login');
+        }
+    }, [loading, user, token, pathname, hasRedirected]);
+
+    const normalizedPath = pathname.toLowerCase().replace(/^\/|\/$/g, '');
+    const isTradeAlertsRoute = normalizedPath.includes('tradealertscreens/tradealerts');
+    const statusBarColor = isTradeAlertsRoute ? '#723CDF' : '#000';
 
     return (
         <SafeAreaView
             style={{
                 flex: 1,
-                backgroundColor: '#000', // Set global black background for all screens
-                // paddingBottom: insets.bottom, // Add padding to account for bottom navigation bar
+                backgroundColor: '#000',
             }}
-            edges={['top', 'left', 'right']} // Exclude bottom edge to manually handle insets.bottom
+            edges={['top', 'left', 'right']}
         >
-            {/* View to simulate the status bar background */}
             <View
                 style={{
                     height: insets.top,
@@ -81,7 +91,7 @@ function SafeAreaViewWrapper({ statusBarColor }) {
                     headerShown: false,
                     contentStyle: {
                         backgroundColor: '#000',
-                        paddingBottom: insets.bottom, // Ensure Stack content respects bottom inset
+                        paddingBottom: insets.bottom,
                     },
                 }}
             >

@@ -7,9 +7,11 @@ import LinearGradient from 'react-native-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'react-native-haptic-feedback';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
+const API_BASE_URL = 'http://192.168.1.23:3000/api';
 
 const menuItems = [
     { name: 'Algo Strategy Builder', route: 'algostrategybuilder', icon: 'cog' },
@@ -68,12 +70,23 @@ const Dashboard = () => {
     // Handle logout
     const handleLogout = async () => {
         try {
-            await AsyncStorage.removeItem('userSession');
-            Haptics.trigger('impactMedium');
-            router.push('/(auth)/login');
+            const token = await AsyncStorage.getItem('userToken');
+            if (token) {
+                await axios.post(
+                    `${API_BASE_URL}/TdUsers/logout`,
+                    {},
+                    { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }
+                );
+            }
+            await AsyncStorage.removeItem('userToken');
+            await AsyncStorage.removeItem('userData');
+            await AsyncStorage.removeItem('lastRoute');
+            await AsyncStorage.removeItem('tokenExpiry');
+            Alert.alert('Success', 'Logged out successfully');
+            router.replace('/(auth)/login');
         } catch (error) {
-            console.error('Error clearing session:', error);
-            Alert.alert('Error', 'Failed to log out. Please try again.');
+            console.error('Logout error:', JSON.stringify(error.response?.data || error.message, null, 2));
+            Alert.alert('Error', error.response?.data?.error?.message || 'Failed to log out. Please try again.');
         }
     };
 
@@ -116,7 +129,6 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        // paddingHorizontal: 16,
         alignItems: 'center',
         paddingVertical: 20,
     },

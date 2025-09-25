@@ -1,26 +1,49 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Image, Modal } from 'react-native';
-import React, { useState, useEffect, useRef } from 'react';
+// app/(auth)/login.jsx
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Image, Modal, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import RBSheet from 'react-native-raw-bottom-sheet';
 import images from '@/constants/images';
+import axios from 'axios';
+import { UserContext } from '@/contexts/UserContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// Use environment variable or fallback for API URL
+const API_BASE_URL = 'http://192.168.1.23:3000/api';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
+    const insets = useSafeAreaInsets();
+    const { login } = useContext(UserContext);
+    const { expired } = useLocalSearchParams(); // Check for session expiry redirect
     const [phone, setPhone] = useState('');
-    const [otp, setOtp] = useState('');
-    const [emailError, setEmailError] = useState('');
+    const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
     const [phoneError, setPhoneError] = useState('');
     const [otpError, setOtpError] = useState('');
     const [isOtpSent, setIsOtpSent] = useState(false);
-    const [generatedOtp, setGeneratedOtp] = useState('');
+    const [newOtp, setNewOtp] = useState(false);
+    const [otpExpiry, setOtpExpiry] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [modalContent, setModalContent] = useState('');
     const [isError, setIsError] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
+    const [resendCountdown, setResendCountdown] = useState(60);
+    const [canResend, setCanResend] = useState(false);
+    const [otpSentCount, setOtpSentCount] = useState(0);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const buttonScaleAnim = useRef(new Animated.Value(1)).current;
+    const otpRefs = useRef([]);
+    const rbSheetRef = useRef(null);
+
+    // Show session expired message if redirected
+    useEffect(() => {
+        if (expired === 'true') {
+            Alert.alert('Session Expired', 'Your session has expired. Please log in again.');
+        }
+    }, [expired]);
 
     // Fade-in animation
     useEffect(() => {
@@ -30,6 +53,32 @@ const Login = () => {
             useNativeDriver: true,
         }).start();
     }, [fadeAnim]);
+
+    // Resend countdown timer
+    useEffect(() => {
+        if (otpSentCount > 0) {
+            setCanResend(false);
+            setResendCountdown(60);
+            const timer = setInterval(() => {
+                setResendCountdown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        setCanResend(true);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [otpSentCount]);
+
+    // Open RBSheet when OTP is sent
+    useEffect(() => {
+        if (isOtpSent && rbSheetRef.current) {
+            rbSheetRef.current.open();
+        }
+    }, [isOtpSent]);
 
     // Handle button press animation
     const handleButtonPressIn = () => {
@@ -57,54 +106,108 @@ const Login = () => {
         setModalVisible(true);
     };
 
-    // Basic email validation
-    const validateEmail = (email) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    };
-
     // Basic phone validation
-    const validatePhone = (phone) => {
-        const phoneRegex = /^\d{10,15}$/;
-        return phoneRegex.test(phone);
-    };
+    const validatePhone = (phone) => /^\d{10,15}$/.test(phone);
 
-    const getRegisteredUsers = async () => {
+    const normalizePhoneNumber = (phone) => phone.replace(/[^0-9]/g, '');
+
+    const generateOtp = async () => {
+        setIsLoading(true);
+        const payload = {
+            phone: normalizePhoneNumber(phone),
+        };
         try {
-            const usersJson = await AsyncStorage.getItem('registeredUsers');
-            return usersJson ? JSON.parse(usersJson) : [];
-        } catch (e) {
-            console.error('Error getting users:', e);
-            return [];
+            const response = await axios.post(
+                `${API_BASE_URL}/TdUsers/loginGenerateOtp`,
+                payload,
+                { timeout: 10000 }
+            );
+            if (response.status === 200 && response.data?.result?.success && response.data?.result?.otp) {
+                setIsOtpSent(true);
+                setOtpExpiry(response.data.result.expiry);
+                setOtpDigits(Array(6).fill(''));
+                setOtpSentCount((prev) => prev + 1);
+                setNewOtp(response.data.result.otp);
+                // console.log('OTP Expiry:', response.data.result); // Debug expiry format
+            } else {
+                throw new Error(response.data?.result?.message || 'Unexpected response from server');
+            }
+        } catch (error) {
+            console.error('Error generating OTP:', JSON.stringify(error.response?.data || error.message, null, 2));
+            let errorMessage = 'Failed to send OTP. Please try again.';
+            if (error.response) {
+                if (error.response.status === 400) {
+                    errorMessage = error.response.data?.error?.message || 'Invalid phone number.';
+                } else if (error.response.status === 500) {
+                    errorMessage = 'Server error. Please try again later.';
+                }
+            } else if (error.code === 'ERR_NETWORK') {
+                errorMessage = `Network error. Please ensure the server is reachable at ${API_BASE_URL}`;
+            }
+            showModal('Error', errorMessage);
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    // Save session to AsyncStorage
-    const saveSession = async (email, phone, provider = 'otp') => {
+    const verifyOtp = async (otp) => {
+        setIsLoading(true);
+        const payload = {
+            phone: normalizePhoneNumber(phone),
+            otp,
+        };
         try {
-            const token = `dummy-token-${provider}-` + Math.random().toString(36).slice(2);
-            const userData = { id: `user-${email}-${provider}`, email, phone, provider };
-            await AsyncStorage.setItem('userToken', token);
-            await AsyncStorage.setItem('userData', JSON.stringify(userData));
-            await AsyncStorage.setItem('lastRoute', '(root)/(tabs)');
+            const response = await axios.post(
+                `${API_BASE_URL}/TdUsers/loginVerifyOtp`,
+                payload,
+                { timeout: 10000 }
+            );
+            // console.log('verifyOtp response:', JSON.stringify(response.data, null, 2));
+            if (response.status === 200 && response.data?.result?.user && response.data?.result?.token) {
+                await login(response.data.result.user, response.data.result.token.id);
+                showModal('Success', 'Logged in successfully', false);
+                rbSheetRef.current?.close();
+            } else {
+                throw new Error('Unexpected response from server');
+            }
         } catch (error) {
-            console.error('Error saving session:', error);
-            showModal('Error', 'Failed to save session. Please try again.');
+            console.error('Error verifying OTP:', JSON.stringify(error.response?.data || error.message, null, 2));
+            let errorMessage = 'Invalid OTP. Please try again.';
+            if (error.response) {
+                if (error.response.status === 400) {
+                    errorMessage = error.response.data?.error?.message || 'Invalid OTP.';
+                } else if (error.response.status === 500) {
+                    errorMessage = 'Server error. Please try again later.';
+                }
+            } else if (error.message.includes('expired')) {
+                errorMessage = 'OTP expired. Please request a new one.';
+            }
+            setOtpError(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleOtpChange = (text, index) => {
+        const newDigits = [...otpDigits];
+        newDigits[index] = text;
+        setOtpDigits(newDigits);
+        setOtpError('');
+
+        if (text && index < 5) {
+            otpRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleOtpKeyPress = ({ nativeEvent }, index) => {
+        if (nativeEvent.key === 'Backspace' && !otpDigits[index] && index > 0) {
+            otpRefs.current[index - 1]?.focus();
         }
     };
 
     const handleSendOtp = async () => {
         let valid = true;
-        setEmailError('');
         setPhoneError('');
-
-        if (!email) {
-            setEmailError('Email is required');
-            valid = false;
-        } else if (!validateEmail(email)) {
-            setEmailError('Please enter a valid email');
-            valid = false;
-        }
 
         if (!phone) {
             setPhoneError('Phone number is required');
@@ -115,32 +218,28 @@ const Login = () => {
         }
 
         if (valid) {
-            const users = await getRegisteredUsers();
-            const user = users.find((u) => u.email === email && u.phone === phone);
-            if (!user) {
-                showModal('Error', 'No account found with this email and phone');
-                return;
-            }
-            const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-            setGeneratedOtp(newOtp);
-            console.log(`OTP sent to phone: ${newOtp}`);
-            setIsOtpSent(true);
-            showModal('Info', 'OTP sent to your phone', false);
+            await generateOtp();
         }
     };
 
     const handleVerify = async () => {
         setOtpError('');
-        if (!otp || otp.length !== 6) {
+        if (otpExpiry && new Date() > new Date(otpExpiry)) {
+            setOtpError('OTP expired. Please request a new one.');
+            return;
+        }
+        const otp = otpDigits.join('');
+        if (otp.length !== 6) {
             setOtpError('Please enter a valid 6-digit OTP');
             return;
         }
-        if (otp === generatedOtp) {
-            await saveSession(email, phone);
-            showModal('Success', 'Logged in successfully', false);
-        } else {
-            setOtpError('Invalid OTP');
-        }
+        await verifyOtp(otp);
+    };
+
+    const handleResend = async () => {
+        if (isLoading || !canResend) return;
+        setOtpDigits(Array(6).fill(''));
+        await generateOtp();
     };
 
     const handleSubmit = () => {
@@ -152,7 +251,7 @@ const Login = () => {
     };
 
     return (
-        <LinearGradient colors={['#0D1117', '#1F2937']} style={styles.container}>
+        <View style={styles.container}>
             <Animated.View style={[styles.formContainer, { opacity: fadeAnim }]}>
                 <View style={styles.logoContainer}>
                     <Image source={images.mainlogo} style={styles.logo} resizeMode="contain" />
@@ -160,23 +259,7 @@ const Login = () => {
                 </View>
 
                 <View style={styles.inputContainer}>
-                    <View style={styles.inputWrapper}>
-                        <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Email"
-                            placeholderTextColor="#9CA3AF"
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
-                    </View>
-                    {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-                </View>
-
-                <View style={styles.inputContainer}>
-                    <View style={styles.inputWrapper}>
+                    <View style={[styles.inputWrapper, { borderColor: phoneError ? '#EF4444' : '#4B5563' }]}>
                         <Ionicons name="call-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
@@ -186,34 +269,21 @@ const Login = () => {
                             onChangeText={setPhone}
                             keyboardType="phone-pad"
                             autoCapitalize="none"
+                            editable={!isLoading}
                         />
+                        {phoneError ? (
+                            <MaterialIcons name="error-outline" size={24} color="#EF4444" style={styles.errorIcon} />
+                        ) : null}
                     </View>
                     {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
                 </View>
-
-                {isOtpSent && (
-                    <View style={styles.inputContainer}>
-                        <View style={styles.inputWrapper}>
-                            <Ionicons name="key-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter 6-digit OTP"
-                                placeholderTextColor="#9CA3AF"
-                                value={otp}
-                                onChangeText={setOtp}
-                                keyboardType="numeric"
-                                maxLength={6}
-                            />
-                        </View>
-                        {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
-                    </View>
-                )}
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPressIn={handleButtonPressIn}
                     onPressOut={handleButtonPressOut}
                     onPress={handleSubmit}
+                    disabled={isLoading}
                 >
                     <Animated.View style={[styles.button, { transform: [{ scale: buttonScaleAnim }] }]}>
                         <LinearGradient
@@ -222,7 +292,11 @@ const Login = () => {
                             end={{ x: 1, y: 1 }}
                             style={styles.buttonGradient}
                         >
-                            <Text style={styles.buttonText}>{isOtpSent ? 'Verify' : 'Send OTP'}</Text>
+                            {isLoading ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.buttonText}>{isOtpSent ? 'Verify' : 'Send OTP'}</Text>
+                            )}
                         </LinearGradient>
                     </Animated.View>
                 </TouchableOpacity>
@@ -253,9 +327,6 @@ const Login = () => {
                         <TouchableOpacity
                             onPress={() => {
                                 setModalVisible(false);
-                                if (!isError && modalTitle === 'Success') {
-                                    router.replace('/(root)/(tabs)');
-                                }
                             }}
                         >
                             <Text style={styles.modalButton}>OK</Text>
@@ -263,18 +334,87 @@ const Login = () => {
                     </View>
                 </View>
             </Modal>
-        </LinearGradient>
+
+            <RBSheet
+                ref={rbSheetRef}
+                height={350 + insets.bottom}
+                openDuration={300}
+                closeOnDragDown={true}
+                closeOnPressMask={false}
+                customStyles={{
+                    container: {
+                        backgroundColor: '#1F2937',
+                        borderTopLeftRadius: 24,
+                        borderTopRightRadius: 24,
+                    },
+                    draggableIcon: {
+                        backgroundColor: '#4B5563',
+                    },
+                }}
+            >
+                <View style={styles.rbSheetContainer}>
+                    <Text style={styles.rbSheetTitle}>Verify OTP</Text>
+                    <Text style={styles.rbSheetSubtitle}>Enter the 6-digit code sent to {phone}</Text>
+                    <Text style={styles.rbSheetSubtitle}>OTP: {newOtp}</Text>
+                    <View style={styles.otpContainer}>
+                        {otpDigits.map((digit, index) => (
+                            <TextInput
+                                key={index}
+                                ref={(el) => (otpRefs.current[index] = el)}
+                                style={[styles.otpInput, { borderColor: otpError ? '#EF4444' : '#4B5563' }]}
+                                value={digit}
+                                onChangeText={(text) => handleOtpChange(text, index)}
+                                onKeyPress={(e) => handleOtpKeyPress(e, index)}
+                                keyboardType="numeric"
+                                maxLength={1}
+                                autoFocus={index === 0}
+                                textAlign="center"
+                                editable={!isLoading}
+                            />
+                        ))}
+                    </View>
+                    {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
+                    <View style={styles.resendContainer}>
+                        {canResend ? (
+                            <TouchableOpacity onPress={handleResend} disabled={isLoading}>
+                                <Text style={styles.resendText}>Resend OTP</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <Text style={styles.resendTextDisabled}>Resend OTP in {resendCountdown} seconds</Text>
+                        )}
+                    </View>
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPressIn={handleButtonPressIn}
+                        onPressOut={handleButtonPressOut}
+                        onPress={handleVerify}
+                        disabled={isLoading}
+                    >
+                        <LinearGradient
+                            colors={['#3B82F6', '#1D4ED8']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.buttonGradient}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.buttonText}>Verify</Text>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
+            </RBSheet>
+        </View>
     );
 };
-
-export default Login;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#0D1117',
+        backgroundColor: '#000',
     },
     formContainer: {
         width: '90%',
@@ -312,7 +452,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#4B5563',
         borderRadius: 12,
         backgroundColor: '#374151',
     },
@@ -326,6 +465,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#F3F4F6',
         fontFamily: 'Questrial-Regular',
+    },
+    errorIcon: {
+        marginRight: 8,
     },
     errorText: {
         color: '#EF4444',
@@ -419,4 +561,58 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
     },
+    rbSheetContainer: {
+        flex: 1,
+        padding: 24,
+    },
+    rbSheetTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#F3F4F6',
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    rbSheetSubtitle: {
+        fontSize: 16,
+        color: '#D1D5DB',
+        marginBottom: 16,
+        textAlign: 'center',
+        fontFamily: 'Questrial-Regular',
+    },
+    otpContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 20,
+    },
+    otpInput: {
+        width: 40,
+        height: 50,
+        borderWidth: 1,
+        borderRadius: 8,
+        backgroundColor: '#374151',
+        textAlign: 'center',
+        fontSize: 20,
+        color: '#F3F4F6',
+        fontFamily: 'Questrial-Regular',
+    },
+    resendContainer: {
+        marginBottom: 16,
+        alignItems: 'center',
+    },
+    resendText: {
+        color: '#3B82F6',
+        fontSize: 16,
+        fontFamily: 'Questrial-Regular',
+    },
+    resendTextDisabled: {
+        color: '#9CA3AF',
+        fontSize: 16,
+        fontFamily: 'Questrial-Regular',
+    },
 });
+
+
+
+
+export default Login;
