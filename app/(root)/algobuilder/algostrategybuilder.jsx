@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
-import AlgoNavigation from '../../components/AlgoNavigation';
+import AlgoNavigation from '../../../components/AlgoNavigation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -47,11 +47,6 @@ const AlgoStrategyBuilder = () => {
 
     return (
         <View style={styles.container}>
-            <View style={styles.headerbox}>
-                <HomeHeader />
-            </View>
-
-            <AlgoNavigation />
 
             <ScrollView style={styles.scollerbox} showsVerticalScrollIndicator={false}>
                 <View style={styles.mainbox}>
@@ -460,7 +455,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: width * 0.04,
     },
     scollerbox: {
-        paddingHorizontal: width * 0.04,
+        // paddingHorizontal: width * 0.04,
         marginBottom: height * 0.03,
     },
     mainbox: {

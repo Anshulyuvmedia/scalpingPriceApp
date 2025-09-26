@@ -1,18 +1,19 @@
 // app/(auth)/login.jsx
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Image, Modal, ActivityIndicator, Alert } from 'react-native';
-import React, { useState, useEffect, useRef, useContext } from 'react';
-import LinearGradient from 'react-native-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import RBSheet from 'react-native-raw-bottom-sheet';
 import images from '@/constants/images';
-import axios from 'axios';
 import { UserContext } from '@/contexts/UserContext';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import axios from 'axios';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import RBSheet from 'react-native-raw-bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Use environment variable or fallback for API URL
-const API_BASE_URL = 'http://192.168.1.23:3000/api';
+// const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000/api';
+const API_BASE_URL = 'http://192.168.1.27:3000/api';
+
 
 const Login = () => {
     const insets = useSafeAreaInsets();

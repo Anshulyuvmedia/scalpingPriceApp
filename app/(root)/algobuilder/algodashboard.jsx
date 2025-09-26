@@ -3,7 +3,7 @@ import React from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather, MaterialCommunityIcons, Octicons, Ionicons, FontAwesome } from '@expo/vector-icons';
-import AlgoNavigation from '../../components/AlgoNavigation';
+import AlgoNavigation from '../../../components/AlgoNavigation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -222,12 +222,6 @@ const AlgoDashboard = () => {
 
     return (
         <View style={styles.container}>
-            <View style={styles.headerbox}>
-                <HomeHeader />
-            </View>
-
-            <AlgoNavigation />
-
             <FlatList
                 data={dashboardData}
                 renderItem={renderItem}
@@ -258,10 +252,10 @@ const styles = StyleSheet.create({
     },
     bottomsection: {
         marginTop: height * 0.025,
-        backgroundColor: '#191922',
+        backgroundColor: '#000',
         borderRadius: 25,
-        paddingHorizontal: width * 0.04,
-        paddingTop: height * 0.025,
+        // paddingHorizontal: width * 0.04,
+        // paddingTop: height * 0.025,
     },
     actionRow: {
         flexDirection: 'row',
@@ -294,7 +288,7 @@ const styles = StyleSheet.create({
         marginBottom: height * 0.01,
     },
     oversoldList: {
-        paddingHorizontal: width * 0.04,
+        // paddingHorizontal: width * 0.04,
     },
     strategyList: {
         paddingBottom: height * 0.02,

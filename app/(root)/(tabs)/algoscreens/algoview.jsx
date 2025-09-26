@@ -1,29 +1,36 @@
-// app/(root)/(tabs)/chatbot/ai-chart-patterns.jsx
-import { StyleSheet, Text, View, Dimensions, Animated } from 'react-native';
-import React, { useState } from 'react';
+import { StyleSheet, Text, View, Dimensions, Animated, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
-import IndexTab from './tabview/IndexTab';
-import StocksTab from './tabview/StocksTab';
-import FutureTab from './tabview/FutureTab';
-import GraphTab from './tabview/GraphTab';
+import Signals from './signals';
+import IndicatorBased from './indicatorbased';
+import Algo from './algo';
+import HomeHeader from '@/components/HomeHeader';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
-const AIChartPatterns = () => {
+const AlgoView = () => {
     const [index, setIndex] = useState(0);
     const [routes] = useState([
-        { key: 'index', title: 'Index' },
-        { key: 'stocks', title: 'Stocks' },
-        { key: 'futures', title: 'Futures' },
-        { key: 'graphs', title: 'Graphs' },
+        { key: 'Signals', title: 'Signals' },
+        { key: 'IndicatorBased', title: 'Indicator Based' },
+        { key: 'Algo', title: 'Algo Trading' },
     ]);
+    const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
+
+    // Update layout on window resize
+    useEffect(() => {
+        const updateLayout = () => {
+            setWindowWidth(Dimensions.get('window').width);
+        };
+        const subscription = Dimensions.addEventListener('change', updateLayout);
+        return () => subscription?.remove();
+    }, []);
 
     const renderScene = SceneMap({
-        index: IndexTab,
-        stocks: StocksTab,
-        futures: FutureTab,
-        graphs: GraphTab,
+        Signals: Signals,
+        IndicatorBased: IndicatorBased,
+        Algo: Algo,
     });
 
     const renderTabBar = (props) => {
@@ -32,18 +39,23 @@ const AIChartPatterns = () => {
 
         return (
             <LinearGradient
-                colors={['#222', '#AEAED4']}
+                colors={['#1A1A1A', '#4B4B7A']}
                 start={{ x: 0, y: 0 }}
-                end={{ x: 2, y: 0 }}
+                end={{ x: 1, y: 0 }}
                 style={styles.gradientBoxBorder}
             >
                 <TabBar
                     {...props}
-                    scrollEnabled
+                    scrollEnabled={windowWidth < 600} // Enable scrolling only on smaller screens
                     indicatorStyle={styles.tabIndicator}
                     style={styles.tabBar}
-                    renderTab={({ route, focused }) => (
-                        <View style={styles.tabContainer}>
+                    renderLabel={({ route, focused }) => (
+                        <View
+                            style={styles.tabContainer}
+                            accessibilityRole="tab"
+                            accessibilityLabel={route.title}
+                            accessible
+                        >
                             {focused ? (
                                 <LinearGradient
                                     colors={['#723CDF', '#9E68E4']}
@@ -64,39 +76,18 @@ const AIChartPatterns = () => {
                     )}
                     renderIndicator={(indicatorProps) => {
                         const { getTabWidth } = indicatorProps;
-                        const tabWidths = routes.map((_, i) => getTabWidth(i));
-                        const maxTabWidth = Math.max(...tabWidths, 1);
-
                         const translateX = position.interpolate({
                             inputRange,
-                            outputRange: tabWidths.map((_, i) => {
-                                return tabWidths.slice(0, i).reduce((sum, w) => sum + w, 0);
-                            }),
+                            outputRange: routes.map((_, i) => getTabWidth(i) * i),
                         });
-
-                        const scaleX = position.interpolate({
-                            inputRange,
-                            outputRange: tabWidths.map((width) => width / maxTabWidth),
-                        });
-
-                        const adjustedTranslateX = Animated.add(
-                            translateX,
-                            Animated.multiply(
-                                Animated.subtract(1, scaleX),
-                                maxTabWidth / 2
-                            )
-                        );
 
                         return (
                             <Animated.View
                                 style={[
                                     styles.pillIndicator,
                                     {
-                                        width: maxTabWidth,
-                                        transform: [
-                                            { translateX: adjustedTranslateX },
-                                            { scaleX },
-                                        ],
+                                        width: getTabWidth(index),
+                                        transform: [{ translateX }],
                                     },
                                 ]}
                             >
@@ -116,84 +107,56 @@ const AIChartPatterns = () => {
 
     return (
         <View style={styles.container}>
-
+            <HomeHeader page="algo" />
             <View style={styles.tabViewContainer}>
                 <TabView
                     navigationState={{ index, routes }}
                     renderScene={renderScene}
                     onIndexChange={setIndex}
-                    initialLayout={initialLayout}
+                    initialLayout={{ width: windowWidth }}
                     lazy
                     renderTabBar={renderTabBar}
+                    style={styles.tabView}
                 />
             </View>
         </View>
     );
 };
 
-export default AIChartPatterns;
+export default AlgoView;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 10,
+        padding: 16, // Increased padding for better spacing
         backgroundColor: '#000',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 20,
-    },
-    title: {
-        color: '#fff',
-        fontSize: 24,
-        fontFamily: 'Sora-Bold',
-        textAlign: 'center',
-    },
-    gradientBorder: {
-        borderRadius: 100,
-        padding: 1,
     },
     gradientBoxBorder: {
-        borderRadius: 25,
+        borderRadius: 50, // Softer radius
         padding: 1,
-        marginHorizontal: 5,
-        marginBottom: 15,
-    },
-    innerContainer: {
-        backgroundColor: '#000',
-        borderRadius: 100,
-        padding: 7,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    heading: {
-        flex: 1,
         marginHorizontal: 10,
-    },
-    coinContainer: {
-        flexDirection: 'row',
-        padding: 12,
-        borderRadius: 100,
-        backgroundColor: '#000',
-        alignItems: 'center',
+        // marginVertical: 10,
     },
     tabViewContainer: {
-        height: 'auto',
-        minHeight: 600,
+        flex: 1, // Use flex to adapt to available space
+    },
+    tabView: {
+        borderRadius: 20,
+        overflow: 'hidden', // Ensure content respects border radius
     },
     tabBar: {
         backgroundColor: '#000',
-        borderRadius: 24,
-        position: 'relative',
+        borderRadius: 50,
+        // paddingVertical: 4,
+        elevation: 0, // Remove shadow on Android for cleaner look
+        shadowOpacity: 0, // Remove shadow on iOS
     },
     tabContainer: {
-        paddingHorizontal: 10,
-        paddingVertical: 5,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
     },
     activeTabGradient: {
-        borderRadius: 15,
+        borderRadius: 50,
         paddingHorizontal: 12,
         paddingVertical: 8,
     },
@@ -203,27 +166,29 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
     tabIndicator: {
-        height: 0,
+        height: 0, // Hide default indicator
         backgroundColor: 'transparent',
     },
     pillIndicator: {
         position: 'absolute',
-        bottom: 0,
-        height: 48,
+        bottom: 2,
+        height: 45,
         zIndex: -1,
     },
     pillGradient: {
         flex: 1,
-        borderRadius: 20,
+        borderRadius: 50,
     },
     tabLabel: {
         color: '#FFF',
-        fontFamily: 'Questrial-Regular',
-        fontSize: 14,
+        fontFamily: Platform.select({
+            ios: 'Questrial-Regular',
+            android: 'Questrial', // Android may need font name adjustment
+        }),
+        fontSize: 16, // Slightly larger for readability
         textAlign: 'center',
     },
     activeTabLabel: {
-        color: '#FFF',
-        fontWeight: 'bold',
+        fontWeight: '600', // Semi-bold for better emphasis
     },
 });

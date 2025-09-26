@@ -3,7 +3,6 @@ import { StyleSheet, Text, View, FlatList, TouchableOpacity, Switch, ScrollView 
 import React, { useState } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import HomeHeader from '@/components/HomeHeader';
 import AlgoCard from '@/components/AlgoCard';
 import { router } from 'expo-router';
 
@@ -24,49 +23,9 @@ const Algo = () => {
         : ALGO_DATA.filter(item => item.status === 'Active');
 
     return (
-        <View className="flex-1 bg-black pt-3">
+        <View className="flex-1 bg-black">
             {/* Fixed Content */}
             <View style={styles.fixedContainer}>
-                <HomeHeader page="algo" />
-
-                <View className="flex-row justify-between items-center">
-                    <TouchableOpacity onPress={() => router.push('/algoscreens/signals')}>
-                        <LinearGradient
-                            colors={['#0C0C18', '#B0B0B0']}
-                            start={{ x: 0.5, y: 0 }}
-                            end={{ x: 0, y: 0 }}
-                            style={styles.gradientBorder}
-                        >
-                            <View style={[styles.tabBox, { backgroundColor: '#000' }]}>
-                                <Text className="text-white font-questrial">Signals</Text>
-                            </View>
-                        </LinearGradient>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => router.push('/algoscreens/indicatorbased')}>
-                        <LinearGradient
-                            colors={['#0C0C18', '#B0B0B0']}
-                            start={{ x: 0.5, y: 0 }}
-                            end={{ x: 0, y: 0 }}
-                            style={styles.gradientBorder}
-                        >
-                            <View style={[styles.tabBox, { backgroundColor: '#000' }]}>
-                                <Text className="text-white font-questrial">Indicator based</Text>
-                            </View>
-                        </LinearGradient>
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                        <LinearGradient
-                            colors={['#9E68E4', '#723CDF']}
-                            start={{ x: 1, y: 0 }}
-                            end={{ x: 0, y: 0 }}
-                            style={styles.gradientBox}
-                        >
-                            <View style={styles.tabBox}>
-                                <Text className="text-white font-questrial">Algorithmic Trading</Text>
-                            </View>
-                        </LinearGradient>
-                    </TouchableOpacity>
-                </View>
 
                 <View className="my-7">
                     <Text className="text-white text-xl font-sora-extrabold">Algorithmic Trading</Text>
@@ -152,7 +111,7 @@ export default Algo;
 
 const styles = StyleSheet.create({
     fixedContainer: {
-        paddingHorizontal: 10,
+        // paddingHorizontal: 10,
     },
     gradientBorder: {
         borderRadius: 100,

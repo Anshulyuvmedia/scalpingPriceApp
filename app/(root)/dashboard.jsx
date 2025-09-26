@@ -1,22 +1,19 @@
-import { StyleSheet, Text, View, TouchableOpacity, Alert, Dimensions } from 'react-native';
-import React from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
 import HomeHeader from '@/components/HomeHeader';
-import LinearGradient from 'react-native-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'react-native-haptic-feedback';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { router } from 'expo-router';
+import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as Haptics from 'react-native-haptic-feedback';
+import LinearGradient from 'react-native-linear-gradient';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
-const API_BASE_URL = 'http://192.168.1.23:3000/api';
+const API_BASE_URL = 'http://192.168.1.27:3000/api';
 
 const menuItems = [
-    { name: 'Algo Strategy Builder', route: 'algostrategybuilder', icon: 'cog' },
-    { name: 'Algo Dashboard', route: 'algodashboard', icon: 'chart-line' },
-    { name: 'FOX Strategy Builder', route: 'foxstrategybuilder', icon: 'rocket' },
+    { name: 'Algo Builder', route: 'algobuilder', icon: 'rocket' },
     { name: 'Detailed Metrics', route: 'detailedmatrics', icon: 'chart-bar' },
     { name: 'Strategy Backtesting', route: 'strategybacktesting', icon: 'history' },
     { name: 'AI Generated Trade', route: 'aigeneratedtrade', icon: 'robot' },

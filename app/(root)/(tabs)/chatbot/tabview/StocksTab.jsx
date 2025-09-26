@@ -159,15 +159,15 @@ const styles = StyleSheet.create({
     },
     priceCard: {
         flex: 1,
-        paddingVertical: 1,
+        // paddingVertical: 1,
         // paddingBottom: 20,
     },
     priceRow: {
         justifyContent: 'space-between',
-        marginHorizontal: -5,
+        // marginHorizontal: -5,
     },
     scrollContent: {
-        padding: 10,
+        // padding: 15,
         paddingBottom: 50,
     },
 });

@@ -1,5 +1,5 @@
 // app/(root)/(tabs)/chatbot/free-signal.jsx
-import { StyleSheet, Text, View, ScrollView, Dimensions, Animated } from 'react-native';
+import { StyleSheet, Text, View,  Dimensions, Animated } from 'react-native';
 import React, { useState } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
@@ -7,8 +7,6 @@ import IndexTab from './tabview/IndexTab';
 import StocksTab from './tabview/StocksTab';
 import FutureTab from './tabview/FutureTab';
 import GraphTab from './tabview/GraphTab';
-import TabNavigationHeader from '@/components/TabNavigationHeader';
-import HomeHeader from '@/components/HomeHeader';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
@@ -118,11 +116,6 @@ const FreeSignal = () => {
 
     return (
         <View style={styles.container}>
-            {/* Header */}
-            <HomeHeader page={'chatbot'} title={'Free Signal'} action={'refresh'} />
-
-            <TabNavigationHeader activeTab="FreeSignal" />
-
             <View style={styles.tabViewContainer}>
                 <TabView
                     navigationState={{ index, routes }}

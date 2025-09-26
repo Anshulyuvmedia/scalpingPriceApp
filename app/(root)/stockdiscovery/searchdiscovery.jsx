@@ -139,7 +139,7 @@ const SearchDiscovery = () => {
     );
 
     return (
-        <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+        <View style={styles.container}>
             <HomeHeader page={'chatbot'} title={'NSE'} />
 
             {/* NIFTY 50 Section (2x2 Grid) */}
@@ -155,7 +155,7 @@ const SearchDiscovery = () => {
                 />
             </View>
 
-            <View style={[styles.bottomsection, { paddingBottom: insets.bottom }]}>
+            <View style={styles.bottomsection}>
                 {/* Search Section */}
                 <View style={styles.searchSection}>
                     <Text style={styles.title}>Stock Search & Discovery</Text>
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     niftyGrid: {
-        marginBottom: 20,
+        marginBottom: 10,
     },
     niftySection: {
         flexDirection: 'row',

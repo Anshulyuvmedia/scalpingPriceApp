@@ -47,7 +47,6 @@ const IndicatorBased = () => {
         <View className="flex-1 bg-black pt-3">
             {/* Fixed Header and Tabs */}
             <View style={styles.fixedContainer}>
-                <HomeHeader page="algo" />
 
                 <FlatList
                     data={TABS}

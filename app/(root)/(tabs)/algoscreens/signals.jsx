@@ -93,7 +93,6 @@ const Signals = () => {
 
     return (
         <View style={styles.Container}>
-            <HomeHeader page={'algo'} />
 
             <View className="flex-row justify-between items-start mb-3">
                 <View>

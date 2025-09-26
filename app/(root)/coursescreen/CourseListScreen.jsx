@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, FlatList, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -15,7 +14,7 @@ const CourseListScreen = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000/api';
+    const API_BASE_URL = 'http://192.168.1.27:3000/api';
 
     // Debug logging
     // useEffect(() => {
@@ -174,7 +173,7 @@ const CourseListScreen = () => {
 
     const renderLessonItem = ({ item, index }) => {
         // Find the module index for this video
-        const moduleIndex = course.modules.findIndex(module => 
+        const moduleIndex = course.modules.findIndex(module =>
             module.videos.some(video => video.videoUrl === item.videoUrl)
         );
         return <LessonItem item={item} onPress={handleLessonPress} moduleIndex={moduleIndex} videoIndex={index} />;
@@ -195,7 +194,7 @@ const CourseListScreen = () => {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back-outline" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={styles.timeText}>12:53</Text>
+                    {/* <Text style={styles.timeText}>12:53</Text> */}
                 </View>
             ),
         },
@@ -205,9 +204,9 @@ const CourseListScreen = () => {
             content: (
                 <View style={styles.courseHeader}>
                     <Image
-                        source={{ 
-                            uri: course.coverImage.startsWith('http') 
-                                ? course.coverImage 
+                        source={{
+                            uri: course.coverImage.startsWith('http')
+                                ? course.coverImage
                                 : `${API_BASE_URL.replace(/\/api$/, '')}/${course.coverImage.startsWith('/') ? course.coverImage.slice(1) : course.coverImage}`
                         }}
                         style={styles.courseThumbnail}
@@ -306,7 +305,7 @@ const CourseListScreen = () => {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Lessons</Text>
                         <FlatList
-                            data={course.modules.flatMap((module, moduleIndex) => 
+                            data={course.modules.flatMap((module, moduleIndex) =>
                                 module.videos.map((video, videoIndex) => ({
                                     ...video,
                                     moduleIndex,

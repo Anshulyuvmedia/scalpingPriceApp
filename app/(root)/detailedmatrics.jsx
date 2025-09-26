@@ -173,7 +173,7 @@ const DetailedMetrics = () => {
 
     return (
         <View style={styles.container}>
-            <HomeHeader page={'chatbot'} title={'Dashboard'} />
+            <HomeHeader page={'chatbot'} title={'Detailed Matrics'} />
             <View style={styles.gradientBackground}>
                 <FlatList
                     data={combinedData}

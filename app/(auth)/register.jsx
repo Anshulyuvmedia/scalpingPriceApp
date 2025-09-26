@@ -1,17 +1,16 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Image, Modal, ScrollView, ActivityIndicator } from 'react-native';
-import React, { useState, useEffect, useRef } from 'react';
-import LinearGradient from 'react-native-linear-gradient';
-import { router } from 'expo-router';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import RBSheet from 'react-native-raw-bottom-sheet';
 import images from '@/constants/images';
-import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
-import Constants from 'expo-constants';
+import { router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import RBSheet from 'react-native-raw-bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const Register = () => {
-    const API_BASE_URL = 'http://192.168.1.23:3000/api';
+    const API_BASE_URL = 'http://192.168.1.27:3000/api';
     const insets = useSafeAreaInsets();
 
     // State management

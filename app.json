@@ -48,7 +48,7 @@
       "eas": {
         "projectId": "11834245-fd6c-4f9b-b94f-917ade2267d1"
       },
-      "apiBaseUrl": "http://192.168.1.159:3000/api"
+      "apiBaseUrl": "http://192.168.1.27:3000/api"
     }
   }
 }

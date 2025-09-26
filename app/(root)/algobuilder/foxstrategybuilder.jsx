@@ -259,11 +259,6 @@ const FoxStrategyBuilder = () => {
 
     return (
         <View style={styles.container}>
-            <View style={styles.headerbox}>
-                <HomeHeader />
-            </View>
-
-            <AlgoNavigation />
 
             <FlatList
                 data={sections}
@@ -364,7 +359,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: width * 0.04,
     },
     scrollerbox: {
-        paddingHorizontal: width * 0.04,
+        // paddingHorizontal: width * 0.04,
         marginBottom: height * 0.03,
         paddingBottom: height * 0.025,
     },

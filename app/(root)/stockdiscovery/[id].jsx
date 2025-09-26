@@ -8,11 +8,11 @@ import RBSheet from 'react-native-raw-bottom-sheet';
 
 // Move stockData outside component to prevent re-creation
 const stockData = [
-    { id: '1', title: 'RELIANCE', company: 'Reliance Industries Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)', peRatio: 24.56 },
-    { id: '2', title: 'TCS', company: 'Tata Consultancy Services Ltd', value: '4056.90', volume: '987,654', mcap: '14.8L Cr', change: '+15.20 (0.85%)', peRatio: 28.90 },
-    { id: '3', title: 'HDFCBANK', company: 'HDFC Bank Ltd', value: '1650.30', volume: '2,345,678', mcap: '12.5L Cr', change: '-10.50 (0.60%)', peRatio: 22.30 },
-    { id: '4', title: 'INFY', company: 'Infosys Ltd', value: '1850.45', volume: '1,567,890', mcap: '10.9L Cr', change: '+8.90 (0.50%)', peRatio: 25.75 },
-    { id: '5', title: 'ICICIBANK', company: 'ICICI Bank Ltd', value: '1250.60', volume: '1,890,123', mcap: '11.2L Cr', change: '+12.30 (0.95%)', peRatio: 20.15 },
+    { id: '1', title: 'RELIANCE', company: 'Reliance Industries Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
+    { id: '2', title: 'TCS', company: 'Tata Consultancy Services Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
+    { id: '3', title: 'HDFCBANK', company: 'HDFC Bank Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
+    { id: '4', title: 'INFY', company: 'Infosys Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
+    { id: '5', title: 'ICICIBANK', company: 'ICICI Bank Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
 ];
 
 const StockDetails = () => {

@@ -6,7 +6,7 @@ import React from 'react'
 const GraphTab = () => {
     return (
         <View>
-            <Text>GraphTab</Text>
+            <Text className="text-white">GraphTab</Text>
         </View>
     )
 }

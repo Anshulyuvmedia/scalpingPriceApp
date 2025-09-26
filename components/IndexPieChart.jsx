@@ -7,11 +7,14 @@ import LinearGradient from 'react-native-linear-gradient';
 const screenWidth = Dimensions.get('window').width;
 
 const IndexPieChart = () => {
+    const [selectedIndex, setSelectedIndex] = useState('NIFTY 50');
+    const [selectedSegment, setSelectedSegment] = useState(null);
+
     const indicesData = {
         'NIFTY 50': {
             data: [
                 { name: 'Others', value: 52.14, color: '#34C759' },
-                { name: 'HDFCLIFE', value: -12.82, color: '#FF3B30' },
+                { name: 'HDFCLIFE', value: 12.82, color: '#FF3B30' },
                 { name: 'JSWSTEEL', value: 12.41, color: '#28A745' },
                 { name: 'SHRIRAMFIN', value: 12.04, color: '#20C997' },
                 { name: 'ADANIPORTS', value: 10.32, color: '#17A2B8' },
@@ -70,9 +73,6 @@ const IndexPieChart = () => {
         },
     };
 
-    const [selectedIndex, setSelectedIndex] = useState('NIFTY 50');
-    const [selectedSegment, setSelectedSegment] = useState(null);
-
     const chartData = indicesData[selectedIndex].data;
     const changeText = indicesData[selectedIndex].change;
 
@@ -91,19 +91,17 @@ const IndexPieChart = () => {
         color: item.color,
         name: item.name,
         focused: selectedSegment === item.name,
-        text: `${item.name}\n${item.value}%`,
+        text: `${item.name}\n${item.value.toFixed(2)}%`,
         textColor: '#FFF',
-        textSize: 12,
-        font: 'Questrial-Regular',
+        textSize: 14,
+        fontFamily: 'Questrial-Regular',
         percentageColor: item.value >= 0 ? '#34C759' : '#FF3B30',
         labelPosition: 'outward',
     }));
 
-    // Log pieData to debug
-    // console.log('Pie Data:', pieData);
-
     const handleSegmentPress = (item) => {
-        setSelectedSegment(item.name);
+        setSelectedSegment(item.name === selectedSegment ? null : item.name);
+        // console.log(`Segment pressed: ${item.name}, Value: ${item.value}%`);
     };
 
     return (
@@ -144,56 +142,70 @@ const IndexPieChart = () => {
                     <PieChart
                         data={pieData}
                         donut
-                        radius={120} // Reduced to give more space for labels
-                        innerRadius={60}
-                        center={[screenWidth / 2 - 20, 150]}
+                        radius={150} // Reduced further to force outward labels
+                        innerRadius={50}
+                        center={[screenWidth / 2, 250]}
                         innerCircleColor="#121212"
                         focusOnPress
                         sectionAutoFocus
                         onPress={handleSegmentPress}
-                        focusedRadius={10}
-                        focusedInnerRadius={10}
-                        extraRadius={20} // Increased for outward labels
-                        paddingHorizontal={60} // Increased padding
-                        paddingVertical={60} // Increased padding
-                        showValuesAsLabels
+                        focusedRadius={5}
+                        focusedInnerRadius={5}
+                        extraRadius={30} // Significantly increased for outward placement
+                        paddingHorizontal={20} // Increased padding
+                        paddingVertical={20}
+                        showValuesAsLabels={true}
                         labelsPosition="outward"
-                        showTextBackground
+                        showText={true}
+                        showTextBackground={true}
                         textBackgroundColor="#333"
-                        textBackgroundRadius={12}
-                        showLabelLine
+                        textBackgroundRadius={1}
+                        showLabelLine={true}
                         labelLineColor="#FFF"
                         labelLineConfig={{
-                            length: 30, // Increased to position labels further out
+                            length: 30, // Increased length for outward reach
                             tailLength: 10,
-                            color: '#fff',
-                            thickness: 2, // Increased for visibility
+                            color: '#FFF',
+                            thickness: 1,
                             avoidOverlappingOfLabels: true,
                         }}
                         initialAngle={0}
-                        style={{ height: 500 }} // Increased height for labels
-                        centerLabelComponent={() => {
-                            return (
-                                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                                    <Text
-                                        style={{ fontSize: 18, color: 'white', fontFamily: 'Questrial-Regular', fontWeight: 'bold', }}>
-                                        {selectedIndex}
-                                    </Text>
-                                    <Text style={{ fontSize: 14, color: 'white', fontFamily: 'Questrial-Regular' }}>
-                                        {changeText}
-                                    </Text>
-                                </View>
-                            );
-                        }}
-                        // Temporarily removed textComponent to test default labels
+                        style={{ height: 450, width: screenWidth }} // Increased height
+                        centerLabelComponent={() => (
+                            <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                <Text style={{ fontSize: 16, color: 'white', fontFamily: 'Questrial-Regular', fontWeight: 'bold' }}>
+                                    {selectedIndex}
+                                </Text>
+                                <Text style={{ fontSize: 12, color: 'white', fontFamily: 'Questrial-Regular' }}>
+                                    {changeText}
+                                </Text>
+                            </View>
+                        )}
                         textComponent={(item) => {
                             const [name, percentage] = item.text.split('\n');
                             return (
-                                <View style={{ alignItems: 'center' }}>
-                                    <Text style={{ fontSize: 12, color: '#FFF', fontFamily: 'Questrial-Regular' }}>
-                                        {name}
+                                <View style={{ alignItems: 'center', paddingHorizontal: 5 }}>
+                                    <Text
+                                        numberOfLines={1}
+                                        ellipsizeMode="tail"
+                                        style={{
+                                            fontSize: 14,
+                                            color: '#FFF',
+                                            fontFamily: 'Questrial-Regular',
+                                            textAlign: 'center',
+                                            maxWidth: 60, // Reduced maxWidth to minimize overlap
+                                        }}
+                                    >
+                                        {name.length > 8 ? `${name.substring(0, 8)}...` : name}
                                     </Text>
-                                    <Text style={{ fontSize: 12, color: item.percentageColor, fontFamily: 'Questrial-Regular' }}>
+                                    <Text
+                                        style={{
+                                            fontSize: 14,
+                                            color: item.percentageColor,
+                                            fontFamily: 'Questrial-Regular',
+                                            textAlign: 'center',
+                                        }}
+                                    >
                                         {percentage}
                                     </Text>
                                 </View>
@@ -211,24 +223,24 @@ export default IndexPieChart;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#000',
     },
     chartSection: {
-        alignItems: 'flex-end',
-        marginTop: 5,
-        width: '100%', // Ensure full width
+        alignItems: 'center',
+        marginTop: 10,
+        width: '100%',
     },
     gradientBorder: {
         borderRadius: 100,
         padding: 1,
         marginHorizontal: 15,
-        marginBottom: 0,
+        marginBottom: 10,
     },
     dropdownContainer: {
-        width: 200,
+        width: 180,
         paddingHorizontal: 10,
         backgroundColor: '#000',
         borderRadius: 100,
-        display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
     },
@@ -252,6 +264,7 @@ const styles = StyleSheet.create({
     },
     chartWrapper: {
         alignItems: 'center',
-        width: '100%', // Ensure full width
+        width: '100%',
+        marginTop: 10,
     },
 });

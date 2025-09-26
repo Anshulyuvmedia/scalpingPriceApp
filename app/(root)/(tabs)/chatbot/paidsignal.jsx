@@ -7,8 +7,6 @@ import IndexTab from './tabview/IndexTab';
 import StocksTab from './tabview/StocksTab';
 import FutureTab from './tabview/FutureTab';
 import GraphTab from './tabview/GraphTab';
-import TabNavigationHeader from '@/components/TabNavigationHeader';
-import HomeHeader from '@/components/HomeHeader';
 
 const initialLayout = { width: Dimensions.get('window').width - 20 }; // Account for paddingHorizontal: 10
 
@@ -120,10 +118,6 @@ const PaidSignal = () => {
 
     return (
         <View style={styles.container}>
-            {/* Header */}
-            <HomeHeader page={'chatbot'} title={'Paid Signal'} action={'refresh'} />
-
-            <TabNavigationHeader activeTab="PaidSignal" />
 
             <View style={styles.tabViewContainer}>
                 <TabView
@@ -144,8 +138,7 @@ export default PaidSignal;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 10,
-        paddingBottom: 0,
+        marginTop: 10,
         backgroundColor: '#000',
     },
     gradientBoxBorder: {

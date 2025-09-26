@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Video } from 'expo-video';
 import { Component, useEffect, useRef, useState } from 'react';
@@ -36,6 +35,7 @@ const VideosPlayers = () => {
     const { courseId, videoId } = useLocalSearchParams();
     const [course, setCourse] = useState(null);
     const [selectedVideo, setSelectedVideo] = useState(null);
+    const [selectedVideoIndices, setSelectedVideoIndices] = useState(null); // Store moduleIndex and videoIndex
     const [videoStatus, setVideoStatus] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -43,10 +43,8 @@ const VideosPlayers = () => {
     const [playing, setPlaying] = useState(false);
     const videoRef = useRef(null);
 
-    // Get API base URL from app.json with fallback
-    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000/api';
+    const API_BASE_URL = 'http://192.168.1.27:3000/api';
 
-    // Utility function to detect video source type
     const getVideoSourceType = (url) => {
         if (!url) return 'unknown';
         if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
@@ -55,33 +53,24 @@ const VideosPlayers = () => {
         return 'unknown';
     };
 
-    // Extract YouTube video ID from URL
     const getYouTubeVideoId = (url) => {
         const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
         const match = url.match(regex);
         return match ? match[1] : null;
     };
 
-    // Function to fetch course and video data
     const fetchCourseAndVideo = async () => {
-        if (!courseId) {
-            console.error('No courseId provided');
-            setError('No course selected. Please choose a course.');
+        if (!courseId || !videoId || !API_BASE_URL) {
+            console.error('Missing parameters or configuration:', { courseId, videoId, API_BASE_URL });
+            setError(
+                !courseId ? 'No course selected.' :
+                !videoId ? 'No video selected.' :
+                'API base URL is not defined.'
+            );
             setIsLoading(false);
             return;
         }
-        if (!videoId) {
-            console.error('No videoId provided');
-            setError('No video selected. Please choose a video.');
-            setIsLoading(false);
-            return;
-        }
-        if (!API_BASE_URL) {
-            console.error('API base URL is not defined');
-            setError('API base URL is not defined. Please check app.json configuration.');
-            setIsLoading(false);
-            return;
-        }
+
         setError(null);
         setIsLoading(true);
         try {
@@ -95,18 +84,47 @@ const VideosPlayers = () => {
                 return;
             }
             // console.log('Selected Course:', selectedCourse);
+            // console.log('Modules:', selectedCourse.modules);
             setCourse(selectedCourse);
-            const allVideos = selectedCourse.modules.flatMap(module => module.videos);
-            const video = allVideos.find(v => v.videoUrl === videoId);
-            if (!video) {
-                console.error('Video not found for URL:', videoId);
-                setError('Video not found. Please check the video URL.');
+
+            const [moduleIndex, videoIndex] = videoId.split('-').map(Number);
+            if (isNaN(moduleIndex) || isNaN(videoIndex)) {
+                console.error('Invalid videoId format:', videoId);
+                setError('Invalid video ID format. Please use moduleIndex-videoIndex (e.g., 0-0).');
                 setIsLoading(false);
                 return;
             }
-            // console.log('Selected Video:', video);
-            setSelectedVideo(video);
-            const initialStatus = allVideos.reduce((acc, v) => ({ ...acc, [v.videoUrl]: false }), {});
+
+            const selectedModule = selectedCourse.modules[moduleIndex];
+            // console.log('Selected Module:', selectedModule);
+            if (!selectedModule || !selectedModule.videos[videoIndex]) {
+                console.error('Video not found for ID:', videoId);
+                if (selectedCourse.modules.length > 0 && selectedCourse.modules[0].videos.length > 0) {
+                    const fallbackVideo = selectedCourse.modules[0].videos[0];
+                    // console.log('Falling back to first video:', fallbackVideo);
+                    setSelectedVideo(fallbackVideo);
+                    setSelectedVideoIndices({ moduleIndex: 0, videoIndex: 0 });
+                } else {
+                    setError('No videos available in this course.');
+                    setIsLoading(false);
+                    return;
+                }
+            } else {
+                const video = selectedModule.videos[videoIndex];
+                // console.log('Selected Video:', video);
+                setSelectedVideo(video);
+                setSelectedVideoIndices({ moduleIndex, videoIndex });
+            }
+
+            const allVideos = selectedCourse.modules.flatMap((module, mIndex) =>
+                module.videos.map((video, vIndex) => ({
+                    ...video,
+                    moduleIndex: mIndex,
+                    videoIndex: vIndex,
+                }))
+            );
+            // console.log('All Videos:', allVideos);
+            const initialStatus = allVideos.reduce((acc, v) => ({ ...acc, [`${v.moduleIndex}-${v.videoIndex}`]: false }), {});
             setVideoStatus(initialStatus);
         } catch (err) {
             console.error('Fetch Error:', err.message, err.code);
@@ -116,80 +134,63 @@ const VideosPlayers = () => {
         }
     };
 
-    // Initial fetch
     useEffect(() => {
-        // console.log('VideosPlayers - Route params:', { courseId, videoId });
-        // console.log('VideosPlayers - API_BASE_URL:', API_BASE_URL);
+        // console.log('Params:', { courseId, videoId });
         fetchCourseAndVideo();
     }, [courseId, videoId]);
 
-    // Handle pull-to-refresh
     const onRefresh = async () => {
-        if (!courseId || !videoId || !API_BASE_URL) {
-            setError(!courseId ? 'No course selected.' : !videoId ? 'No video selected.' : 'API base URL is not defined.');
-            setRefreshing(false);
-            return;
-        }
         setRefreshing(true);
-        try {
-            const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
-            // console.log('Refresh API Response:', response.data);
-            const selectedCourse = response.data.find(course => course.id === courseId && course.isPublished);
-            if (!selectedCourse) {
-                setError('Course not found. Please check the course ID.');
-                setRefreshing(false);
-                return;
-            }
-            setCourse(selectedCourse);
-            const allVideos = selectedCourse.modules.flatMap(module => module.videos);
-            const video = allVideos.find(v => v.videoUrl === videoId);
-            if (!video) {
-                setError('Video not found. Please check the video URL.');
-                setRefreshing(false);
-                return;
-            }
-            setSelectedVideo(video);
-            const initialStatus = allVideos.reduce((acc, v) => ({ ...acc, [v.videoUrl]: false }), {});
-            setVideoStatus(initialStatus);
-            setError(null);
-        } catch (err) {
-            console.error('Refresh Error:', err.message, err.code);
-            setError('Failed to refresh course or video. Please try again.');
-        } finally {
-            setRefreshing(false);
-        }
+        await fetchCourseAndVideo();
+        setRefreshing(false);
     };
 
     const handleVideoEnd = () => {
-        if (selectedVideo) {
-            setVideoStatus(prev => ({ ...prev, [selectedVideo.videoUrl]: true }));
-            console.log(`Video ${selectedVideo.title} marked as complete`);
+        if (selectedVideo && selectedVideoIndices) {
+            setVideoStatus(prev => ({
+                ...prev,
+                [`${selectedVideoIndices.moduleIndex}-${selectedVideoIndices.videoIndex}`]: true,
+            }));
+            // console.log(`Video ${selectedVideo.title} marked as complete`);
         }
     };
 
-    const handleVideoSelect = (video) => {
-        console.log('Selecting video:', video.title, video.videoUrl);
+    const handleVideoSelect = (video, moduleIndex, videoIndex) => {
+        // console.log('Selecting video:', video.title, video.videoUrl, { moduleIndex, videoIndex });
         setSelectedVideo(video);
+        setSelectedVideoIndices({ moduleIndex, videoIndex });
         setPlaying(false);
+        router.push({
+            pathname: './videosplayers',
+            params: { courseId, videoId: `${moduleIndex}-${videoIndex}` },
+        });
     };
 
-    const renderVideoItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.videoItem}
-            onPress={() => handleVideoSelect(item)}
-            disabled={item.videoUrl === selectedVideo?.videoUrl}
-        >
-            <View style={styles.videoItemContent}>
-                <Ionicons
-                    name={videoStatus[item.videoUrl] ? 'checkmark-circle' : 'play-circle-outline'}
-                    size={20}
-                    color={videoStatus[item.videoUrl] ? '#00FF00' : '#2B6BFD'}
-                />
-                <Text style={styles.videoTitle}>{item.title}</Text>
-                <Text style={styles.videoDuration}>{item.duration}</Text>
-            </View>
-        </TouchableOpacity>
-    );
+    const renderVideoItem = ({ item }) => {
+        const { moduleIndex, videoIndex } = item;
+        // console.log('Rendering video item:', { title: item.title, moduleIndex, videoIndex });
+        return (
+            <TouchableOpacity
+                style={styles.videoItem}
+                onPress={() => handleVideoSelect(item, moduleIndex, videoIndex)}
+                disabled={
+                    selectedVideoIndices &&
+                    moduleIndex === selectedVideoIndices.moduleIndex &&
+                    videoIndex === selectedVideoIndices.videoIndex
+                }
+            >
+                <View style={styles.videoItemContent}>
+                    <Ionicons
+                        name={videoStatus[`${moduleIndex}-${videoIndex}`] ? 'checkmark-circle' : 'play-circle-outline'}
+                        size={20}
+                        color={videoStatus[`${moduleIndex}-${videoIndex}`] ? '#00FF00' : '#2B6BFD'}
+                    />
+                    <Text style={styles.videoTitle}>{item.title}</Text>
+                    <Text style={styles.videoDuration}>{item.duration}</Text>
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     if (isLoading && !refreshing) {
         return (
@@ -228,10 +229,33 @@ const VideosPlayers = () => {
     }
 
     const videoSourceType = getVideoSourceType(selectedVideo.videoUrl);
-    // console.log('Rendering player for video:', selectedVideo.videoUrl, 'Type:', videoSourceType);
+    const otherVideos = course?.modules
+        .flatMap((module, mIndex) =>
+            module.videos.map((video, vIndex) => ({
+                ...video,
+                moduleIndex: mIndex,
+                videoIndex: vIndex,
+            }))
+        )
+        .filter(
+            v =>
+                !(
+                    selectedVideoIndices &&
+                    v.moduleIndex === selectedVideoIndices.moduleIndex &&
+                    v.videoIndex === selectedVideoIndices.videoIndex
+                )
+        ) || [];
+    console.log('Other Videos for FlatList:', otherVideos);
 
     return (
         <ErrorBoundary>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="arrow-back-outline" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+                <Text style={styles.timeText}>{course.courseName}</Text>
+                <Text style={styles.timeText}></Text>
+            </View>
             <LinearGradient colors={['#000', '#000']} style={styles.container}>
                 <View style={styles.content}>
                     {videoSourceType === 'file' && (
@@ -288,21 +312,25 @@ const VideosPlayers = () => {
 
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Other Videos</Text>
-                        <FlatList
-                            data={course.modules.flatMap(module => module.videos).filter(v => v.videoUrl !== selectedVideo.videoUrl)}
-                            renderItem={renderVideoItem}
-                            keyExtractor={(item) => item.videoUrl}
-                            showsVerticalScrollIndicator={false}
-                            contentContainerStyle={styles.videoList}
-                            refreshControl={
-                                <RefreshControl
-                                    refreshing={refreshing}
-                                    onRefresh={onRefresh}
-                                    colors={['#2B6BFD']}
-                                    tintColor="#2B6BFD"
-                                />
-                            }
-                        />
+                        {otherVideos.length === 0 ? (
+                            <Text style={styles.errorText}>No other videos available.</Text>
+                        ) : (
+                            <FlatList
+                                data={otherVideos}
+                                renderItem={renderVideoItem}
+                                keyExtractor={(item) => `${item.moduleIndex}-${item.videoIndex}`}
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={styles.videoList}
+                                refreshControl={
+                                    <RefreshControl
+                                        refreshing={refreshing}
+                                        onRefresh={onRefresh}
+                                        colors={['#2B6BFD']}
+                                        tintColor="#2B6BFD"
+                                    />
+                                }
+                            />
+                        )}
                     </View>
                 </View>
             </LinearGradient>
@@ -315,6 +343,24 @@ export default VideosPlayers;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#000',
+        padding: 10,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#000',
+        paddingInline: 16,
+    },
+    backButton: {
+        padding: 8,
+    },
+    timeText: {
+        color: '#FFFFFF',
+        fontSize: 20,
+        fontWeight: 'bold',
+        fontFamily: 'Questrial-Regular',
     },
     content: {
         padding: 16,

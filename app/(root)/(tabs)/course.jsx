@@ -2,7 +2,6 @@ import HomeHeader from '@/components/HomeHeader';
 import images from '@/constants/images';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, FlatList, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -28,7 +27,7 @@ const Course = () => {
     const screenWidth = Dimensions.get('window').width;
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000/api';
+    const API_BASE_URL = 'http://192.168.1.27:3000/api';
 
     // Function to fetch courses
     const fetchCourses = useCallback(async () => {
@@ -43,7 +42,7 @@ const Course = () => {
             const response = await axios.get(`${API_BASE_URL}/TdCourses`, { timeout: 10000 });
             const publishedCourses = response.data.filter(course => course.isPublished);
             // console.log('API Response:', response.data);
-            console.log('Published Courses:', publishedCourses);
+            // console.log('Published Courses:', publishedCourses);
             setCourses(publishedCourses);
         } catch (err) {
             console.error('Fetch Error:', err.message, err.code);

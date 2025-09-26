@@ -1,16 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import moment from 'moment';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Notifications = () => {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+
     const [notifications, setNotifications] = useState([]);
     const [filteredNotifications, setFilteredNotifications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +25,7 @@ const Notifications = () => {
     const [selectedNotification, setSelectedNotification] = useState(null);
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000/api';
+    const API_BASE_URL = 'http://192.168.1.27:3000/api';
 
     // Load read status from AsyncStorage
     const loadReadStatus = useCallback(async () => {
@@ -48,8 +50,8 @@ const Notifications = () => {
 
     // Debug logging
     useEffect(() => {
-        console.log('Notifications - Constants.expoConfig', Constants.expoConfig);
-        console.log('Notifications - API_BASE_URL', API_BASE_URL);
+        // console.log('Notifications - Constants.expoConfig', Constants.expoConfig);
+        // console.log('Notifications - API_BASE_URL', API_BASE_URL);
         loadReadStatus();
     }, [loadReadStatus]);
 
@@ -65,7 +67,7 @@ const Notifications = () => {
         setIsLoading(true);
         try {
             const response = await axios.get(`${API_BASE_URL}/notifications`, { timeout: 10000 });
-            console.log('Notifications API Response:', response.data);
+            // console.log('Notifications API Response:', response.data);
             if (Array.isArray(response.data)) {
                 const updatedNotifications = response.data.map(notif => ({
                     ...notif,
@@ -309,14 +311,15 @@ const Notifications = () => {
             )}
             <RBSheet
                 ref={rbSheetRef}
-                height={Platform.OS === 'ios' ? 400 : 350}
+                height={350}
                 openDuration={250}
                 customStyles={{
                     container: {
-                        backgroundColor: '#000',
+                        backgroundColor: '#28282B',
                         borderTopLeftRadius: 20,
                         borderTopRightRadius: 20,
-                        padding: 16,
+                        padding: 10,
+                        paddingBottom: insets.bottom,
                     },
                 }}
             >
@@ -344,6 +347,7 @@ export default Notifications;
 
 const styles = StyleSheet.create({
     container: {
+        backgroundColor: '#000',
         flex: 1,
     },
     header: {
@@ -351,8 +355,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#3D4050',
     },
     backButton: {
         padding: 8,
@@ -425,7 +427,7 @@ const styles = StyleSheet.create({
     notificationContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#000',
+        backgroundColor: '#28282B',
         borderRadius: 12,
         padding: 16,
     },
@@ -530,6 +532,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 20,
         borderRadius: 10,
+        marginTop: 'auto',
         alignItems: 'center',
     },
     sheetCloseText: {

@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
         padding: 1,
     },
     scrollContent: {
-        padding: 10,
+        // padding: 10,
         paddingBottom: 24,
     },
 });
