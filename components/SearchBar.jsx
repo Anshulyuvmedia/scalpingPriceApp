@@ -1,61 +1,70 @@
 // components/SearchBar.jsx
-import { StyleSheet, View, TextInput } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity } from 'react-native';
 import React from 'react';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import LinearGradient from 'react-native-linear-gradient';
+import { useRouter, useNavigation } from 'expo-router'; // Import useNavigation
 
 const SearchBar = ({ color }) => {
+    const router = useRouter();
     return (
         <View>
             {/* Outer LinearGradient to create the gradient border */}
             {color === 'transparent' ?
-                <LinearGradient
-                    colors={['#D9C4FC', '#D49DEA']} // Gradient from black (left) to white (right)
-                    start={{ x: 1, y: 0 }} // Start at the left
-                    end={{ x: 1, y: 1 }} // End at the right
-                    style={styles.gradientBorder}
-                >
+                <TouchableOpacity onPress={() => router.push('/stockdiscovery/searchdiscovery')}>
                     <LinearGradient
-                        colors={['#824ce0', '#965fe2']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 0, y: 1 }}
-                        style={styles.gradientBox}
+                        colors={['#D9C4FC', '#D49DEA']} // Gradient from black (left) to white (right)
+                        start={{ x: 1, y: 0 }} // Start at the left
+                        end={{ x: 1, y: 1 }} // End at the right
+                        style={styles.gradientBorder}
                     >
-                        <View style={styles.innerContainer}>
-                            <Ionicons name="search-outline" size={22} color="#fff" />
-                            <TextInput
-                                placeholder="Search for 'Nestle'"
-                                placeholderTextColor="#fff"
-                                style={[styles.textInput, {
-                                    color: '#fff',
-                                }]}
-                            />
-                        </View>
+                        <LinearGradient
+                            colors={['#824ce0', '#965fe2']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 0, y: 1 }}
+                            style={styles.gradientBox}
+                        >
+                            <View style={styles.innerContainer}>
+                                <Ionicons name="search-outline" size={22} color="#fff" />
+                                <TextInput
+                                    placeholder="Search for 'Nestle'"
+                                    placeholderTextColor="#fff"
+                                    editable={false}
+                                    style={[styles.textInput, {
+                                        color: '#fff',
+                                    }]}
+                                />
+                            </View>
+                        </LinearGradient>
                     </LinearGradient>
-                </LinearGradient>
+                </TouchableOpacity>
+
                 :
-                <LinearGradient
-                    colors={['#AEAED4', '#444']}
-                    start={{ x: 1, y: 0 }}
-                    end={{ x: 0, y: 0 }}
-                    style={styles.gradientBorder}
-                >
+                <TouchableOpacity onPress={() => router.push('/stockdiscovery/searchdiscovery')}>
                     <LinearGradient
-                        colors={['#824ce0', '#965fe2']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 0, y: 1 }}
-                        style={styles.gradientBox}
+                        colors={['#AEAED4', '#444']}
+                        start={{ x: 1, y: 0 }}
+                        end={{ x: 0, y: 0 }}
+                        style={styles.gradientBorder}
                     >
-                        <View style={[styles.innerContainer, { backgroundColor: '#000' }]}>
-                            <Ionicons name="search-outline" size={22} color="#AFAFAF" />
-                            <TextInput
-                                placeholder="Search for 'Nestle'"
-                                placeholderTextColor="#888"
-                                style={styles.textInput}
-                            />
-                        </View>
+                        <LinearGradient
+                            colors={['#824ce0', '#965fe2']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 0, y: 1 }}
+                            style={styles.gradientBox}
+                        >
+                            <View style={[styles.innerContainer, { backgroundColor: '#000' }]}>
+                                <Ionicons name="search-outline" size={22} color="#AFAFAF" />
+                                <TextInput
+                                    placeholder="Search for 'stock'"
+                                    placeholderTextColor="#888"
+                                    style={styles.textInput}
+                                    editable={false}
+                                />
+                            </View>
+                        </LinearGradient>
                     </LinearGradient>
-                </LinearGradient>
+                </TouchableOpacity>
             }
         </View>
     );

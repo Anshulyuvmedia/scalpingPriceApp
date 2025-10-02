@@ -140,7 +140,7 @@ const SearchDiscovery = () => {
 
     return (
         <View style={styles.container}>
-            <HomeHeader page={'chatbot'} title={'NSE'} />
+            <HomeHeader page={'chatbot'} title={'Stock Search'} />
 
             {/* NIFTY 50 Section (2x2 Grid) */}
             <View style={styles.niftyGrid}>

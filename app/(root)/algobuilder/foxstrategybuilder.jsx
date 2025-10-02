@@ -6,10 +6,13 @@ import { Feather } from '@expo/vector-icons';
 import AlgoNavigation from '@/components/AlgoNavigation';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
 const FoxStrategyBuilder = () => {
+    const insets = useSafeAreaInsets();
+
     const [strategyName, setStrategyName] = useState('');
     const [riskLevel, setRiskLevel] = useState(50);
     const [indicators, setIndicators] = useState({
@@ -270,6 +273,7 @@ const FoxStrategyBuilder = () => {
 
             <RBSheet
                 ref={refRBSheet}
+                height={300 + insets.bottom}
                 closeOnDragDown={true}
                 closeOnPressMask={true}
                 customStyles={{

@@ -1,32 +1,30 @@
-// app/(root)/(tabs)/chatbot/paid-signal.jsx
-import { StyleSheet, Text, View, Dimensions, Animated } from 'react-native';
+// app/(root)/(tabs)/chatbot/PaidSignal.jsx
+import { StyleSheet, Text, View, Dimensions, Animated, TouchableOpacity } from 'react-native';
 import React, { useState } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import IndexTab from './tabview/IndexTab';
 import StocksTab from './tabview/StocksTab';
 import FutureTab from './tabview/FutureTab';
-import GraphTab from './tabview/GraphTab';
+import useSignals from '../../../../utils/useSignals';
 
-const initialLayout = { width: Dimensions.get('window').width - 20 }; // Account for paddingHorizontal: 10
+const initialLayout = { width: Dimensions.get('window').width - 20 };
 
 const PaidSignal = () => {
     const [index, setIndex] = useState(0);
+    const { signals, loading, error, refresh } = useSignals('Paid');
 
     const [routes] = useState([
         { key: 'index', title: 'Index' },
         { key: 'stocks', title: 'Stocks' },
         { key: 'futures', title: 'Futures' },
-        { key: 'graphs', title: 'Graphs' },
     ]);
 
     const renderScene = SceneMap({
-        index: IndexTab,
-        stocks: StocksTab,
-        futures: FutureTab,
-        graphs: GraphTab,
+        index: () => <IndexTab signals={signals.index} loading={loading} error={error} onRefresh={refresh} />,
+        stocks: () => <StocksTab signals={signals.stocks} loading={loading} error={error} onRefresh={refresh} />,
+        futures: () => <FutureTab signals={signals.futures} loading={loading} error={error} onRefresh={refresh} />,
     });
-
 
     const renderTabBar = (props) => {
         const { navigationState, position } = props;
@@ -44,7 +42,7 @@ const PaidSignal = () => {
                     scrollEnabled
                     indicatorStyle={styles.tabIndicator}
                     style={styles.tabBar}
-                    renderTab={({ route, focused }) => (
+                    renderLabel={({ route, focused }) => (
                         <View style={styles.tabContainer}>
                             {focused ? (
                                 <LinearGradient
@@ -53,9 +51,7 @@ const PaidSignal = () => {
                                     end={{ x: 1, y: 1 }}
                                     style={styles.activeTabGradient}
                                 >
-                                    <Text style={[styles.tabLabel, styles.activeTabLabel]}>
-                                        {route.title}
-                                    </Text>
+                                    <Text style={[styles.tabLabel, styles.activeTabLabel]}>{route.title}</Text>
                                 </LinearGradient>
                             ) : (
                                 <View style={styles.inactiveTab}>
@@ -71,9 +67,7 @@ const PaidSignal = () => {
 
                         const translateX = position.interpolate({
                             inputRange,
-                            outputRange: tabWidths.map((_, i) => {
-                                return tabWidths.slice(0, i).reduce((sum, w) => sum + w, 0);
-                            }),
+                            outputRange: tabWidths.map((_, i) => tabWidths.slice(0, i).reduce((sum, w) => sum + w, 0)),
                         });
 
                         const scaleX = position.interpolate({
@@ -81,24 +75,13 @@ const PaidSignal = () => {
                             outputRange: tabWidths.map((width) => width / maxTabWidth),
                         });
 
-                        const adjustedTranslateX = Animated.add(
-                            translateX,
-                            Animated.multiply(
-                                Animated.subtract(1, scaleX),
-                                maxTabWidth / 2
-                            )
-                        );
-
                         return (
                             <Animated.View
                                 style={[
                                     styles.pillIndicator,
                                     {
                                         width: maxTabWidth,
-                                        transform: [
-                                            { translateX: adjustedTranslateX },
-                                            { scaleX },
-                                        ],
+                                        transform: [{ translateX }, { scaleX }],
                                     },
                                 ]}
                             >
@@ -118,7 +101,14 @@ const PaidSignal = () => {
 
     return (
         <View style={styles.container}>
-
+            {error && (
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Error: {error}</Text>
+                    <TouchableOpacity onPress={refresh} style={styles.retryButton}>
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
             <View style={styles.tabViewContainer}>
                 <TabView
                     navigationState={{ index, routes }}
@@ -193,5 +183,29 @@ const styles = StyleSheet.create({
     activeTabLabel: {
         color: '#FFF',
         fontWeight: 'bold',
+    },
+    errorContainer: {
+        backgroundColor: '#FF4D4D',
+        padding: 10,
+        marginHorizontal: 10,
+        borderRadius: 10,
+        marginBottom: 10,
+    },
+    errorText: {
+        color: '#FFF',
+        fontSize: 16,
+        textAlign: 'center',
+    },
+    retryButton: {
+        backgroundColor: '#723CDF',
+        padding: 10,
+        borderRadius: 10,
+        marginTop: 10,
+        alignItems: 'center',
+    },
+    retryButtonText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontFamily: 'Questrial-Regular',
     },
 });

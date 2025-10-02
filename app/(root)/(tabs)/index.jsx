@@ -6,18 +6,47 @@ import IndexPieChart from '@/components/IndexPieChart';
 import HomeHeader from '@/components/HomeHeader';
 import { router } from 'expo-router';
 import CallPut from '../../../components/CallPut';
+import { useIndex } from '@/contexts/IndexContext'; // Simplified import
+import React, { useState, useEffect } from 'react';
 
 const Index = () => {
+  const { indicesData, loading, error } = useIndex();
+  const [niftyValue, setNiftyValue] = useState('18,245.32');
+  const [sensexValue, setSensexValue] = useState('61,232.45');
+  const [niftyChange, setNiftyChange] = useState('1.2%');
+  const [sensexChange, setSensexChange] = useState('0.8%');
 
+  useEffect(() => {
+    if (!loading && !error && indicesData) {
+      const niftyData = indicesData['NIFTY 50'];
+      const sensexData = indicesData['SENSEX'];
+      // console.log('Nifty Data:', niftyData); // Debug log
+      // console.log('Sensex Data:', sensexData); // Debug log
+
+      if (niftyData) {
+        const changeMatch = niftyData.change.match(/(-?\d+)/); // Extract numeric part
+        const changeValue = changeMatch ? parseInt(changeMatch[0]) : 0;
+        const baseValue = niftyData.baseValue || 18500; // Fallback to default
+        setNiftyValue((baseValue + changeValue).toLocaleString());
+        setNiftyChange(niftyData.change || '0 pts');
+      }
+      if (sensexData) {
+        const changeMatch = sensexData.change.match(/(-?\d+)/); // Extract numeric part
+        const changeValue = changeMatch ? parseInt(changeMatch[0]) : 0;
+        const baseValue = sensexData.baseValue || 61500; // Fallback to default
+        setSensexValue((baseValue + changeValue).toLocaleString());
+        setSensexChange(sensexData.change || '0 pts');
+      }
+    }
+  }, [indicesData, loading, error]);
+
+  if (loading) return <View><Text style={{ color: '#FFF' }}>Loading...</Text></View>;
+  if (error) return <View><Text style={{ color: '#FFF' }}>Error: {error}</Text></View>;
 
   return (
     <View style={styles.container}>
       <HomeHeader page={'home'} />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
-
-
+      <ScrollView showsVerticalScrollIndicator={false}>
         {/* News and FX Signal Buttons */}
         <View style={styles.buttonRow}>
           <LinearGradient
@@ -39,7 +68,7 @@ const Index = () => {
             end={{ x: 0, y: 0 }}
             style={styles.gradientBorder}
           >
-            <TouchableOpacity style={styles.button} onPress={() => router.push('../tradealertscreens/tradealerts')} >
+            <TouchableOpacity style={styles.button} onPress={() => router.push('../tradealertscreens/tradealerts')}>
               <FontAwesome name="dollar" size={16} color="#FFF" style={styles.iconMargin} />
               <Text style={styles.buttonText}>FX Signal</Text>
               <Feather name="arrow-up-right" size={16} color="#FFF" style={styles.iconMargin} />
@@ -47,7 +76,7 @@ const Index = () => {
           </LinearGradient>
         </View>
 
-        {/* NIFTY 50 Index Section */}
+        {/* NIFTY 50 and Sensex Index Sections */}
         <View style={styles.indexSection}>
           <TouchableOpacity style={styles.indexBox} onPress={() => router.push('/stockdiscovery/searchdiscovery')}>
             <LinearGradient
@@ -66,21 +95,19 @@ const Index = () => {
                   <View style={styles.indexHeader}>
                     <Text style={styles.indexTitle}>Nifty 50</Text>
                     <View style={styles.indexChangeContainer}>
-                      <Feather name="arrow-up-right" size={16} color="#34C759" style={styles.iconMargin} />
-                      <Text style={styles.indexChangePositive}>1.2%</Text>
+                      <Feather name={niftyChange.includes('-') ? "arrow-down-right" : "arrow-up-right"} size={16} color={niftyChange.includes('-') ? "#FF3B30" : "#34C759"} style={styles.iconMargin} />
+                      <Text style={[styles.indexChangePositive, niftyChange.includes('-') && styles.indexChangeNegative]}>{niftyChange}</Text>
                     </View>
                   </View>
-                  {/* Gradient Text */}
                   <MaskedView
-                    maskElement={<Text style={styles.indexValue}>18,245.32</Text>}
+                    maskElement={<Text style={styles.indexValue}>{niftyValue}</Text>}
                   >
                     <LinearGradient
                       colors={['#C6DBF8', '#609DF9']}
                       start={{ x: 1, y: 0.5 }}
                       end={{ x: 0, y: 0 }}
-                    // style={{ flex: 1 }}
                     >
-                      <Text style={[styles.indexValue, { opacity: 0 }]}>18,245.32</Text>
+                      <Text style={[styles.indexValue, { opacity: 0 }]}>{niftyValue}</Text>
                     </LinearGradient>
                   </MaskedView>
                 </View>
@@ -88,7 +115,7 @@ const Index = () => {
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.indexBox} >
+          <TouchableOpacity style={styles.indexBox}>
             <LinearGradient
               colors={['#000', '#AEAED4']}
               start={{ x: 0.3, y: 0.6 }}
@@ -105,20 +132,19 @@ const Index = () => {
                   <View style={styles.indexHeader}>
                     <Text style={styles.indexTitle}>Sensex</Text>
                     <View style={styles.indexChangeContainer}>
-                      <Feather name="arrow-down-right" size={16} color="#FF3B30" style={styles.iconMargin} />
-                      <Text style={styles.indexChangeNegative}> 0.8%</Text>
+                      <Feather name={sensexChange.includes('-') ? "arrow-down-right" : "arrow-up-right"} size={16} color={sensexChange.includes('-') ? "#FF3B30" : "#34C759"} style={styles.iconMargin} />
+                      <Text style={[styles.indexChangePositive, sensexChange.includes('-') && styles.indexChangeNegative]}>{sensexChange}</Text>
                     </View>
                   </View>
                   <MaskedView
-                    maskElement={<Text style={styles.indexValue}>61,232.45</Text>}
+                    maskElement={<Text style={styles.indexValue}>{sensexValue}</Text>}
                   >
                     <LinearGradient
                       colors={['#F3DF65', '#FF5D57']}
                       start={{ x: 1, y: 0.5 }}
                       end={{ x: 0, y: 0 }}
-                    // style={{ flex: 1 }}
                     >
-                      <Text style={[styles.indexValue, { opacity: 0 }]}>61,232.45</Text>
+                      <Text style={[styles.indexValue, { opacity: 0 }]}>{sensexValue}</Text>
                     </LinearGradient>
                   </MaskedView>
                 </View>
@@ -127,12 +153,7 @@ const Index = () => {
           </TouchableOpacity>
         </View>
 
-        {/* <CallPut /> */}
-
-        <View className="">
-          <IndexPieChart />
-        </View>
-
+        <IndexPieChart />
       </ScrollView>
     </View>
   );
@@ -191,13 +212,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
-
   },
   indexBox: {
     width: '50%',
   },
   indexCard: {
-    // backgroundColor: '#000',
     padding: 15,
     paddingBottom: 50,
     alignItems: 'center',
@@ -241,8 +260,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Questrial-Regular',
     fontWeight: '500',
   },
-  
-
 });
 
 export default Index;

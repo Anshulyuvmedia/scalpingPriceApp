@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import IndexTab from './tabview/IndexTab';
-import StocksTab from './tabview/StocksTab';
-import FutureTab from './tabview/FutureTab';
 import GraphTab from './tabview/GraphTab';
 
 const initialLayout = { width: Dimensions.get('window').width };
@@ -13,17 +11,13 @@ const initialLayout = { width: Dimensions.get('window').width };
 const AIChartPatterns = () => {
     const [index, setIndex] = useState(0);
     const [routes] = useState([
+        { key: 'GraphTab', title: 'GraphTab' },
         { key: 'index', title: 'Index' },
-        { key: 'stocks', title: 'Stocks' },
-        { key: 'futures', title: 'Futures' },
-        { key: 'graphs', title: 'Graphs' },
     ]);
 
     const renderScene = SceneMap({
+        GraphTab: GraphTab,
         index: IndexTab,
-        stocks: StocksTab,
-        futures: FutureTab,
-        graphs: GraphTab,
     });
 
     const renderTabBar = (props) => {

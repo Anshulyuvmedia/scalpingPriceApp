@@ -10,6 +10,7 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="strategybacktesting" options={{ headerShown: false }} />
             <Stack.Screen name="notifications" options={{ headerShown: false }} />
             <Stack.Screen name="detailedmatrics" options={{ headerShown: false }} />
+            <Stack.Screen name="signaldetail" options={({ params }) => ({ title: 'Signal' })} />
         </Stack>
     );
 }

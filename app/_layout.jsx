@@ -1,4 +1,3 @@
-// app/_layout.jsx
 import { Stack, usePathname, router } from 'expo-router';
 import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -9,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState, useContext } from 'react';
 import './globals.css';
 import { UserContext, UserProvider } from '@/contexts/UserContext';
+import { IndexProvider } from '@/contexts/IndexContext'; // Import IndexProvider
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,7 +35,9 @@ export default function AppLayout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <SafeAreaProvider>
                 <UserProvider>
-                    <SafeAreaViewWrapper />
+                    <IndexProvider> {/* Add IndexProvider here */}
+                        <SafeAreaViewWrapper />
+                    </IndexProvider>
                 </UserProvider>
             </SafeAreaProvider>
         </GestureHandlerRootView>
