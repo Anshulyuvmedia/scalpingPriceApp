@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Use environment variable or fallback for API URL
 // const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000/api';
-const API_BASE_URL = 'http://192.168.1.27:3000/api';
+const API_BASE_URL = 'http://192.168.1.50:3000/api';
 
 
 const Login = () => {
@@ -123,27 +123,37 @@ const Login = () => {
                 payload,
                 { timeout: 10000 }
             );
-            if (response.status === 200 && response.data?.result?.success && response.data?.result?.otp) {
+            console.log('generateOtp response:', JSON.stringify(response.data, null, 2)); // Debug response
+            // Check response structure
+            if (response.status === 200 && response.data?.success) {
                 setIsOtpSent(true);
-                setOtpExpiry(response.data.result.expiry);
+                setOtpExpiry(response.data.expiry);
                 setOtpDigits(Array(6).fill(''));
                 setOtpSentCount((prev) => prev + 1);
-                setNewOtp(response.data.result.otp);
-                // console.log('OTP Expiry:', response.data.result); // Debug expiry format
+                setNewOtp(response.data.otp);
             } else {
-                throw new Error(response.data?.result?.message || 'Unexpected response from server');
+                console.log('Unexpected response structure:', JSON.stringify(response.data, null, 2));
+                throw new Error(response.data?.message || response.data?.error?.message || 'Unexpected response from server');
             }
         } catch (error) {
             console.error('Error generating OTP:', JSON.stringify(error.response?.data || error.message, null, 2));
-            let errorMessage = 'Failed to send OTP. Please try again.';
+            let errorMessage = 'Failed to generate OTP. Please try again.';
             if (error.response) {
                 if (error.response.status === 400) {
                     errorMessage = error.response.data?.error?.message || 'Invalid phone number.';
+                } else if (error.response.status === 404) {
+                    errorMessage = error.response.data?.error?.message || 'User not found.';
                 } else if (error.response.status === 500) {
                     errorMessage = 'Server error. Please try again later.';
+                } else {
+                    errorMessage = error.response.data?.error?.message || 'Unexpected server response.';
                 }
             } else if (error.code === 'ERR_NETWORK') {
                 errorMessage = `Network error. Please ensure the server is reachable at ${API_BASE_URL}`;
+            } else if (error.code === 'ECONNABORTED') {
+                errorMessage = 'Request timed out. Please try again.';
+            } else {
+                errorMessage = error.message || 'Failed to generate OTP. Please try again.';
             }
             showModal('Error', errorMessage);
         } finally {
@@ -163,13 +173,14 @@ const Login = () => {
                 payload,
                 { timeout: 10000 }
             );
-            // console.log('verifyOtp response:', JSON.stringify(response.data, null, 2));
-            if (response.status === 200 && response.data?.result?.user && response.data?.result?.token) {
-                await login(response.data.result.user, response.data.result.token.id);
+            console.log('verifyOtp response:', JSON.stringify(response.data, null, 2)); // Debug response
+            if (response.status === 200 && response.data?.user && response.data?.token) {
+                await login(response.data.user, response.data.token.id);
                 showModal('Success', 'Logged in successfully', false);
                 rbSheetRef.current?.close();
             } else {
-                throw new Error('Unexpected response from server');
+                console.log('Unexpected verifyOtp response:', JSON.stringify(response.data, null, 2));
+                throw new Error(response.data?.message || response.data?.error?.message || 'Unexpected response from server');
             }
         } catch (error) {
             console.error('Error verifying OTP:', JSON.stringify(error.response?.data || error.message, null, 2));
@@ -177,9 +188,17 @@ const Login = () => {
             if (error.response) {
                 if (error.response.status === 400) {
                     errorMessage = error.response.data?.error?.message || 'Invalid OTP.';
+                } else if (error.response.status === 404) {
+                    errorMessage = error.response.data?.error?.message || 'User not found.';
                 } else if (error.response.status === 500) {
                     errorMessage = 'Server error. Please try again later.';
+                } else {
+                    errorMessage = error.response.data?.error?.message || 'Unexpected server response.';
                 }
+            } else if (error.code === 'ERR_NETWORK') {
+                errorMessage = `Network error. Please ensure the server is reachable at ${API_BASE_URL}`;
+            } else if (error.code === 'ECONNABORTED') {
+                errorMessage = 'Request timed out. Please try again.';
             } else if (error.message.includes('expired')) {
                 errorMessage = 'OTP expired. Please request a new one.';
             }
@@ -328,6 +347,9 @@ const Login = () => {
                         <TouchableOpacity
                             onPress={() => {
                                 setModalVisible(false);
+                                if (!isError) {
+                                    router.replace('/(tabs)/home'); // Navigate to home on successful login
+                                }
                             }}
                         >
                             <Text style={styles.modalButton}>OK</Text>
@@ -355,7 +377,9 @@ const Login = () => {
             >
                 <View style={styles.rbSheetContainer}>
                     <Text style={styles.rbSheetTitle}>Verify OTP</Text>
-                    <Text style={styles.rbSheetSubtitle}>Enter the 6-digit code sent to {phone}</Text>
+                    <Text style={styles.rbSheetSubtitle}>
+                        Enter the 6-digit OTP displayed below for {phone}
+                    </Text>
                     <Text style={styles.rbSheetSubtitle}>OTP: {newOtp}</Text>
                     <View style={styles.otpContainer}>
                         {otpDigits.map((digit, index) => (
@@ -378,10 +402,10 @@ const Login = () => {
                     <View style={styles.resendContainer}>
                         {canResend ? (
                             <TouchableOpacity onPress={handleResend} disabled={isLoading}>
-                                <Text style={styles.resendText}>Resend OTP</Text>
+                                <Text style={styles.resendText}>Request New OTP</Text>
                             </TouchableOpacity>
                         ) : (
-                            <Text style={styles.resendTextDisabled}>Resend OTP in {resendCountdown} seconds</Text>
+                            <Text style={styles.resendTextDisabled}>Request New OTP in {resendCountdown} seconds</Text>
                         )}
                     </View>
                     <TouchableOpacity

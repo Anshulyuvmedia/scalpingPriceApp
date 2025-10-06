@@ -1,15 +1,15 @@
 // app/(root)/(tabs)/chatbot/signaldetail/[id].jsx
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
-import React, { useState, useEffect } from 'react';
-import { Feather } from '@expo/vector-icons';
-import LinearGradient from 'react-native-linear-gradient';
-import Slider from '@react-native-community/slider';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import axios from 'axios';
 import HomeHeader from '@/components/HomeHeader';
 import icons from '@/constants/icons';
+import { Feather } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
+import axios from 'axios';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
-const API_BASE_URL = 'http://192.168.1.27:3000/api';
+const API_BASE_URL = 'http://192.168.1.50:3000/api';
 
 const GradientCard = ({ children, style }) => (
     <LinearGradient

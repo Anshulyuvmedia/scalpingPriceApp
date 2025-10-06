@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 const IndexContext = createContext();
 
@@ -10,7 +10,7 @@ export const IndexProvider = ({ children }) => {
 
     const fetchData = async () => {
         try {
-            const response = await axios.get('http://192.168.1.27:3000/api/indices');
+            const response = await axios.get('http://192.168.1.50:3000/api/indices');
             const formattedData = response.data.reduce((acc, item) => {
                 acc[item.name] = { data: item.data, change: item.change };
                 return acc;

@@ -1,9 +1,9 @@
-import { StyleSheet, Text, View, Dimensions} from 'react-native';
+import { StyleSheet, Text, View, Dimensions } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { PieChart } from 'react-native-gifted-charts';
 import { Picker } from '@react-native-picker/picker';
 import LinearGradient from 'react-native-linear-gradient';
-import { useIndex } from '../contexts/IndexContext'; // Adjust the import path
+import { useIndex } from '../contexts/IndexContext';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -12,7 +12,6 @@ const IndexPieChart = () => {
     const [selectedIndex, setSelectedIndex] = useState('NIFTY 50');
     const [selectedSegment, setSelectedSegment] = useState(null);
 
-    // Log the data for debugging
     useEffect(() => {
         if (!loading && !error && indicesData[selectedIndex]) {
             // console.log('Chart Data for', selectedIndex, ':', indicesData[selectedIndex].data);
@@ -36,14 +35,13 @@ const IndexPieChart = () => {
     }
 
     const pieData = chartData.map(item => {
-        // Ensure value is a number, default to 0 if invalid
         const value = typeof item.value === 'number' ? item.value : (parseFloat(item.value) || 0);
         return {
             value: Math.abs(value),
-            color: item.color || '#000000', // Default color if missing
+            color: item.color || '#000000',
             name: item.name || 'Unknown',
             focused: selectedSegment === item.name,
-            text: `${item.name}\n${value.toFixed(2)}%`, // Use validated value
+            text: `${item.name}\n${value.toFixed(2)}%`,
             textColor: '#FFF',
             textSize: 14,
             fontFamily: 'Questrial-Regular',
@@ -146,7 +144,6 @@ const IndexPieChart = () => {
                                     }}
                                 >
                                     {displayName}
-                                    {'\n'}
                                     <Text
                                         style={{
                                             fontSize: 14,
@@ -154,7 +151,7 @@ const IndexPieChart = () => {
                                             fontFamily: 'Questrial-Regular',
                                         }}
                                     >
-                                        {percentage}
+                                        {`\n${percentage}`}
                                     </Text>
                                 </Text>
                             );
