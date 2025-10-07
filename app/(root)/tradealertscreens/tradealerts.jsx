@@ -8,11 +8,13 @@ import ForexAlerts from './alertview/forexalerts';
 import CryptoAlerts from './alertview/cryptoalerts';
 import BinaryOptionAlerts from './alertview/binaryoptionalerts';
 import CommodityAlerts from './alertview/commodityalerts';
+import { useForex } from '../../../contexts/ForexContext'; // Import useForex
 
 const initialLayout = { width: Dimensions.get('window').width - 20 };
 
-const TradeAlerts = () => {
+const TradeAlerts = ({ navigation }) => {
     const [index, setIndex] = useState(0);
+    const { rates, isLoading, error } = useForex();
 
     const [routes] = useState([
         { key: 'forexalerts', title: 'Forex' },
@@ -22,10 +24,10 @@ const TradeAlerts = () => {
     ]);
 
     const renderScene = SceneMap({
-        forexalerts: ForexAlerts,
-        cryptoalerts: CryptoAlerts,
-        binaryoptionalerts: BinaryOptionAlerts,
-        commodityalerts: CommodityAlerts,
+        forexalerts: () => <ForexAlerts data={rates.forex} navigation={navigation} />,
+        cryptoalerts: () => <CryptoAlerts data={rates.crypto} navigation={navigation} />,
+        binaryoptionalerts: () => <BinaryOptionAlerts data={rates.binary} navigation={navigation} />,
+        commodityalerts: () => <CommodityAlerts data={rates.commodity} navigation={navigation} />,
     });
 
     const renderTabBar = (props) => {
@@ -109,8 +111,24 @@ const TradeAlerts = () => {
         );
     };
 
+    if (isLoading) {
+        return (
+            <View style={styles.container}>
+                <Text>Loading...</Text>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.container}>
+                <Text style={{ color: '#ff4444' }}>{error}</Text>
+            </View>
+        );
+    }
+
     return (
-        <ScrollView style={styles.container}>
+        <View style={styles.container}>
             <LinearGradient
                 colors={['#723CDF', '#FAC1EC']}
                 start={{ x: 1, y: 0 }}
@@ -134,7 +152,7 @@ const TradeAlerts = () => {
                     renderTabBar={renderTabBar}
                 />
             </View>
-        </ScrollView>
+        </View>
     );
 };
 
@@ -170,8 +188,7 @@ const styles = StyleSheet.create({
         paddingBottom: 70,
     },
     tabViewContainer: {
-        height: 'auto',
-        minHeight: 600,
+        flex: 1,
         padding: 10,
         marginTop: -90,
     },
@@ -198,7 +215,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
         paddingHorizontal: 12,
         paddingVertical: 8,
-        borderColor: '#D49DEA', // Solid border color
+        borderColor: '#D49DEA',
         borderWidth: 2,
         borderRadius: 15,
     },

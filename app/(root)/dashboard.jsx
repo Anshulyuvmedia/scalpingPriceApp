@@ -10,7 +10,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
-const API_BASE_URL = 'http://192.168.1.50:3000/api';
+const API_BASE_URL = 'http://192.168.1.17:3000/api';
 
 const menuItems = [
     // { name: 'Algo Builder', route: 'algobuilder', icon: 'rocket' },
@@ -96,7 +96,7 @@ const Dashboard = () => {
 
     return (
         <View style={styles.container}>
-            <HomeHeader page={'chatbot'} title={'Menu'} />
+            <HomeHeader page={'chatbot'} title={'Settings'} />
             <View style={styles.content}>
                 <View style={styles.menuContainer}>
                     {menuItems.map((item, index) => (

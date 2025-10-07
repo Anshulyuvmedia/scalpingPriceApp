@@ -1,137 +1,72 @@
-import { StyleSheet, Text, View, ScrollView } from 'react-native'
-import React, { useState } from 'react';
-import { FontAwesome } from '@expo/vector-icons';
-import Slider from '@react-native-community/slider';
-import icons from '@/constants/icons';
+import React from 'react';
+import { FlatList, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { useForex } from '@/contexts/ForexContext';
+import { useNavigation } from 'expo-router'; // Import useNavigation
 
 const CommodityAlerts = () => {
-    const [lowValue, setLowValue] = useState(70);
+    const navigation = useNavigation(); // Use hook to get navigation
+    const { rates, isLoading, error } = useForex();
+
+    if (isLoading) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.loading}>Loading...</Text>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.error}>{error}</Text>
+            </View>
+        );
+    }
+
+    const commodityRates = rates?.commodity || [];
 
     return (
-        <ScrollView className="mt-8 px-3">
-            <View className="flex-row justify-between items-center">
-                <View>
-                    <Text className="text-white font-sora-bold">Gold</Text>
-                    <Text className="text-[#83838D] font-questrial">2 days ago</Text>
-                </View>
-                <View className="bg-[#05FF92] rounded-full px-4 py-2">
-                    <Text className="text-black">Gold</Text>
-                </View>
-            </View>
-            <View className="flex-row justify-between items-center mt-3">
-                <View>
-                    <Text className="text-white font-sora">EUR/USD CHART</Text>
-                    <View className="flex-row mt-1">
-                        <FontAwesome name="star" size={18} color="#FFD700" className="ms-1" />
-                        <FontAwesome name="star" size={18} color="#FFD700" className="ms-1" />
-                        <FontAwesome name="star" size={18} color="#FFD700" className="ms-1" />
-                        <FontAwesome name="star" size={18} color="#FFD700" className="ms-1" />
-                        <FontAwesome name="star" size={18} color="#FFD700" className="ms-1" />
-                    </View>
-
-                </View>
-            </View>
-            <View className="flex-row justify-between items-center p-3 my-3">
-                <View>
-                    <Text className="text-[#83838D] font-sora">Entry</Text>
-                    <Text className="text-white font-questrial text-xl">1800</Text>
-                </View>
-                <View>
-                    <Text className="text-[#83838D] font-sora">TP1</Text>
-                    <Text className="text-white font-questrial text-xl">1820</Text>
-                </View>
-                <View>
-                    <Text className="text-[#83838D] font-sora">TP2</Text>
-                    <Text className="text-white font-questrial text-xl">1840</Text>
-                </View>
-                <View>
-                    <Text className="text-[#83838D] font-sora">TP3</Text>
-                    <Text className="text-white font-questrial text-xl">1860</Text>
-                </View>
-            </View>
-            <View className="flex-row justify-between items-center mt-3">
-                <View>
-                    <Text className="text-white font-sora text-2xl">1815</Text>
-                    <Text className="text-[#05FF92] font-sora">+15.00</Text>
-                </View>
-            </View>
-            <View className="items-start my-3">
-                <Text className="text-white font-sora mb-1 text-xl">AI Confidence</Text>
-                <View className="flex-row justify-between items-center">
-                    <View style={styles.sliderContainer}>
-                        {/* Custom track to increase height */}
-                        <View style={styles.customTrack} />
-                        <Slider
-                            style={styles.slider}
-                            minimumValue={0}
-                            maximumValue={100}
-                            value={lowValue}
-                            onValueChange={(value) => { setLowValue(Math.round(value)) }}
-                            minimumTrackTintColor="#1F65FF"
-                            maximumTrackTintColor="#AEAED4"
-                            thumbTintColor="#1F65FF" // Fallback color if thumbImage fails
-                            thumbImage={icons.ellipse} // Path to your custom thumb image
-                        />
-                    </View>
-                    <Text className="text-white font-sora ml-2">{lowValue}%</Text>
-                </View>
-            </View>
-
-            <View>
-                <Text className="text-white text-xl font-sora mb-3">Analysis</Text>
-                <Text className="text-gray-400 font-questrial text-lg">The USD/CHF pair shows a bullish trend with strongmomentum. Consider entering a short position with caution.</Text>
-                <View className='flex-row justify-between mt-4'>
-                    <View>
-                        <Text className="text-gray-400 text-lg font-questrial">Trade Type</Text>
-                        <Text className="text-white text-xl font-sora ">Spot</Text>
-                    </View>
-                    <View>
-                        <Text className="text-gray-400 text-lg font-questrial">Strategy</Text>
-                        <Text className="text-white text-xl font-sora ">Breakout</Text>
-                    </View>
-                    <View>
-                        <Text className="text-gray-400 text-lg font-questrial">Sector</Text>
-                        <Text className="text-white text-xl font-sora ">Cryptocurrency</Text>
-                    </View>
-                </View>
-            </View>
-        </ScrollView>
+        <View style={styles.container}>
+            {commodityRates.length === 0 ? (
+                <Text style={styles.noData}>No commodity alerts available</Text>
+            ) : (
+                <FlatList
+                    data={commodityRates}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={styles.item}
+                            onPress={() => navigation.push('fxdetails', { currencyPair: item.name, assetType: 'commodity' })}
+                        >
+                            <Text style={styles.name}>{item.name}</Text>
+                            <Text style={[styles.rate, { color: item.changePercent > 0 ? 'green' : 'red' }]}> {item.changePercent}</Text>
+                        </TouchableOpacity>
+                    )}
+                    keyExtractor={item => item.name}
+                    contentContainerStyle={styles.list}
+                />
+            )}
+        </View>
     )
 }
 
 export default CommodityAlerts
 
 const styles = StyleSheet.create({
-    sliderContainer: {
-        position: 'relative',
-        width: "90%",
-        height: 40,
+    container: { flex: 1, padding: 10, marginTop: 20, },
+    list: { paddingBottom: 20, },
+    item: {
+        backgroundColor: '#1a1a1a',
+        padding: 15,
+        marginVertical: 5,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#333',
+        flexDirection: 'row',
+        justifyContent: 'space-between'
     },
-    slider: {
-        width: '100%',
-        height: 40,
-        position: 'absolute',
-    },
-    // customTrack: {
-    //     position: 'absolute',
-    //     top: 15,
-    //     width: '100%',
-
-    //     height: 10,
-    //     // backgroundColor: '#1F65FF',
-    //     borderRadius: 4,
-    // },
-    thumb: {
-        position: 'absolute',
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: '#1F65FF',
-        top: -10,
-        shadowColor: '#FFF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 4,
-        elevation: 4,
-    },
-})
+    name: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    rate: { color: '#ccc', fontSize: 14 },
+    noData: { color: '#fff', textAlign: 'center', marginTop: 20 },
+    loading: { color: '#fff', textAlign: 'center', marginTop: 20 },
+    error: { color: '#ff4444', textAlign: 'center', marginTop: 20 },
+});

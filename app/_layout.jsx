@@ -9,6 +9,7 @@ import { useEffect, useState, useContext } from 'react';
 import './globals.css';
 import { UserContext, UserProvider } from '@/contexts/UserContext';
 import { IndexProvider } from '@/contexts/IndexContext'; // Import IndexProvider
+import { ForexProvider } from '@/contexts/ForexContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,7 +37,9 @@ export default function AppLayout() {
             <SafeAreaProvider>
                 <UserProvider>
                     <IndexProvider> {/* Add IndexProvider here */}
-                        <SafeAreaViewWrapper />
+                        <ForexProvider>
+                            <SafeAreaViewWrapper />
+                        </ForexProvider>
                     </IndexProvider>
                 </UserProvider>
             </SafeAreaProvider>

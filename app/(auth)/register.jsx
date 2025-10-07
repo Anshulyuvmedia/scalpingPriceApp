@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const Register = () => {
-    const API_BASE_URL = 'http://192.168.1.50:3000/api';
+    const API_BASE_URL = 'http://192.168.1.17:3000/api';
     const insets = useSafeAreaInsets();
 
     // State management

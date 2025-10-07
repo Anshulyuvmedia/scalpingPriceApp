@@ -11,7 +11,7 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="notifications" options={{ headerShown: false }} />
             <Stack.Screen name="detailedmatrics" options={{ headerShown: false }} />
             <Stack.Screen name="settings" options={{ headerShown: false }} />
-            {/* <Stack.Screen name="signaldetail" options={({ params }) => ({ title: 'Signal' })} /> */}
+            <Stack.Screen name="tradealertscreens" options={{ headerShown: false }} />
         </Stack>
     );
 }

@@ -1,8 +1,8 @@
-// app/(auth)/login.jsx
 import images from '@/constants/images';
 import { UserContext } from '@/contexts/UserContext';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Added import
 import { router, useLocalSearchParams } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -10,15 +10,12 @@ import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Use environment variable or fallback for API URL
-// const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000/api';
-const API_BASE_URL = 'http://192.168.1.50:3000/api';
-
+const API_BASE_URL = 'http://192.168.1.17:3000/api'; // Using provided backend URL
 
 const Login = () => {
     const insets = useSafeAreaInsets();
     const { login } = useContext(UserContext);
-    const { expired } = useLocalSearchParams(); // Check for session expiry redirect
+    const { expired } = useLocalSearchParams();
     const [phone, setPhone] = useState('');
     const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
     const [phoneError, setPhoneError] = useState('');
@@ -39,14 +36,12 @@ const Login = () => {
     const otpRefs = useRef([]);
     const rbSheetRef = useRef(null);
 
-    // Show session expired message if redirected
     useEffect(() => {
         if (expired === 'true') {
             Alert.alert('Session Expired', 'Your session has expired. Please log in again.');
         }
     }, [expired]);
 
-    // Fade-in animation
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
@@ -55,7 +50,6 @@ const Login = () => {
         }).start();
     }, [fadeAnim]);
 
-    // Resend countdown timer
     useEffect(() => {
         if (otpSentCount > 0) {
             setCanResend(false);
@@ -74,14 +68,12 @@ const Login = () => {
         }
     }, [otpSentCount]);
 
-    // Open RBSheet when OTP is sent
     useEffect(() => {
         if (isOtpSent && rbSheetRef.current) {
             rbSheetRef.current.open();
         }
     }, [isOtpSent]);
 
-    // Handle button press animation
     const handleButtonPressIn = () => {
         Animated.spring(buttonScaleAnim, {
             toValue: 0.97,
@@ -107,7 +99,6 @@ const Login = () => {
         setModalVisible(true);
     };
 
-    // Basic phone validation
     const validatePhone = (phone) => /^\d{10,15}$/.test(phone);
 
     const normalizePhoneNumber = (phone) => phone.replace(/[^0-9]/g, '');
@@ -123,8 +114,7 @@ const Login = () => {
                 payload,
                 { timeout: 10000 }
             );
-            console.log('generateOtp response:', JSON.stringify(response.data, null, 2)); // Debug response
-            // Check response structure
+            // console.log('generateOtp response:', JSON.stringify(response.data, null, 2));
             if (response.status === 200 && response.data?.success) {
                 setIsOtpSent(true);
                 setOtpExpiry(response.data.expiry);
@@ -152,8 +142,6 @@ const Login = () => {
                 errorMessage = `Network error. Please ensure the server is reachable at ${API_BASE_URL}`;
             } else if (error.code === 'ECONNABORTED') {
                 errorMessage = 'Request timed out. Please try again.';
-            } else {
-                errorMessage = error.message || 'Failed to generate OTP. Please try again.';
             }
             showModal('Error', errorMessage);
         } finally {
@@ -173,8 +161,12 @@ const Login = () => {
                 payload,
                 { timeout: 10000 }
             );
-            console.log('verifyOtp response:', JSON.stringify(response.data, null, 2)); // Debug response
+            // console.log('verifyOtp response:', JSON.stringify(response.data, null, 2));
             if (response.status === 200 && response.data?.user && response.data?.token) {
+                // Store userToken and userId in AsyncStorage
+                await AsyncStorage.setItem('userToken', response.data.token.id);
+                await AsyncStorage.setItem('userId', response.data.user.id);
+                // Call login from UserContext
                 await login(response.data.user, response.data.token.id);
                 showModal('Success', 'Logged in successfully', false);
                 rbSheetRef.current?.close();
@@ -348,7 +340,7 @@ const Login = () => {
                             onPress={() => {
                                 setModalVisible(false);
                                 if (!isError) {
-                                    router.replace('/(tabs)/home'); // Navigate to home on successful login
+                                    router.replace('/(tabs)/home');
                                 }
                             }}
                         >
@@ -636,8 +628,5 @@ const styles = StyleSheet.create({
         fontFamily: 'Questrial-Regular',
     },
 });
-
-
-
 
 export default Login;
