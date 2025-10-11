@@ -1,8 +1,8 @@
 import images from '@/constants/images';
 import { UserContext } from '@/contexts/UserContext';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Added import
 import { router, useLocalSearchParams } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -10,7 +10,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const API_BASE_URL = 'http://192.168.1.17:3000/api'; // Using provided backend URL
+const API_BASE_URL = 'http://192.168.1.20:3000/api'; // Confirm this IP; use your machine's IP if different
 
 const Login = () => {
     const insets = useSafeAreaInsets();
@@ -114,7 +114,7 @@ const Login = () => {
                 payload,
                 { timeout: 10000 }
             );
-            // console.log('generateOtp response:', JSON.stringify(response.data, null, 2));
+            console.log('generateOtp response:', JSON.stringify(response.data, null, 2)); // Keep for debugging
             if (response.status === 200 && response.data?.success) {
                 setIsOtpSent(true);
                 setOtpExpiry(response.data.expiry);
@@ -133,13 +133,15 @@ const Login = () => {
                     errorMessage = error.response.data?.error?.message || 'Invalid phone number.';
                 } else if (error.response.status === 404) {
                     errorMessage = error.response.data?.error?.message || 'User not found.';
+                } else if (error.response.status === 422) {
+                    errorMessage = error.response.data?.error?.message || 'Validation error on server.';
                 } else if (error.response.status === 500) {
                     errorMessage = 'Server error. Please try again later.';
                 } else {
                     errorMessage = error.response.data?.error?.message || 'Unexpected server response.';
                 }
             } else if (error.code === 'ERR_NETWORK') {
-                errorMessage = `Network error. Please ensure the server is reachable at ${API_BASE_URL}`;
+                errorMessage = `Network error. Please check if server is running at ${API_BASE_URL} and your device is on the same network.`;
             } else if (error.code === 'ECONNABORTED') {
                 errorMessage = 'Request timed out. Please try again.';
             }
@@ -161,7 +163,7 @@ const Login = () => {
                 payload,
                 { timeout: 10000 }
             );
-            // console.log('verifyOtp response:', JSON.stringify(response.data, null, 2));
+            console.log('verifyOtp response:', JSON.stringify(response.data, null, 2)); // Keep for debugging
             if (response.status === 200 && response.data?.user && response.data?.token) {
                 // Store userToken and userId in AsyncStorage
                 await AsyncStorage.setItem('userToken', response.data.token.id);
@@ -250,6 +252,10 @@ const Login = () => {
 
     const handleResend = async () => {
         if (isLoading || !canResend) return;
+        if (otpExpiry && new Date() < new Date(otpExpiry)) {
+            setOtpError('Current OTP is still valid. Wait for expiry to resend.');
+            return;
+        }
         setOtpDigits(Array(6).fill(''));
         await generateOtp();
     };
@@ -425,6 +431,9 @@ const Login = () => {
         </View>
     );
 };
+
+// Styles remain unchanged
+export default Login;
 
 const styles = StyleSheet.create({
     container: {
@@ -628,5 +637,3 @@ const styles = StyleSheet.create({
         fontFamily: 'Questrial-Regular',
     },
 });
-
-export default Login;

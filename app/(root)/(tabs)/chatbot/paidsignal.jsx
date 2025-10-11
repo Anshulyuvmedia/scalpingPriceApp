@@ -101,14 +101,6 @@ const PaidSignal = () => {
 
     return (
         <View style={styles.container}>
-            {error && (
-                <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>Error: {error}</Text>
-                    <TouchableOpacity onPress={refresh} style={styles.retryButton}>
-                        <Text style={styles.retryButtonText}>Retry</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
             <View style={styles.tabViewContainer}>
                 <TabView
                     navigationState={{ index, routes }}

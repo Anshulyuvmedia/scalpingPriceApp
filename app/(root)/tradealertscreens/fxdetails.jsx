@@ -1,11 +1,11 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import icons from '@/constants/icons';
+import { useForex } from '@/contexts/ForexContext';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import axios from 'axios';
-import icons from '@/constants/icons';
-import { useForex } from '@/contexts/ForexContext';
-import { useLocalSearchParams, router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const FxDetails = () => {
     // Use useLocalSearchParams to get navigation params
@@ -26,7 +26,7 @@ const FxDetails = () => {
                     return;
                 }
                 const response = await axios.get(
-                    `http://192.168.1.17:3000/api/ForexRates/product-detail?currencyPair=${encodeURIComponent(currencyPair)}&assetType=${encodeURIComponent(assetType)}`
+                    `http://192.168.1.20:3000/api/ForexRates/product-detail?currencyPair=${encodeURIComponent(currencyPair)}&assetType=${encodeURIComponent(assetType)}`
                 );
                 // console.log('API response:', response.data.data); // Log full response
                 setDetail(response.data.data || response.data); // Handle both cases

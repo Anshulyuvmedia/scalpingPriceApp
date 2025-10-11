@@ -1,89 +1,14 @@
-import { Text, View, FlatList, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import React, { useState } from 'react';
+import { Text, View, FlatList, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect, memo } from 'react';
+import { useRouter } from 'expo-router'; // Use Expo Router
+import { formatDistanceToNow } from 'date-fns';
 import HomeHeader from '@/components/HomeHeader';
 import images from '@/constants/images';
 import LinearGradient from 'react-native-linear-gradient';
 
-const NewsListing = () => {
-    const [selectedFilter, setSelectedFilter] = useState('All');
-
-    const filters = [
-        'All',
-        'Stock Market',
-        'Crypto',
-        'Business',
-        'Technology',
-        'Finance',
-    ];
-
-    const newsData = [
-        {
-            id: '1',
-            category: 'Stock Market',
-            title: 'Market Hits Record Highs Amid Tech Surge',
-            source: 'Economic Times',
-            timestamp: '2h ago',
-            image: images.courseimg,
-        },
-        {
-            id: '2',
-            category: 'Crypto',
-            title: 'Bitcoin Surges Past $70K',
-            source: 'CoinDesk',
-            timestamp: '3h ago',
-            image: images.courseimg,
-        },
-        {
-            id: '3',
-            category: 'Business',
-            title: 'Major Merger Announced in Retail Sector',
-            source: 'Business Insider',
-            timestamp: '5h ago',
-            image: images.courseimg,
-        },
-        {
-            id: '4',
-            category: 'Technology',
-            title: 'AI Startup Raises $100M in Funding',
-            source: 'TechCrunch',
-            timestamp: '1d ago',
-            image: images.courseimg,
-        },
-        {
-            id: '5',
-            category: 'Finance',
-            title: 'Federal Reserve Hints at Rate Cut',
-            source: 'Bloomberg',
-            timestamp: '2d ago',
-            image: images.courseimg,
-        },
-        {
-            id: '6',
-            category: 'Stock Market',
-            title: 'Tech Stocks Lead Market Rally',
-            source: 'Reuters',
-            timestamp: '3d ago',
-            image: images.courseimg,
-        },
-    ];
-
-    const filteredNews = selectedFilter === 'All'
-        ? newsData
-        : newsData.filter(item => item.category === selectedFilter);
-
-    const renderFilter = ({ item }) => (
-        <TouchableOpacity
-            className={`mr-2 px-5 py-3 rounded-full border  ${selectedFilter === item
-                ? 'bg-purple-600'
-                : 'bg-gray-900 border-white'
-                }`}
-            onPress={() => setSelectedFilter(item)}
-        >
-            <Text className="text-white text-sm">{item}</Text>
-        </TouchableOpacity>
-    );
-
-    const renderNewsCard = ({ item }) => (
+// Memoized NewsCard component
+const NewsCard = memo(({ item, onPress }) => (
+    <TouchableOpacity onPress={onPress}>
         <LinearGradient
             colors={['#222', '#AEAED4']}
             start={{ x: 0, y: 0 }}
@@ -92,12 +17,14 @@ const NewsListing = () => {
         >
             <View style={styles.newsbox} className="flex-row bg-black">
                 <Image
-                    source={item.image}
+                    source={typeof item.image === 'string' && item.image.startsWith('http') ? { uri: item.image } : images.courseimg}
                     className="w-20 h-12 rounded mr-3"
                     resizeMode="cover"
                 />
                 <View className="flex-1">
-                    <Text className="text-white text-sm font-bold mb-1">{item.title}</Text>
+                    <Text className="text-white text-sm font-bold mb-1" numberOfLines={2}>
+                        {item.title}
+                    </Text>
                     <View className="flex-row justify-between">
                         <Text className="text-gray-400 text-xs">{item.source}</Text>
                         <Text className="text-gray-400 text-xs">{item.timestamp}</Text>
@@ -105,12 +32,103 @@ const NewsListing = () => {
                 </View>
             </View>
         </LinearGradient>
+    </TouchableOpacity>
+));
+NewsCard.displayName = 'NewsCard';
+const NewsListing = () => {
+    const [selectedFilter, setSelectedFilter] = useState('All');
+    const [newsData, setNewsData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const router = useRouter(); // Use Expo Router's router
+
+    const filters = ['All', 'Stock Market', 'Crypto', 'Business', 'Technology', 'Finance'];
+
+    const filterToApiParams = {
+        All: { category: '', keywords: 'business finance technology crypto' },
+        'Stock Market': { category: 'business', keywords: 'stock market' },
+        Crypto: { category: '', keywords: 'crypto bitcoin blockchain' },
+        Business: { category: 'business', keywords: 'business' },
+        Technology: { category: 'technology', keywords: 'technology' },
+        Finance: { category: 'business', keywords: 'finance' },
+    };
+
+    useEffect(() => {
+        setNewsData([]);
+        setPage(1);
+        fetchNews(1);
+    }, [selectedFilter]);
+
+    const fetchNews = async (pageNum) => {
+        setLoading(true);
+        try {
+            const { category, keywords } = filterToApiParams[selectedFilter];
+            let url = `http://192.168.1.20:3000/api/TdNews/getNewsData?page=${pageNum}`;
+            if (category) url += `&category=${category}`;
+            if (keywords) url += `&keywords=${keywords}`;
+
+            // console.log('Fetching URL:', url);
+            const response = await fetch(url);
+            const text = await response.text();
+            // console.log('Response status:', response.status);
+            // console.log('Response body:', text);
+            if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
+
+            const data = JSON.parse(text);
+            if (data.dataList.status === '0') {
+                Alert.alert('No Results', data.dataList.message || 'No news articles found for this filter.');
+                return;
+            }
+
+            const formattedData = data.dataList.Item.map((item) => ({
+                ...item,
+                timestamp: formatDistanceToNow(new Date(item.timestamp), { addSuffix: true }),
+                image: typeof item.image === 'string' && item.image.startsWith('http') ? item.image : images.courseimg,
+                url: typeof item.url === 'string' && item.url.startsWith('http') ? item.url : '#',
+                content: item.content ? item.content.replace(/\[\+\d+ chars\]/, '').trim() : 'No content available',
+            }));
+
+            setNewsData((prev) => (pageNum === 1 ? formattedData : [...prev, ...formattedData]));
+            if (data.dataList.totalResults <= newsData.length + formattedData.length) {
+                // console.log('No more articles to load');
+            }
+        } catch (error) {
+            console.error('Error fetching news:', error);
+            Alert.alert('Error', 'Failed to load news. Please check your connection and try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLoadMore = () => {
+        if (!loading) {
+            setPage((prev) => prev + 1);
+            fetchNews(page + 1);
+        }
+    };
+
+    const renderFilter = ({ item }) => (
+        <TouchableOpacity
+            className={`mr-2 px-5 py-3 rounded-full border ${selectedFilter === item ? 'bg-purple-600' : 'bg-gray-900 border-white'}`}
+            onPress={() => setSelectedFilter(item)}
+        >
+            <Text className="text-white text-sm">{item}</Text>
+        </TouchableOpacity>
     );
+
+    const renderNewsCard = ({ item }) => {
+        // console.log('Navigating to NewsDetail with article:', item);
+        return (
+            <NewsCard
+                item={item}
+                onPress={() => router.push({ pathname: './NewsDetail', params: { article: JSON.stringify(item) } })}
+            />
+        );
+    };
 
     return (
         <View style={styles.container}>
             <HomeHeader page={'news'} />
-
             <View className="mb-4">
                 <Text className="text-white text-2xl font-bold">Market News</Text>
             </View>
@@ -125,19 +143,28 @@ const NewsListing = () => {
                 />
             </View>
             <View className="flex-1">
-                <FlatList
-                    data={filteredNews}
-                    renderItem={renderNewsCard}
-                    keyExtractor={(item) => item.id}
-                />
+                {loading && page === 1 ? (
+                    <Text className="text-white">Loading...</Text>
+                ) : (
+                    <FlatList
+                        data={newsData}
+                        renderItem={renderNewsCard}
+                        keyExtractor={(item) => item.id}
+                        onEndReached={handleLoadMore}
+                        onEndReachedThreshold={0.5}
+                        initialNumToRender={10}
+                        maxToRenderPerBatch={10}
+                        windowSize={5}
+                        removeClippedSubviews={true}
+                        ListFooterComponent={loading && page > 1 ? <Text className="text-white">Loading more...</Text> : null}
+                    />
+                )}
             </View>
         </View>
     );
 };
 
-export default NewsListing;
-
-const styles = StyleSheet.create({ 
+const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 10,
@@ -152,6 +179,7 @@ const styles = StyleSheet.create({
     newsbox: {
         padding: 10,
         borderRadius: 10,
+    },
+});
 
-    }
-})
+export default NewsListing;

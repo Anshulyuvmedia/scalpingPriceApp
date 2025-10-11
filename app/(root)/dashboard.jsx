@@ -10,13 +10,13 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
-const API_BASE_URL = 'http://192.168.1.17:3000/api';
+const API_BASE_URL = 'http://192.168.1.20:3000/api';
 
 const menuItems = [
     // { name: 'Algo Builder', route: 'algobuilder', icon: 'rocket' },
     // { name: 'Detailed Metrics', route: 'detailedmatrics', icon: 'chart-bar' },
     // { name: 'Strategy Backtesting', route: 'strategybacktesting', icon: 'history' },
-    // { name: 'AI Generated Trade', route: 'aigeneratedtrade', icon: 'robot' },
+    { name: 'Packages', route: 'packages/package', icon: 'robot' },
     { name: 'Settings', route: 'settings', icon: 'robot' },
 ];
 

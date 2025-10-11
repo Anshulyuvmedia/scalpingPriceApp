@@ -1,5 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 const ForexContext = createContext();
 
@@ -11,7 +11,7 @@ export const ForexProvider = ({ children }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get('http://192.168.1.17:3000/api/ForexRates/products');
+                const response = await axios.get('http://192.168.1.20:3000/api/ForexRates/products');
                 // console.log('fx:', response.data.data);
                 const data = response.data.data || { forex: [], crypto: [], binary: [], commodity: [] }; // Extract 'data' key
                 setRates(data);

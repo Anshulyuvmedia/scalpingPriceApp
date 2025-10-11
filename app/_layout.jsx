@@ -10,7 +10,7 @@ import './globals.css';
 import { UserContext, UserProvider } from '@/contexts/UserContext';
 import { IndexProvider } from '@/contexts/IndexContext'; // Import IndexProvider
 import { ForexProvider } from '@/contexts/ForexContext';
-
+import { PackageProvider } from '@/contexts/PackageContext';
 SplashScreen.preventAutoHideAsync();
 
 export default function AppLayout() {
@@ -36,11 +36,13 @@ export default function AppLayout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <SafeAreaProvider>
                 <UserProvider>
-                    <IndexProvider> {/* Add IndexProvider here */}
-                        <ForexProvider>
-                            <SafeAreaViewWrapper />
-                        </ForexProvider>
-                    </IndexProvider>
+                    <PackageProvider>
+                        <IndexProvider>
+                            <ForexProvider>
+                                <SafeAreaViewWrapper />
+                            </ForexProvider>
+                        </IndexProvider>
+                    </PackageProvider>
                 </UserProvider>
             </SafeAreaProvider>
         </GestureHandlerRootView>
