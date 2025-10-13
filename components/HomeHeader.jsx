@@ -65,7 +65,7 @@ const HomeHeader = ({ page, title, action }) => {
                     </LinearGradient>
                 </TouchableOpacity>
             ) : (
-                <TouchableOpacity>
+                <TouchableOpacity  onPress={() => router.push('/(root)/notifications')}>
                     <LinearGradient
                         colors={['#444', '#AEAED4']}
                         start={{ x: 0, y: 0 }}
@@ -73,9 +73,9 @@ const HomeHeader = ({ page, title, action }) => {
                         style={styles.gradientBorder}
                     >
                         <View style={styles.coinContainer}>
-                            <Image source={images.rupee} style={styles.coinImage} resizeMode="contain" />
-                            <Text style={styles.coinText}>400</Text>
-                            {/* <Feather name="bell" size={24} color="#fff" /> */}
+                            {/* <Image source={images.rupee} style={styles.coinImage} resizeMode="contain" />
+                            <Text style={styles.coinText}>400</Text> */}
+                            <Feather name="bell" size={24} color="#fff" />
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>

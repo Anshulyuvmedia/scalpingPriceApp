@@ -1,6 +1,6 @@
 import HomeHeader from '@/components/HomeHeader';
 import images from '@/constants/images';
-import { Feather, FontAwesome } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
 import axios from 'axios';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -27,7 +27,7 @@ const Course = () => {
     const screenWidth = Dimensions.get('window').width;
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = 'http://192.168.1.20:3000/api';
+    const API_BASE_URL = 'http://192.168.1.47:3000/api';
 
     // Function to fetch courses
     const fetchCourses = useCallback(async () => {
@@ -89,7 +89,7 @@ const Course = () => {
             <Image
                 source={item.image}
                 style={styles.bannerImage}
-                resizeMode="cover"
+                resizeMode="contain"
             />
         </View>
     );
@@ -179,17 +179,17 @@ const Course = () => {
             <View style={styles.fixedContainer}>
                 <View style={styles.header}>
                     <HomeHeader page="course" />
-                    <View className="flex-row justify-between items-center mb-4">
-                        <Text className="text-white font-sora-bold text-xl">Courses</Text>
-                        <TouchableOpacity onPress={() => router.push('/(root)/notifications')}>
+                    {/* <View className="flex-row justify-between items-center mb-4"> */}
+                        {/* <Text className="text-white font-sora-bold text-xl">Courses</Text> */}
+                        {/* <TouchableOpacity onPress={() => router.push('/(root)/notifications')}>
                             <Feather name="bell" size={24} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
+                        </TouchableOpacity> */}
+                    {/* </View> */}
                 </View>
 
                 <ReanimatedCarousel
                     width={screenWidth - 20}
-                    height={200}
+                    height={150}
                     data={BANNERS}
                     renderItem={renderBannerItem}
                     autoPlay
@@ -259,14 +259,15 @@ const styles = StyleSheet.create({
     },
     bannerContainer: {
         width: '100%',
-        height: 200,
+        // height: 150,
         borderRadius: 10,
         overflow: 'hidden',
     },
     bannerImage: {
         width: '100%',
-        height: 200,
+        height: 150,
         borderRadius: 10,
+        // objectFit: 'contain',
     },
     gradientFilter: {
         borderRadius: 100,

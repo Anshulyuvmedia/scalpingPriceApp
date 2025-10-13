@@ -138,7 +138,7 @@ const TradeAlerts = ({ navigation }) => {
                 <TransHeader page={'alerts'} />
                 <View style={styles.header}>
                     <Text className="text-white font-sora-bold text-xl">Trade Alerts</Text>
-                    <Feather name="bell" size={24} color="#fff" />
+                    {/* <Feather name="bell" size={24} color="#fff" /> */}
                 </View>
             </LinearGradient>
 

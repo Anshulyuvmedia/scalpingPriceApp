@@ -10,7 +10,7 @@ export const IndexProvider = ({ children }) => {
 
     const fetchData = async () => {
         try {
-            const response = await axios.get('http://192.168.1.20:3000/api/indices');
+            const response = await axios.get('http://192.168.1.47:3000/api/indices');
             const formattedData = response.data.reduce((acc, item) => {
                 acc[item.name] = { data: item.data, change: item.change };
                 return acc;

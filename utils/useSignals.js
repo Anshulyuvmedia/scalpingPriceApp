@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 
-const API_BASE_URL = 'http://192.168.1.20:3000/api';
+const API_BASE_URL = 'http://192.168.1.47:3000/api';
 
 const useSignals = (signalType) => {
     const [signals, setSignals] = useState({

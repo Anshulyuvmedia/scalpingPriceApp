@@ -55,7 +55,7 @@ const TransHeader = ({ page, title, action }) => {
                     </LinearGradient>
                 </TouchableOpacity>
                 :
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/(root)/notifications')}>
                     <LinearGradient
                         colors={['#D49DEA', '#D9C4FC']}
                         start={{ x: 1, y: 0 }}
@@ -69,8 +69,9 @@ const TransHeader = ({ page, title, action }) => {
                             style={styles.gradientBox}
                         >
                             <View style={styles.coinContainer}>
-                                <Image source={images.rupee} style={styles.coinImage} resizeMode="contain" />
-                                <Text style={styles.coinText}>400</Text>
+                                {/* <Image source={images.rupee} style={styles.coinImage} resizeMode="contain" />
+                                    <Text style={styles.coinText}>400</Text> */}
+                                <Feather name="bell" size={24} color="#fff" />
                             </View>
                         </LinearGradient>
                     </LinearGradient>

@@ -4,12 +4,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView, RefreshControl } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
-const API_BASE_URL = 'http://192.168.1.20:3000/api';
+const API_BASE_URL = 'http://192.168.1.47:3000/api';
 
 const Settings = () => {
     const [user, setUser] = useState(null);
@@ -21,6 +21,7 @@ const Settings = () => {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
     const [error, setError] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
 
     // Validate token
     const validateToken = async (token) => {
@@ -29,7 +30,6 @@ const Settings = () => {
                 headers: { Authorization: `Bearer ${token}` },
                 timeout: 5000,
             });
-            console.log('Token validation response:', JSON.stringify(response.data, null, 2));
             return response.data.valid;
         } catch (error) {
             console.error('Token validation error:', JSON.stringify(error.response?.data || error.message, null, 2));
@@ -38,59 +38,57 @@ const Settings = () => {
     };
 
     // Fetch user details
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const token = await AsyncStorage.getItem('userToken');
-                const userId = await AsyncStorage.getItem('userId');
-                console.log('Fetching user - userId:', userId, 'userToken:', token);
-                if (!token || !userId) {
-                    Alert.alert('Error', 'Not logged in. Please log in to continue.');
-                    router.replace('/(auth)/login');
-                    return;
-                }
-
-                // Validate token
-                const isValid = await validateToken(token);
-                if (!isValid) {
-                    Alert.alert('Error', 'Session expired. Please log in again.');
-                    await AsyncStorage.removeItem('userToken');
-                    await AsyncStorage.removeItem('userId');
-                    router.replace('/(auth)/login?expired=true');
-                    return;
-                }
-
-                const response = await axios.get(`${API_BASE_URL}/TdUsers/${userId}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                    timeout: 10000,
-                });
-
-                console.log('Fetch user response:', JSON.stringify(response.data, null, 2));
-                setUser(response.data);
-                setFormData({
-                    contactName: response.data.contactName || '',
-                    email: response.data.email || '',
-                    phone: response.data.phone || '',
-                });
-            } catch (error) {
-                console.error('Fetch user error:', JSON.stringify(error.response?.data || error.message, null, 2));
-                let errorMessage = 'Failed to fetch user details';
-                if (error.response?.status === 401) {
-                    errorMessage = 'Session expired. Please log in again.';
-                    await AsyncStorage.removeItem('userToken');
-                    await AsyncStorage.removeItem('userId');
-                    router.replace('/(auth)/login?expired=true');
-                } else if (error.response?.status === 404) {
-                    errorMessage = 'User not found.';
-                } else if (error.code === 'ERR_NETWORK') {
-                    errorMessage = `Network error. Please ensure the server is reachable at ${API_BASE_URL}`;
-                }
-                setError(errorMessage);
-            } finally {
-                setLoading(false);
+    const fetchUser = async () => {
+        try {
+            setLoading(true);
+            const token = await AsyncStorage.getItem('userToken');
+            const userId = await AsyncStorage.getItem('userId');
+            if (!token || !userId) {
+                Alert.alert('Error', 'Not logged in. Please log in to continue.');
+                router.replace('/(auth)/login');
+                return;
             }
-        };
 
+            const response = await axios.get(`${API_BASE_URL}/TdUsers/${userId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 10000,
+            });
+
+            // console.log('Fetch user response:', JSON.stringify(response.data, null, 2));
+            setUser(response.data);
+            setFormData({
+                contactName: response.data.contactName || '',
+                email: response.data.email || '',
+                phone: response.data.phone || '',
+            });
+        } catch (error) {
+            console.error('Fetch user error:', JSON.stringify(error.response?.data || error.message, null, 2));
+            let errorMessage = 'Failed to fetch user details';
+            if (error.response?.status === 401) {
+                errorMessage = 'Session expired. Please log in again.';
+                await AsyncStorage.removeItem('userToken');
+                await AsyncStorage.removeItem('userId');
+                router.replace('/(auth)/login?expired=true');
+            } else if (error.response?.status === 404) {
+                errorMessage = 'User not found.';
+            } else if (error.code === 'ERR_NETWORK') {
+                errorMessage = `Network error. Please ensure the server is reachable at ${API_BASE_URL}`;
+            }
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    // Handle pull-to-refresh
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await fetchUser();
+    };
+
+    // Fetch user details on mount
+    useEffect(() => {
         fetchUser();
     }, []);
 
@@ -104,18 +102,15 @@ const Settings = () => {
         setError('');
         try {
             const token = await AsyncStorage.getItem('userToken');
-            console.log('Updating user - userId:', user.id, 'userToken:', token);
             if (!token) {
                 throw new Error('No authentication token found');
             }
 
-            // Validate token
             const isValid = await validateToken(token);
             if (!isValid) {
                 throw new Error('Session expired or unauthorized');
             }
 
-            // Retry logic
             let attempts = 0;
             const maxAttempts = 2;
             let lastError;
@@ -129,7 +124,6 @@ const Settings = () => {
                         },
                         { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }
                     );
-                    console.log('User updated:', JSON.stringify(response.data, null, 2));
                     setUser(response.data);
                     Alert.alert('Success', 'Profile updated successfully!');
                     return;
@@ -140,7 +134,6 @@ const Settings = () => {
                     if (error.response?.status !== 401 || attempts >= maxAttempts) {
                         throw error;
                     }
-                    // Wait before retry
                     await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
             }
@@ -177,10 +170,19 @@ const Settings = () => {
 
     return (
         <View style={styles.container}>
-            <HomeHeader page={'chatbot'} title={'Menu'} />
-            <View style={styles.content}>
+            <HomeHeader page={'chatbot'} title={'Update Profile'} />
+            <ScrollView
+                contentContainerStyle={styles.content}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={['#3B82F6']}
+                        tintColor="#3B82F6"
+                    />
+                }
+            >
                 <View style={styles.formContainer}>
-                    <Text style={styles.title}>Update Profile</Text>
                     <Text style={styles.userType}>User Type: {user?.userType}</Text>
                     <Text style={styles.userType}>Active Plan: {user?.planId}</Text>
                     <View style={styles.inputContainer}>
@@ -242,7 +244,7 @@ const Settings = () => {
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </ScrollView>
         </View>
     );
 };
@@ -254,7 +256,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
     },
     content: {
-        flex: 1,
+        flexGrow: 1,
         alignItems: 'center',
         paddingVertical: 20,
     },
@@ -269,14 +271,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 12,
         elevation: 5,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: '#F3F4F6',
-        textAlign: 'center',
-        marginBottom: 20,
-        fontFamily: 'Questrial-Regular',
     },
     userType: {
         fontSize: 16,

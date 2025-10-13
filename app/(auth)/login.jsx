@@ -10,7 +10,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const API_BASE_URL = 'http://192.168.1.20:3000/api'; // Confirm this IP; use your machine's IP if different
+const API_BASE_URL = 'http://192.168.1.47:3000/api'; // Confirm this IP; use your machine's IP if different
 
 const Login = () => {
     const insets = useSafeAreaInsets();
@@ -114,7 +114,7 @@ const Login = () => {
                 payload,
                 { timeout: 10000 }
             );
-            console.log('generateOtp response:', JSON.stringify(response.data, null, 2)); // Keep for debugging
+            // console.log('generateOtp response:', JSON.stringify(response.data, null, 2)); // Keep for debugging
             if (response.status === 200 && response.data?.success) {
                 setIsOtpSent(true);
                 setOtpExpiry(response.data.expiry);
@@ -163,7 +163,7 @@ const Login = () => {
                 payload,
                 { timeout: 10000 }
             );
-            console.log('verifyOtp response:', JSON.stringify(response.data, null, 2)); // Keep for debugging
+            // console.log('verifyOtp response:', JSON.stringify(response.data, null, 2)); // Keep for debugging
             if (response.status === 200 && response.data?.user && response.data?.token) {
                 // Store userToken and userId in AsyncStorage
                 await AsyncStorage.setItem('userToken', response.data.token.id);

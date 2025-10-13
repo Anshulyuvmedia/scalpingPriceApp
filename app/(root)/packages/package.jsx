@@ -38,7 +38,7 @@ const Package = () => {
             if (!userId || !token) {
                 throw new Error('Please log in to subscribe.');
             }
-
+            console.log('user: ', userId, 'user: ', token);
             const response = await subscribeToPlan(userId, planId, token);
             if (response.success) {
                 setUser({ ...user, planId, expiryDate: response.expiryDate });

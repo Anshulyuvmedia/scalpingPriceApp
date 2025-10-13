@@ -1,9 +1,9 @@
-import { Text, View, FlatList, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
-import React, { useState, useEffect, memo } from 'react';
-import { useRouter } from 'expo-router'; // Use Expo Router
-import { formatDistanceToNow } from 'date-fns';
 import HomeHeader from '@/components/HomeHeader';
 import images from '@/constants/images';
+import { formatDistanceToNow } from 'date-fns';
+import { useRouter } from 'expo-router'; // Use Expo Router
+import { memo, useEffect, useState } from 'react';
+import { Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 // Memoized NewsCard component
@@ -63,7 +63,7 @@ const NewsListing = () => {
         setLoading(true);
         try {
             const { category, keywords } = filterToApiParams[selectedFilter];
-            let url = `http://192.168.1.20:3000/api/TdNews/getNewsData?page=${pageNum}`;
+            let url = `http://192.168.1.47:3000/api/TdNews/getNewsData?page=${pageNum}`;
             if (category) url += `&category=${category}`;
             if (keywords) url += `&keywords=${keywords}`;
 

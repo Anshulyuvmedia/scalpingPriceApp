@@ -1,8 +1,7 @@
-
 import axios from 'axios';
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useState, useMemo } from 'react';
 
-const API_BASE_URL = 'http://192.168.1.20:3000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.1.47:3000/api';
 
 export const PackageContext = createContext();
 
@@ -15,9 +14,13 @@ export const PackageProvider = ({ children }) => {
         try {
             setLoading(true);
             setError(null);
-            // console.log('fetchPlans - Sending GET request to:', `${API_BASE_URL}/TdPlans`);
+            if (process.env.NODE_ENV === 'development') {
+                console.log('fetchPlans - Sending GET request to:', `${API_BASE_URL}/TdPlans`);
+            }
             const response = await axios.get(`${API_BASE_URL}/TdPlans`, { timeout: 10000 });
-            // console.log('fetchPlans - Response:', response.data);
+            if (process.env.NODE_ENV === 'development') {
+                console.log('fetchPlans - Response:', response.data);
+            }
             setPlans(response.data);
         } catch (err) {
             console.error('fetchPlans - Error:', err);
@@ -29,28 +32,58 @@ export const PackageProvider = ({ children }) => {
 
     const subscribeToPlan = async (userId, planId, token) => {
         try {
+            if (!userId || !planId || !token) {
+                throw new Error('Missing required parameters for subscription');
+            }
             setLoading(true);
             setError(null);
-            console.log('subscribeToPlan - Sending POST request to:', `${API_BASE_URL}/TdUsers/subscribeToPlan`, {
-                userId,
-                planId,
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            if (process.env.NODE_ENV === 'development') {
+                console.log('subscribeToPlan - Sending POST request to:', `${API_BASE_URL}/TdSubscriptions`, {
+                    userId,
+                    planId,
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            }
             const response = await axios.post(
-                `${API_BASE_URL}/TdUsers/subscribeToPlan`,
+                `${API_BASE_URL}/TdSubscriptions`,
                 { userId, planId },
                 { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }
             );
-            console.log('subscribeToPlan - Response:', response.data);
+            if (process.env.NODE_ENV === 'development') {
+                console.log('subscribeToPlan - Response:', response.data);
+            }
             return response.data;
         } catch (err) {
             console.error('subscribeToPlan - Error:', err);
-            const errorMessage = err.response?.data?.error?.message || 'Failed to subscribe to plan';
-            console.log('subscribeToPlan - Error message:', errorMessage);
-            if (errorMessage.includes('No role assigned')) {
-                throw new Error('Session issue: Please log out and log in again.');
+            const errorCode = err.response?.data?.error?.code || err.code;
+            const errorMessage = err.response?.data?.error?.message || err.message || 'Failed to subscribe to plan';
+            let userFriendlyMessage;
+            switch (errorCode) {
+                case 'INVALID_TOKEN':
+                    userFriendlyMessage = 'Session issue: Please log out and log in again.';
+                    break;
+                case 'UNAUTHORIZED':
+                    userFriendlyMessage = 'You are not authorized to perform this action.';
+                    break;
+                case 'USER_NOT_FOUND':
+                    userFriendlyMessage = 'User not found.';
+                    break;
+                case 'PLAN_NOT_FOUND':
+                    userFriendlyMessage = 'Plan not found.';
+                    break;
+                case 'INVALID_DURATION':
+                    userFriendlyMessage = 'Invalid plan duration.';
+                    break;
+                case 'ECONNABORTED':
+                case 'Network Error':
+                    userFriendlyMessage = 'Network error. Please check your connection and try again.';
+                    break;
+                default:
+                    userFriendlyMessage = errorMessage;
             }
-            throw new Error(errorMessage);
+            console.log('subscribeToPlan - Error message:', userFriendlyMessage);
+            setError(userFriendlyMessage);
+            throw new Error(userFriendlyMessage);
         } finally {
             setLoading(false);
         }
@@ -60,8 +93,10 @@ export const PackageProvider = ({ children }) => {
         fetchPlans();
     }, []);
 
+    const value = useMemo(() => ({ plans, loading, error, fetchPlans, subscribeToPlan }), [plans, loading, error]);
+
     return (
-        <PackageContext.Provider value={{ plans, loading, error, fetchPlans, subscribeToPlan }}>
+        <PackageContext.Provider value={value}>
             {children}
         </PackageContext.Provider>
     );
