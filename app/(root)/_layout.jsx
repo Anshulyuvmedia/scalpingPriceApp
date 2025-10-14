@@ -13,6 +13,8 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="settings" options={{ headerShown: false }} />
             <Stack.Screen name="tradealertscreens" options={{ headerShown: false }} />
             <Stack.Screen name="packages/package" options={{ headerShown: false }} />
+            <Stack.Screen name="portfolio" options={{ headerShown: false }} />
+            <Stack.Screen name="OrderHistoryScreen" options={{ headerShown: false }} />
         </Stack>
     );
 }

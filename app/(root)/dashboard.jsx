@@ -1,5 +1,5 @@
 import HomeHeader from '@/components/HomeHeader';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
@@ -14,9 +14,9 @@ const API_BASE_URL = 'http://192.168.1.47:3000/api';
 
 const menuItems = [
     // { name: 'Algo Builder', route: 'algobuilder', icon: 'rocket' },
-    // { name: 'Detailed Metrics', route: 'detailedmatrics', icon: 'chart-bar' },
     // { name: 'Strategy Backtesting', route: 'strategybacktesting', icon: 'history' },
-    { name: 'Packages', route: 'packages/package', icon: 'robot' },
+    { name: 'Portfolio', route: 'portfolio', icon: 'chart-bar' },
+    { name: 'Packages', route: 'packages/package', icon: 'rocket' },
     { name: 'Settings', route: 'settings', icon: 'robot' },
 ];
 
@@ -56,7 +56,9 @@ const MenuButton = ({ item, onPress, isLogout = false }) => {
                                 style={styles.buttonIcon}
                             />
                             <Text style={styles.buttonText}>{isLogout ? 'Logout' : item.name}</Text>
+
                         </View>
+                        <MaterialIcons name="arrow-forward-ios" size={20} color="white" style={styles.buttonIcon} />
                     </LinearGradient>
                 </LinearGradient>
             </TouchableOpacity>
@@ -96,7 +98,7 @@ const Dashboard = () => {
 
     return (
         <View style={styles.container}>
-            <HomeHeader page={'chatbot'} title={'Settings'} />
+            <HomeHeader page={'chatbot'} title={'Dashboard'} />
             <View style={styles.content}>
                 <View style={styles.menuContainer}>
                     {menuItems.map((item, index) => (
@@ -150,6 +152,9 @@ const styles = StyleSheet.create({
     buttonGradient: {
         borderRadius: 16,
         overflow: 'hidden',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     buttonBorder: {
         borderRadius: 16,

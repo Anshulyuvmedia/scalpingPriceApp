@@ -15,11 +15,11 @@ export const PackageProvider = ({ children }) => {
             setLoading(true);
             setError(null);
             if (process.env.NODE_ENV === 'development') {
-                console.log('fetchPlans - Sending GET request to:', `${API_BASE_URL}/TdPlans`);
+                // console.log('fetchPlans - Sending GET request to:', `${API_BASE_URL}/TdPlans`);
             }
             const response = await axios.get(`${API_BASE_URL}/TdPlans`, { timeout: 10000 });
             if (process.env.NODE_ENV === 'development') {
-                console.log('fetchPlans - Response:', response.data);
+                // console.log('fetchPlans - Response:', response.data);
             }
             setPlans(response.data);
         } catch (err) {
