@@ -11,7 +11,7 @@ export const ForexProvider = ({ children }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get('http://192.168.1.47:3000/api/ForexRates/products');
+                const response = await axios.get('http://192.168.1.38:3000/api/ForexRates/products');
                 // console.log('fx:', response.data.data);
                 const data = response.data.data || { forex: [], crypto: [], binary: [], commodity: [] }; // Extract 'data' key
                 setRates(data);

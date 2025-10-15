@@ -107,7 +107,9 @@ const AlgoView = () => {
 
     return (
         <View style={styles.container}>
-            <HomeHeader page="algo" />
+            <View className="px-3">
+                <HomeHeader page="algo" />
+            </View>
             <View style={styles.tabViewContainer}>
                 <TabView
                     navigationState={{ index, routes }}
@@ -128,7 +130,7 @@ export default AlgoView;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16, // Increased padding for better spacing
+        // padding: 5, // Increased padding for better spacing
         backgroundColor: '#000',
     },
     gradientBoxBorder: {

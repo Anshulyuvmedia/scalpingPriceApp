@@ -8,7 +8,7 @@ import images from '@/constants/images';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const TABS = ['Neutral', 'Bullish', 'Bearish', 'Others'];
+const TABS = ['All','Neutral', 'Bullish', 'Bearish'];
 
 const IndicatorBased = () => {
     const [activeTab, setActiveTab] = useState('Neutral');
@@ -19,7 +19,7 @@ const IndicatorBased = () => {
         { id: '3', name: 'Short Strangle', imageuri: images.shortstrangle, type: 'Neutral' },
         { id: '4', name: 'Bull Call Spread', imageuri: images.shortstraddle, type: 'Bullish' },
         { id: '5', name: 'Bear Put Spread', imageuri: images.ironbutterfly, type: 'Bearish' },
-        { id: '6', name: 'Long Straddle', imageuri: images.shortstrangle, type: 'Others' },
+        { id: '6', name: 'Long Straddle', imageuri: images.shortstrangle, type: 'All' },
         { id: '7', name: 'Call Option', imageuri: images.shortstraddle, type: 'Bullish' },
         { id: '8', name: 'Put Option', imageuri: images.ironbutterfly, type: 'Bearish' },
     ];
@@ -36,7 +36,7 @@ const IndicatorBased = () => {
             >
                 <View className="bg-black rounded-full">
                     <View style={styles.tabBox}>
-                        <Text className="text-white font-questrial text-base">{item}</Text>
+                        <Text className="text-white font-questrial">{item}</Text>
                     </View>
                 </View>
             </LinearGradient>
@@ -87,9 +87,9 @@ const styles = StyleSheet.create({
     },
     tabBox: {
         paddingHorizontal: 18,
-        paddingVertical: 10,
+        paddingVertical: 7,
         borderRadius: 100,
-        minWidth: 100,
+        minWidth: 80,
         alignItems: 'center',
     },
     tabList: {

@@ -1,4 +1,3 @@
-// app/(root)/chatbotscreens/tabview/signaldetail/[id].jsx
 import { StyleSheet, Text, View, TouchableOpacity, Dimensions, FlatList, RefreshControl, TextInput } from 'react-native';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -6,68 +5,17 @@ import HomeHeader from '@/components/HomeHeader';
 import LinearGradient from 'react-native-linear-gradient';
 import { LineChart } from 'react-native-chart-kit';
 import RBSheet from 'react-native-raw-bottom-sheet';
-import { Feather } from '@expo/vector-icons';
 
-// Move signalData outside component to prevent re-creation
-const signalData = [
-    {
-        id: '1',
-        title: 'Bank Nifty',
-        description: 'Bank Nifty Index Future',
-        value: '42350.25',
-        change: '-1.2%',
-        entry: '₹ 4200',
-        target: '₹ 4250',
-        stopLoss: '₹ 4150',
-        exit: '₹ 4230'
-    },
-    {
-        id: '2',
-        title: 'Nifty 50',
-        description: 'Nifty 50 Index',
-        value: '24567.80',
-        change: '+0.8%',
-        entry: '₹ 24500',
-        target: '₹ 24700',
-        stopLoss: '₹ 24400',
-        exit: '₹ 24600'
-    },
-    {
-        id: '3',
-        title: 'RELIANCE',
-        description: 'Reliance Industries Ltd',
-        value: '2456.75',
-        change: '+2.1%',
-        entry: '₹ 2450',
-        target: '₹ 2500',
-        stopLoss: '₹ 2430',
-        exit: '₹ 2480'
-    },
-    {
-        id: '4',
-        title: 'TCS',
-        description: 'Tata Consultancy Services Ltd',
-        value: '3789.50',
-        change: '-0.5%',
-        entry: '₹ 3780',
-        target: '₹ 3820',
-        stopLoss: '₹ 3760',
-        exit: '₹ 3800'
-    },
-    {
-        id: '5',
-        title: 'HDFCBANK',
-        description: 'HDFC Bank Ltd',
-        value: '1567.30',
-        change: '+1.3%',
-        entry: '₹ 1560',
-        target: '₹ 1580',
-        stopLoss: '₹ 1550',
-        exit: '₹ 1570'
-    },
+// Move stockData outside component to prevent re-creation
+const stockData = [
+    { id: '1', title: 'RELIANCE', company: 'Reliance Industries Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
+    { id: '2', title: 'TCS', company: 'Tata Consultancy Services Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
+    { id: '3', title: 'HDFCBANK', company: 'HDFC Bank Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
+    { id: '4', title: 'INFY', company: 'Infosys Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
+    { id: '5', title: 'ICICIBANK', company: 'ICICI Bank Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
 ];
 
-const SignalDetail = () => {
+const StockDetails = () => {
     const { id } = useLocalSearchParams();
     const sheetRef = useRef(null);
     const router = useRouter();
@@ -82,40 +30,42 @@ const SignalDetail = () => {
         { time: '2:00', price: 2615 },
         { time: '3:00', price: 2600 },
     ]);
-    const [signalLevels, setSignalLevels] = useState([]);
+    const [fundamentalsData, setFundamentalsData] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
     const [action, setAction] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [orderType, setOrderType] = useState('Market');
 
-    // Memoize signal to prevent unnecessary re-renders
-    const signal = useMemo(() => signalData.find((item) => item.id === id), [id]);
+    // Memoize stock to prevent unnecessary re-renders
+    const stock = useMemo(() => stockData.find((item) => item.id === id), [id]);
 
-    // Calculate total value (always call useMemo, even if signal is undefined)
+    // Calculate total value (always call useMemo, even if stock is undefined)
     const totalValue = useMemo(() => {
-        if (!signal) return 0;
+        if (!stock) return 0;
         const qty = Number(quantity);
-        const price = Number((signal.value || '0').replace(/,/g, ''));
+        const price = Number((stock.value || '0').replace(',', ''));
         return isNaN(qty) ? 0 : (qty * price).toFixed(2);
-    }, [quantity, signal?.value, signal]);
+    }, [quantity, stock?.value, stock]);
 
     // Use useEffect instead of conditional useMemo
     useEffect(() => {
-        if (signal) {
-            setSignalLevels([
-                { label: 'Entry', value: signal.entry, color: 'text-white' },
-                { label: 'Target', value: signal.target, color: 'text-green-400' },
-                { label: 'Stop-Loss', value: signal.stopLoss, color: 'text-red-600' },
-                { label: 'Exit', value: signal.exit, color: 'text-white' },
+        if (stock) {
+            setFundamentalsData([
+                { label: 'P/E Ratio', value: stock.peRatio },
+                { label: 'Volume', value: stock.volume },
+                { label: 'Market Cap', value: stock.mcap },
+                { label: 'Dividend Yield', value: '1.5%' },
+                { label: 'EPS', value: '95.30' },
+                { label: 'Beta', value: '1.2' },
             ]);
         }
-    }, [signal]);
+    }, [stock]);
 
-    // Early return if signal is not found
-    if (!signal) {
+    // Early return if stock is not found
+    if (!stock) {
         return (
             <View style={styles.container}>
-                <Text style={styles.errorText}>Signal not found</Text>
+                <Text style={styles.errorText}>Stock not found</Text>
             </View>
         );
     }
@@ -150,25 +100,27 @@ const SignalDetail = () => {
                 { time: '2:00', price: 2615 },
                 { time: '3:00', price: 2600 },
             ]);
-            setSignalLevels([
-                { label: 'Entry', value: signal.entry, color: 'text-white' },
-                { label: 'Target', value: signal.target, color: 'text-green-400' },
-                { label: 'Stop-Loss', value: signal.stopLoss, color: 'text-red-600' },
-                { label: 'Exit', value: signal.exit, color: 'text-white' },
+            setFundamentalsData([
+                { label: 'P/E Ratio', value: stock.peRatio },
+                { label: 'Volume', value: stock.volume },
+                { label: 'Market Cap', value: stock.mcap },
+                { label: 'Dividend Yield', value: '1.5%' },
+                { label: 'EPS', value: '95.30' },
+                { label: 'Beta', value: '1.2' },
             ]);
             setRefreshing(false);
         }, 1000);
     };
 
-    const renderLevelItem = ({ item }) => (
+    const renderFundamentalItem = ({ item }) => (
         <LinearGradient
             colors={['#2A2A3D', '#1E1E2F']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.levelItem}
+            style={styles.fundamentalItem}
         >
-            <Text style={styles.levelLabel}>{item.label}</Text>
-            <Text style={[styles.levelValue, { color: item.color }]}>{item.value}</Text>
+            <Text style={styles.fundamentalLabel}>{item.label}</Text>
+            <Text style={styles.fundamentalValue}>{item.value}</Text>
         </LinearGradient>
     );
 
@@ -191,23 +143,23 @@ const SignalDetail = () => {
         // Navigate to confirmation screen
         router.push({
             pathname: '/stockdiscovery/confirmorder',
-            params: { stock: signal.title, action, quantity: `${quantity} shares`, orderType, price: signal.value, totalValue }
+            params: { stock: stock.title, action, quantity: `${quantity} shares`, orderType, price: stock.value, totalValue }
         });
         sheetRef.current?.close();
     };
 
     return (
         <View style={styles.container}>
-            <HomeHeader page={'chatbot'} title={signal.title} />
+            <HomeHeader page={'chatbot'} title={stock.title} />
             <View style={styles.headerSection}>
                 <View>
-                    <Text style={styles.title}>{signal.title}</Text>
-                    <Text style={styles.company}>{signal.description}</Text>
+                    <Text style={styles.title}>{stock.title}</Text>
+                    <Text style={styles.company}>{stock.company}</Text>
                 </View>
                 <View style={styles.valueContainer}>
-                    <Text style={styles.value}>₹{signal.value}</Text>
-                    <Text style={[styles.change, signal.change.includes('-') ? styles.negativeChange : styles.positiveChange]}>
-                        {signal.change}
+                    <Text style={styles.value}>₹{stock.value}</Text>
+                    <Text style={[styles.change, stock.change.includes('-') ? styles.negativeChange : styles.positiveChange]}>
+                        {stock.change}
                     </Text>
                 </View>
             </View>
@@ -237,15 +189,16 @@ const SignalDetail = () => {
                 />
             </View>
 
-            <View style={styles.levelsContainer}>
-                <Text style={styles.sectionTitle}>Signal Levels</Text>
+            <View style={styles.fundamentalsContainer}>
+                <Text style={styles.sectionTitle}>Fundamentals</Text>
                 <FlatList
-                    data={signalLevels}
-                    renderItem={renderLevelItem}
+                    data={fundamentalsData}
+                    renderItem={renderFundamentalItem}
                     keyExtractor={(item, index) => index.toString()}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.levelsList}
+                    numColumns={2}
+                    columnWrapperStyle={styles.fundamentalsGrid}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.fundamentalsList}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#05FF93']} />
                     }
@@ -255,7 +208,7 @@ const SignalDetail = () => {
             <View style={styles.buttonContainer}>
                 <TouchableOpacity
                     onPress={() => openSheet('Buy')}
-                    accessibilityLabel={`Buy ${signal.title} signal`}
+                    accessibilityLabel={`Buy ${stock.title} stock`}
                     style={[styles.actionButton, styles.buyButton]}
                 >
                     <View>
@@ -265,7 +218,7 @@ const SignalDetail = () => {
 
                 <TouchableOpacity
                     onPress={() => openSheet('Sell')}
-                    accessibilityLabel={`Sell ${signal.title} signal`}
+                    accessibilityLabel={`Sell ${stock.title} stock`}
                     style={[styles.actionButton, styles.sellButton]}
                 >
                     <View>
@@ -285,8 +238,8 @@ const SignalDetail = () => {
                 }}
             >
                 <View style={styles.sheetContent}>
-                    <Text style={styles.sheetTitle}>{action} Order - {signal.title}</Text>
-                    <Text style={styles.sheetPrice}>Current Price: ₹{signal.value}</Text>
+                    <Text style={styles.sheetTitle}>{action} Order - {stock.title}</Text>
+                    <Text style={styles.sheetPrice}>Current Price: ₹{stock.value}</Text>
 
                     <View style={styles.orderContainer}>
                         <Text style={styles.subtitle}>Quantity:</Text>
@@ -325,7 +278,7 @@ const SignalDetail = () => {
                         <Text style={styles.sectionTitle}>Order Summary</Text>
                         <View style={styles.summaryRow}>
                             <Text style={styles.subtitle}>Current Price:</Text>
-                            <Text style={styles.summaryValue}>₹{signal.value}</Text>
+                            <Text style={styles.summaryValue}>₹{stock.value}</Text>
                         </View>
                         <View style={styles.summaryRow}>
                             <Text style={styles.subtitle}>Quantity:</Text>
@@ -354,13 +307,14 @@ const SignalDetail = () => {
     );
 };
 
-export default SignalDetail;
+export default StockDetails;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
         padding: 10,
+
     },
     headerSection: {
         marginBottom: 20,
@@ -410,31 +364,33 @@ const styles = StyleSheet.create({
     chartLine: {
         borderRadius: 16,
     },
-    levelsContainer: {
+    fundamentalsContainer: {
         marginBottom: 25,
         flex: 1,
     },
-    levelsList: {
+    fundamentalsGrid: {
+        justifyContent: 'space-between',
+    },
+    fundamentalsList: {
         paddingBottom: 10,
     },
-    levelItem: {
+    fundamentalItem: {
         borderRadius: 12,
         padding: 15,
-        marginRight: 10,
+        width: '48%',
         justifyContent: 'center',
-        minWidth: 80,
+        marginBottom: 10,
     },
-    levelLabel: {
+    fundamentalLabel: {
         color: '#A9A9A9',
         fontSize: 14,
         fontWeight: '500',
         marginBottom: 5,
-        textAlign: 'center',
     },
-    levelValue: {
+    fundamentalValue: {
+        color: '#FFF',
         fontSize: 16,
         fontWeight: '600',
-        textAlign: 'center',
     },
     buttonContainer: {
         flexDirection: 'row',

@@ -4,10 +4,10 @@ import HomeHeader from '@/components/HomeHeader';
 import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router'; // Import useRouter from expo-router
+import { useRouter } from 'expo-router';
 
 const Portfolio = () => {
-    const router = useRouter(); // Use Expo Router's router
+    const router = useRouter();
     const [refreshing, setRefreshing] = useState(false);
     const [selectedStock, setSelectedStock] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -85,6 +85,10 @@ const Portfolio = () => {
     const totalRealisedPL = userPortfolio.reduce((sum, stock) => sum + stock.realisedPL, 0);
     const totalDaysPL = userPortfolio.reduce((sum, stock) => sum + stock.daysPL, 0);
     const daysPLPercent = (totalDaysPL / totalInvestment) * 100;
+    const totalPLPercent = (totalPL / totalInvestment) * 100;
+    const unrealisedPLPercent = (totalUnrealisedPL / totalInvestment) * 100;
+    const realisedPLPercent = (totalRealisedPL / totalInvestment) * 100;
+    const currentValuePercent = ((totalCurrentValue - totalInvestment) / totalInvestment) * 100;
 
     // Filtered and sorted portfolio
     const filteredPortfolio = useMemo(() => {
@@ -180,128 +184,57 @@ const Portfolio = () => {
         switch (item.type) {
             case 'portfolio':
                 return (
-
                     <View style={styles.portfolioContainer}>
                         <View style={styles.summaryContainer}>
-                            <LinearGradient
-                                colors={['#4E4E6A', '#2A2A40']}
-                                start={{ x: 1, y: 1 }}
-                                end={{ x: 0.2, y: 0 }}
-                                style={styles.gradientBorder}
-                            >
-                                <LinearGradient
-                                    colors={['#000', '#1E1E2F']}
-                                    start={{ x: 1, y: 1 }}
-                                    end={{ x: 0.2, y: 0 }}
-                                    style={styles.stockRow}
-                                >
-                                    <View style={styles.summaryCard}>
-                                        <Text style={styles.summaryLabel}>Current Value</Text>
-                                        <Text style={styles.summaryValue}>₹{totalCurrentValue.toFixed(2)}</Text>
-                                    </View>
-                                </LinearGradient>
-                            </LinearGradient>
-
-                            <LinearGradient
-                                colors={['#4E4E6A', '#2A2A40']}
-                                start={{ x: 1, y: 1 }}
-                                end={{ x: 0.2, y: 0 }}
-                                style={styles.gradientBorder}
-                            >
-                                <LinearGradient
-                                    colors={['#000', '#1E1E2F']}
-                                    start={{ x: 1, y: 1 }}
-                                    end={{ x: 0.2, y: 0 }}
-                                    style={styles.stockRow}
-                                >
-                                    <View style={styles.summaryCard}>
-                                        <Text style={styles.summaryLabel}>Investment</Text>
-                                        <Text style={styles.summaryValue}>₹{totalInvestment.toFixed(2)}</Text>
-                                    </View>
-                                </LinearGradient>
-                            </LinearGradient>
-
-                            <LinearGradient
-                                colors={['#4E4E6A', '#2A2A40']}
-                                start={{ x: 1, y: 1 }}
-                                end={{ x: 0.2, y: 0 }}
-                                style={styles.gradientBorder}
-                            >
-                                <LinearGradient
-                                    colors={['#000', '#1E1E2F']}
-                                    start={{ x: 1, y: 1 }}
-                                    end={{ x: 0.2, y: 0 }}
-                                    style={styles.stockRow}
-                                >
-                                    <View style={styles.summaryCard}>
-                                        <Text style={styles.summaryLabel}>Total P&L</Text>
-                                        <Text style={[styles.summaryValue, totalPL < 0 ? styles.negativeValue : styles.positiveValue]}>
-                                            ₹{totalPL.toFixed(2)}
-                                        </Text>
-                                    </View>
-                                </LinearGradient>
-                            </LinearGradient>
-                            <LinearGradient
-                                colors={['#4E4E6A', '#2A2A40']}
-                                start={{ x: 1, y: 1 }}
-                                end={{ x: 0.2, y: 0 }}
-                                style={styles.gradientBorder}
-                            >
-                                <LinearGradient
-                                    colors={['#000', '#1E1E2F']}
-                                    start={{ x: 1, y: 1 }}
-                                    end={{ x: 0.2, y: 0 }}
-                                    style={styles.stockRow}
-                                >
-                                    <View style={styles.summaryCard}>
-                                        <Text style={styles.summaryLabel}>Unrealised P&L</Text>
-                                        <Text style={[styles.summaryValue, totalUnrealisedPL < 0 ? styles.negativeValue : styles.positiveValue]}>
-                                            ₹{totalUnrealisedPL.toFixed(2)}
-                                        </Text>
-                                    </View>
-                                </LinearGradient>
-                            </LinearGradient>
-                            <LinearGradient
-                                colors={['#4E4E6A', '#2A2A40']}
-                                start={{ x: 1, y: 1 }}
-                                end={{ x: 0.2, y: 0 }}
-                                style={styles.gradientBorder}
-                            >
-                                <LinearGradient
-                                    colors={['#000', '#1E1E2F']}
-                                    start={{ x: 1, y: 1 }}
-                                    end={{ x: 0.2, y: 0 }}
-                                    style={styles.stockRow}
-                                >
-                                    <View style={styles.summaryCard}>
-                                        <Text style={styles.summaryLabel}>Realised P&L</Text>
-                                        <Text style={[styles.summaryValue, totalRealisedPL < 0 ? styles.negativeValue : styles.positiveValue]}>
-                                            ₹{totalRealisedPL.toFixed(2)}
-                                        </Text>
-                                    </View>
-                                </LinearGradient>
-                            </LinearGradient>
-                            <LinearGradient
-                                colors={['#4E4E6A', '#2A2A40']}
-                                start={{ x: 1, y: 1 }}
-                                end={{ x: 0.2, y: 0 }}
-                                style={styles.gradientBorder}
-                            >
-                                <LinearGradient
-                                    colors={['#000', '#1E1E2F']}
-                                    start={{ x: 1, y: 1 }}
-                                    end={{ x: 0.2, y: 0 }}
-                                    style={styles.stockRow}
-                                >
-                                    <View style={styles.summaryCard}>
-                                        <Text style={styles.summaryLabel}>Day&apos;s P&L</Text>
-                                        <Text style={[styles.summaryValue, totalDaysPL < 0 ? styles.negativeValue : styles.positiveValue]}>
-                                            ₹{totalDaysPL.toFixed(2)} ({daysPLPercent.toFixed(2)}%)
-                                        </Text>
-                                    </View>
-                                </LinearGradient>
-                            </LinearGradient>
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryLabel}>Current Value</Text>
+                                <Text style={styles.summaryValue}>₹{totalCurrentValue.toFixed(2)}</Text>
+                                <Text style={[styles.summaryPercent, currentValuePercent < 0 ? styles.negativeValue : styles.positiveValue]}>
+                                    ({currentValuePercent.toFixed(2)}%)
+                                </Text>
+                            </View>
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryLabel}>Investment</Text>
+                                <Text style={styles.summaryValue}>₹{totalInvestment.toFixed(2)}</Text>
+                            </View>
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryLabel}>Total P&L</Text>
+                                <Text style={[styles.summaryValue, totalPL < 0 ? styles.negativeValue : styles.positiveValue]}>
+                                    ₹{totalPL.toFixed(2)}
+                                </Text>
+                                <Text style={[styles.summaryPercent, totalPLPercent < 0 ? styles.negativeValue : styles.positiveValue]}>
+                                    ({totalPLPercent.toFixed(2)}%)
+                                </Text>
+                            </View>
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryLabel}>Unrealised P&L</Text>
+                                <Text style={[styles.summaryValue, totalUnrealisedPL < 0 ? styles.negativeValue : styles.positiveValue]}>
+                                    ₹{totalUnrealisedPL.toFixed(2)}
+                                </Text>
+                                <Text style={[styles.summaryPercent, unrealisedPLPercent < 0 ? styles.negativeValue : styles.positiveValue]}>
+                                    ({unrealisedPLPercent.toFixed(2)}%)
+                                </Text>
+                            </View>
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryLabel}>Realised P&L</Text>
+                                <Text style={[styles.summaryValue, totalRealisedPL < 0 ? styles.negativeValue : styles.positiveValue]}>
+                                    ₹{totalRealisedPL.toFixed(2)}
+                                </Text>
+                                <Text style={[styles.summaryPercent, realisedPLPercent < 0 ? styles.negativeValue : styles.positiveValue]}>
+                                    ({realisedPLPercent.toFixed(2)}%)
+                                </Text>
+                            </View>
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryLabel}>Day&apos;s P&L</Text>
+                                <Text style={[styles.summaryValue, totalDaysPL < 0 ? styles.negativeValue : styles.positiveValue]}>
+                                    ₹{totalDaysPL.toFixed(2)}
+                                </Text>
+                                <Text style={[styles.summaryPercent, daysPLPercent < 0 ? styles.negativeValue : styles.positiveValue]}>
+                                    ({daysPLPercent.toFixed(2)}%)
+                                </Text>
+                            </View>
                         </View>
+                        <Text style={styles.sectionTitle}>Stock Portfolio</Text>
                         <FlatList
                             data={item.data}
                             renderItem={renderStockItem}
@@ -506,12 +439,11 @@ const Portfolio = () => {
                                 <Text style={styles.buttonText}>Sell</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.actionButton} onPress={() => console.log('Get Quote')}>
-                                <Text style={[styles.buttonText, { color: 'black', }]}>Get Quote</Text>
+                                <Text style={styles.sellButtonText}>Get Quote</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
-                )
-                }
+                )}
             </RBSheet>
 
             <RBSheet
@@ -598,7 +530,7 @@ const Portfolio = () => {
                     </TouchableOpacity>
                 </View>
             </RBSheet>
-        </View >
+        </View>
     );
 };
 
@@ -613,6 +545,7 @@ const styles = StyleSheet.create({
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginBottom: 10,
     },
     searchInput: {
         flex: 1,
@@ -671,15 +604,15 @@ const styles = StyleSheet.create({
     summaryContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 10,
+        marginBottom: 20,
         flexWrap: 'wrap',
     },
     summaryCard: {
-        // backgroundColor: '#2A2A40',
-        // borderRadius: 10,
-        // padding: 10,
-        // width: '30%',
-        // marginBottom: 10,
+        backgroundColor: '#2A2A40',
+        borderRadius: 10,
+        padding: 10,
+        width: '30%',
+        marginBottom: 10,
     },
     summaryLabel: {
         color: '#A9A9A9',
@@ -701,7 +634,8 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 10,
     },
-    stockColumn: {},
+    stockColumn: {
+    },
     stockRowItem: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -754,8 +688,7 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 20,
         fontWeight: '600',
-        marginBottom: 20,
-        textAlign: 'center',
+        marginBottom: 10,
     },
     sheetDetail: {
         color: '#A9A9A9',
@@ -778,15 +711,14 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     sellButton: {
-        borderColor: '#FFC107',
-        borderWidth: 2,
+        backgroundColor: '#FFC107',
         padding: 10,
         borderRadius: 10,
         alignItems: 'center',
         marginBlock: 20,
     },
     sellButtonText: {
-        color: '#FFC107',
+        color: '#000',
         fontSize: 16,
         fontWeight: '600',
     },

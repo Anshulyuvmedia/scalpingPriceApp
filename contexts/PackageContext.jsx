@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { createContext, useEffect, useState, useMemo } from 'react';
+import { createContext, useEffect, useMemo, useState } from 'react';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.1.47:3000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.1.38:3000/api';
 
 export const PackageContext = createContext();
 

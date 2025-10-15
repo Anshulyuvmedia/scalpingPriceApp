@@ -34,11 +34,11 @@ const styles = StyleSheet.create({
     cardContainer: {
         backgroundColor: '#000',
         borderRadius: 25,
-        paddingHorizontal: 15,
-        paddingVertical: 15,
     },
     graphimg: {
-        width: 130,
-        height: 130,
+        width: '150',
+        height: '150',
+        borderRadius: 25,
+
     },
 });

@@ -26,7 +26,7 @@ const FxDetails = () => {
                     return;
                 }
                 const response = await axios.get(
-                    `http://192.168.1.47:3000/api/ForexRates/product-detail?currencyPair=${encodeURIComponent(currencyPair)}&assetType=${encodeURIComponent(assetType)}`
+                    `http://192.168.1.38:3000/api/ForexRates/product-detail?currencyPair=${encodeURIComponent(currencyPair)}&assetType=${encodeURIComponent(assetType)}`
                 );
                 // console.log('API response:', response.data.data); // Log full response
                 setDetail(response.data.data || response.data); // Handle both cases

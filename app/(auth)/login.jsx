@@ -10,7 +10,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const API_BASE_URL = 'http://192.168.1.47:3000/api'; // Confirm this IP; use your machine's IP if different
+const API_BASE_URL = 'http://192.168.1.38:3000/api'; // Confirm this IP; use your machine's IP if different
 
 const Login = () => {
     const insets = useSafeAreaInsets();
