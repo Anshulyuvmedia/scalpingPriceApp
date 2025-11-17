@@ -27,7 +27,7 @@ const Algo = () => {
             {/* Fixed Content */}
             <View style={styles.fixedContainer}>
 
-                <View className="my-7">
+                <View className="my-5 mx-3">
                     <Text className="text-white text-xl font-sora-extrabold">Algorithmic Trading</Text>
                     <Text className="text-[#AEAEB9] text-base font-questrial mt-4">Your Trading Algorithms</Text>
                     <Text className="text-[#83838D] text-base font-questrial">
@@ -35,7 +35,7 @@ const Algo = () => {
                     </Text>
                 </View>
 
-                <View className="flex-row justify-between items-center">
+                <View className="flex-row justify-between items-center mx-3">
                     <Switch
                         trackColor={{ false: '#444', true: '#444' }}
                         thumbColor={isEnabled ? '#05FF93' : '#f4f3f4'}

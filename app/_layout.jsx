@@ -11,6 +11,7 @@ import { UserContext, UserProvider } from '@/contexts/UserContext';
 import { IndexProvider } from '@/contexts/IndexContext'; // Import IndexProvider
 import { ForexProvider } from '@/contexts/ForexContext';
 import { PackageProvider } from '@/contexts/PackageContext';
+import { StrategyProvider } from '@/contexts/StrategyContext';
 SplashScreen.preventAutoHideAsync();
 
 export default function AppLayout() {
@@ -39,7 +40,9 @@ export default function AppLayout() {
                     <PackageProvider>
                         <IndexProvider>
                             <ForexProvider>
-                                <SafeAreaViewWrapper />
+                                <StrategyProvider>
+                                    <SafeAreaViewWrapper />
+                                </StrategyProvider>
                             </ForexProvider>
                         </IndexProvider>
                     </PackageProvider>

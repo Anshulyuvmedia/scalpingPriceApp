@@ -1,24 +1,31 @@
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import React from 'react';
+// components/SignalCard.jsx
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { Feather } from '@expo/vector-icons';
 
 const MetricItem = ({ label, value, isQuantity, onDecrease, onIncrease }) => (
     <LinearGradient
-        colors={['#3C3B40', '#0C0C1800']} // Green gradient to match theme
+        colors={['#2D2B33', '#1A1A1A']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 0.2, y: 0.6 }}
+        end={{ x: 0.3, y: 0.7 }}
         style={styles.metricGradient}
     >
         <View style={styles.metricContainer}>
             <Text style={styles.metricLabel}>{label}</Text>
             {isQuantity ? (
                 <View style={styles.quantityControls}>
-                    <TouchableOpacity style={styles.quantityButton} onPress={onDecrease}>
-                        <Text style={styles.quantityButtonText}>-</Text>
+                    <TouchableOpacity style={styles.quantityBtn} onPress={onDecrease}>
+                        <Text style={styles.quantityBtnText}>-</Text>
                     </TouchableOpacity>
                     <Text style={styles.metricValue}>{value}</Text>
-                    <TouchableOpacity style={styles.quantityButton} onPress={onIncrease}>
-                        <Text style={styles.quantityButtonText}>+</Text>
+                    <TouchableOpacity style={styles.quantityBtn} onPress={onIncrease}>
+                        <Text style={styles.quantityBtnText}>+</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
@@ -31,47 +38,84 @@ const MetricItem = ({ label, value, isQuantity, onDecrease, onIncrease }) => (
 );
 
 const SignalCard = ({ item }) => {
-    const [quantity, setQuantity] = React.useState(item.quantity);
+    const [quantity, setQuantity] = useState(1);
 
-    const handleDecrease = () => {
-        if (quantity > 1) setQuantity(quantity - 1);
-    };
+    const handleDecrease = () => quantity > 1 && setQuantity(q => q - 1);
+    const handleIncrease = () => setQuantity(q => q + 1);
 
-    const handleIncrease = () => {
-        setQuantity(quantity + 1);
-    };
+    // Extract data safely
+    const name = item.strategyName || 'Unknown Strategy';
+    const type = item.strategyType === 'indicatorbased' ? 'Indicator Based' :
+        item.strategyType === 'timebased' ? 'Time Based' : 'Custom';
+    const interval = item.orderSettings?.interval
+        ? `${item.orderSettings.interval} min`
+        : 'No Interval (Time-based)';
+    const startTime = item.orderSettings?.startTime || '09:16';
+    const days = item.orderSettings?.days?.join(', ') || 'MON-FRI';
+    const created = new Date(item.createdAt).toLocaleDateString('en-IN');
+
+    // Mock live P&L (you'll replace with real later)
+    const entryPrice = 1780;
+    const currentPrice = 1825.50;
+    const target = 1950;
+    const stopLoss = 1720;
+    const pnl = ((currentPrice - entryPrice) / entryPrice * 100).toFixed(2);
 
     return (
         <LinearGradient
-            colors={['#D2BDFF', '#0C0C1800']} // Green gradient for card border
+            colors={['#723CDF', '#9D7BEF', '#0C0C18']}
             start={{ x: 0, y: 0 }}
-            end={{ x: 0.2, y: 0.6 }}
+            end={{ x: 1, y: 1 }}
             style={styles.cardGradient}
         >
-            <View style={styles.cardbox}>
+            <View style={styles.card}>
+                {/* Header */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
-                        <View style={styles.indicatorDot} />
+                        <View style={[styles.dot, { backgroundColor: '#05FF93' }]} />
                         <View>
-                            <Text style={styles.stockName}>{item.stock}</Text>
-                            <Text style={styles.subText}>{item.type}</Text>
-                            <Text style={styles.subText}>{item.date}</Text>
+                            <Text style={styles.strategyName}>{name}</Text>
                         </View>
                     </View>
+                </View>
+                <View style={styles.header}>
+                    <View>
+                        <Text style={styles.typeText}>{type}</Text>
+                        <Text style={styles.dateText}>{days}</Text>
+                    </View>
                     <View style={styles.liveBadge}>
-                        <Text style={styles.liveText}>Live</Text>
+                        <Feather name="zap" size={14} color="#000" />
+                        <Text style={styles.liveText}>LIVE</Text>
                     </View>
                 </View>
 
+                {/* Metrics Row 1 */}
                 <View style={styles.metricsRow}>
-                    <MetricItem label="Entry" value={item.entry} />
-                    <MetricItem label="Current/Exit" value={item.current} />
-                    <MetricItem label="Target" value={item.target} />
+                    <MetricItem label="Entry Time" value={startTime} />
+                    <MetricItem label="Interval" value={interval} />
                 </View>
 
+                {/* Metrics Row 2 - Live Trading */}
                 <View style={styles.metricsRow}>
-                    <MetricItem label="StopLoss" value={item.stopLoss} />
-                    <MetricItem label="P&L/Target Hits" value="---" />
+                    <MetricItem label="Entry" value={entryPrice} />
+                    <MetricItem
+                        label="Current"
+                        value={currentPrice}
+                    />
+                    <MetricItem
+                        label="P&L"
+                        value={
+                            <Text style={{ color: pnl > 0 ? '#05FF93' : '#FF05A1' }}>
+                                {pnl > 0 ? '+' : ''}{pnl}%
+                            </Text>
+                        }
+                    />
+                </View>
+
+                {/* Metrics Row 3 */}
+                <View style={styles.metricsRow}>
+                    <MetricItem label="Target" value={target} />
+                    <MetricItem label="StopLoss" value={stopLoss} />
                     <MetricItem
                         label="Quantity"
                         value={quantity}
@@ -81,12 +125,13 @@ const SignalCard = ({ item }) => {
                     />
                 </View>
 
+                {/* Action Buttons */}
                 <View style={styles.actionsRow}>
-                    <TouchableOpacity style={styles.actionButtonPrimary}>
-                        <Text style={styles.actionButtonText}>Place Order</Text>
+                    <TouchableOpacity style={styles.primaryBtn}>
+                        <Text style={styles.primaryBtnText}>Execute Now</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButtonSecondary}>
-                        <Text style={styles.actionButtonText}>About Signal</Text>
+                    <TouchableOpacity style={styles.secondaryBtn}>
+                        <Text style={styles.secondaryBtnText}>View Details</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -98,136 +143,142 @@ export default SignalCard;
 
 const styles = StyleSheet.create({
     cardGradient: {
-        borderRadius: 25,
-        padding: 1,
-        marginTop: 5,
+        borderRadius: 28,
+        padding: 1.5,
+        marginHorizontal: 16,
+        marginVertical: 8,
     },
-    cardbox: {
-        backgroundColor: '#000000', // Black background to match theme
-        borderRadius: 25,
-        padding: 15,
+    card: {
+        backgroundColor: '#000',
+        borderRadius: 26,
+        padding: 18,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
+        alignItems: 'flex-start',
     },
     headerLeft: {
         flexDirection: 'row',
-        alignItems: 'start',
+        alignItems: 'flex-start',
     },
-    indicatorDot: {
-        width: 12, // Reduced from 24 (w-6) for consistency
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#8349FF', // Green to match theme
-        marginRight: 8,
-        marginTop: 8,
+    dot: {
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        marginRight: 12,
+        marginTop: 4,
     },
-    stockName: {
+    strategyName: {
         color: '#FFFFFF',
-        fontSize: 18,
+        fontSize: 19,
         fontWeight: 'bold',
-        fontFamily: 'Questrial-Regular', // Match Signals and SwingTrade
+        fontFamily: 'Sora-ExtraBold',
+    },
+    typeText: {
+        color: '#9D7BEF',
+        fontSize: 13,
+        fontFamily: 'Sora-SemiBold',
+        marginTop: 2,
+    },
+    dateText: {
+        color: '#666',
+        fontSize: 12,
+        marginTop: 2,
     },
     liveBadge: {
-        backgroundColor: '#05FF93', // Green to match theme
-        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#05FF93',
         paddingHorizontal: 12,
-        paddingVertical: 4,
-        elevation: 4, // Shadow for Android
-        shadowColor: '#05FF93', // Shadow for iOS
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.5,
-        shadowRadius: 4,
+        paddingVertical: 6,
+        borderRadius: 20,
     },
     liveText: {
-        color: '#000000', // Black for contrast
-        fontSize: 12,
+        color: '#000',
         fontWeight: 'bold',
-        fontFamily: 'Questrial-Regular',
-    },
-    subText: {
-        color: '#A0A0A0',
-        fontSize: 14,
-        fontFamily: 'Questrial-Regular',
+        fontSize: 12,
+        marginLeft: 4,
     },
     metricsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginVertical: 8,
+        marginVertical: 6,
     },
     metricGradient: {
-        borderRadius: 7,
+        borderRadius: 12,
         padding: 1,
         flex: 1,
         marginHorizontal: 4,
     },
     metricContainer: {
+        backgroundColor: '#0F0F0F',
+        borderRadius: 11,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
         alignItems: 'center',
-        backgroundColor: '#000000', // Black background
-        borderRadius: 7,
-        padding: 12,
     },
     metricLabel: {
-        color: '#A0A0A0',
-        fontSize: 14,
-        fontFamily: 'Questrial-Regular',
-        borderBottomWidth: 1,
-        borderBottomColor: '#3C3B40',
-        paddingBottom: 4,
+        color: '#888',
+        fontSize: 12,
+        fontFamily: 'Sora-Medium',
+        marginBottom: 4,
     },
     metricValue: {
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: 'bold',
-        fontFamily: 'Questrial-Regular',
-        margin: 5,
+        fontFamily: 'Sora-Bold',
     },
     quantityControls: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 5,
+        gap: 12,
+        marginTop: 4,
     },
-    quantityButton: {
-        backgroundColor: '#000', // Green to match theme
-        borderRadius: 5,
-        borderColor: 'white',
-        borderWidth: 1,
-        paddingHorizontal: 8,
-        paddingVertical: 0,
-
+    quantityBtn: {
+        backgroundColor: '#723CDF',
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    quantityButtonText: {
-        color: '#fff', // Black for contrast
+    quantityBtnText: {
+        color: '#FFF',
         fontSize: 20,
         fontWeight: 'bold',
     },
     actionsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 8,
+        marginTop: 16,
+        gap: 12,
     },
-    actionButtonPrimary: {
-        backgroundColor: '#723CDF', // Green to match theme
-        borderRadius: 24,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+    primaryBtn: {
+        flex: 1,
+        backgroundColor: '#723CDF',
+        paddingVertical: 14,
+        borderRadius: 30,
+        alignItems: 'center',
     },
-    actionButtonSecondary: {
-        backgroundColor: '#000000',
-        borderColor: '#383848', // Green border
-        borderWidth: 1,
-        borderRadius: 24,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-    },
-    actionButtonText: {
-        color: '#fff', // Black for primary, white for secondary
-        fontSize: 14,
+    primaryBtnText: {
+        color: '#FFF',
         fontWeight: 'bold',
-        fontFamily: 'Questrial-Regular',
-        textAlign: 'center',
+        fontSize: 15,
+    },
+    secondaryBtn: {
+        flex: 1,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderColor: '#723CDF',
+        paddingVertical: 14,
+        borderRadius: 30,
+        alignItems: 'center',
+    },
+    secondaryBtnText: {
+        color: '#723CDF',
+        fontWeight: 'bold',
+        fontSize: 15,
     },
 });

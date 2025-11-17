@@ -9,7 +9,7 @@ import LinearGradient from 'react-native-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
-const API_BASE_URL = 'http://192.168.1.38:3000/api';
+const API_BASE_URL = 'http://192.168.1.37:3000/api';
 
 const Settings = () => {
     const [user, setUser] = useState(null);
@@ -160,7 +160,6 @@ const Settings = () => {
     if (loading) {
         return (
             <View style={styles.container}>
-                <HomeHeader page={'chatbot'} title={'Menu'} />
                 <View style={styles.content}>
                     <ActivityIndicator size="large" color="#3B82F6" />
                 </View>
