@@ -63,7 +63,7 @@ const NewsListing = () => {
         setLoading(true);
         try {
             const { category, keywords } = filterToApiParams[selectedFilter];
-            let url = `http://192.168.1.38:3000/api/TdNews/getNewsData?page=${pageNum}`;
+            let url = `http://192.168.1.37:3000/api/TdNews/getNewsData?page=${pageNum}`;
             if (category) url += `&category=${category}`;
             if (keywords) url += `&keywords=${keywords}`;
 

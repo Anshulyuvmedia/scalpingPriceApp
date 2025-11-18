@@ -43,7 +43,7 @@ const VideosPlayers = () => {
     const [playing, setPlaying] = useState(false);
     const videoRef = useRef(null);
 
-    const API_BASE_URL = 'http://192.168.1.38:3000/api';
+    const API_BASE_URL = 'http://192.168.1.37:3000/api';
 
     const getVideoSourceType = (url) => {
         if (!url) return 'unknown';

@@ -1,6 +1,6 @@
 import { StyleSheet, View, FlatList, RefreshControl, Text, TouchableOpacity, TextInput } from 'react-native';
 import React, { useState, useRef, useMemo } from 'react';
-import HomeHeader from '@/components/HomeHeader';
+import HomeHeader from '@/components/HomeHeader';   
 import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import { MaterialIcons } from '@expo/vector-icons';

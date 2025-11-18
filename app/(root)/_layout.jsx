@@ -15,6 +15,7 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="packages/package" options={{ headerShown: false }} />
             <Stack.Screen name="portfolio" options={{ headerShown: false }} />
             <Stack.Screen name="OrderHistoryScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="StrategyDetailScreen" options={{ title: 'StrategyDetailScreen' }} />
         </Stack>
     );
 }

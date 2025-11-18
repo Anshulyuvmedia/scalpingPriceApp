@@ -55,14 +55,7 @@ export const StrategyProvider = ({ children }) => {
         // Duplicate intraday strategies into ALL three tabs as you want
         stockOption.push(...intradayStrategies);
         indexOption.push(...intradayStrategies);
-        indexStrategies.push(...intradayStrategies);   // ← Optional: remove this line if you don't want it here
-
-        console.log('DUPLICATED INTRADAY RESULT →', {
-            SwingTrade: swingTrade.length,
-            StockOption: stockOption.length,      // ← 11
-            IndexOption: indexOption.length,      // ← 11 (same!)
-            IndexStrategies: indexStrategies.length, // ← 11 (or 0 if you remove the line above)
-        });
+        indexStrategies.push(...intradayStrategies);
 
         setSwingTrade(swingTrade);
         setStockOption(stockOption);

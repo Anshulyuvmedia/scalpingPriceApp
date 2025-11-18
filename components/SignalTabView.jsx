@@ -7,7 +7,7 @@ import {
     TouchableOpacity,
     RefreshControl,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import SignalCard from './SignalCard';
 
 // Shared context so SignalCard knows which broker to use
@@ -48,7 +48,7 @@ const SignalTabView = ({
             <View className="flex-1 mt-3 pr-3">
 
                 {/* Broker Selection */}
-                <View>
+                <View className="">
                     <FlatList
                         data={brokers}
                         renderItem={renderBrokerChip}
@@ -60,14 +60,18 @@ const SignalTabView = ({
                 </View>
 
                 {/* Performance Header */}
-                <View className="flex-row justify-between items-center my-3">
+                <View className="flex-row justify-between items-center my-3 px-3">
                     <Text className="text-white text-lg font-sora-bold">Performance Ratio</Text>
                     <View className="flex-row items-center rounded-xl overflow-hidden">
-                        <View className="px-4 py-2 bg-green-600">
-                            <Text className="text-white font-sora-bold">Up 68.4%</Text>
+                        <View className="px-2 py-2 bg-green-600">
+                            <Text className="text-white font-sora-bold">
+                            <MaterialCommunityIcons name="arrow-up-thin" size={20} color="white" />
+                            68.4%</Text>
                         </View>
-                        <View className="px-4 py-2 bg-red-600">
-                            <Text className="text-white font-sora-bold">Down 31.6%</Text>
+                        <View className="px-2 py-2 bg-red-600">
+                            <Text className="text-white font-sora-bold">
+                            <MaterialCommunityIcons name="arrow-down-thin" size={20} color="white" />
+                            31.6%</Text>
                         </View>
                     </View>
                     <Feather name="settings" size={24} color="white" />
@@ -86,6 +90,7 @@ const SignalTabView = ({
                             <Text className="text-gray-500 text-lg">{emptyMessage}</Text>
                         </View>
                     }
+                    showsVerticalScrollIndicator={false}
                 />
             </View>
         </BrokerContext.Provider>

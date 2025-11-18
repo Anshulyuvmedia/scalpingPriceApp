@@ -119,6 +119,7 @@ const AlgoView = () => {
                     lazy
                     renderTabBar={renderTabBar}
                     style={styles.tabView}
+                    swipeEnabled={false}
                 />
             </View>
         </View>

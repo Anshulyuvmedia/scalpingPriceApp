@@ -94,7 +94,7 @@ const Signals = () => {
     return (
         <View style={styles.Container}>
             {/* Header */}
-            <View className="flex-row justify-between items-start px-2">
+            <View className="flex-row justify-between items-start px-3">
                 <View>
                     <Text className="text-white text-2xl font-sora-extrabold">Signals</Text>
                     <Text className="text-gray-500 text-sm mt-1">

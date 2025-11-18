@@ -99,6 +99,7 @@ const ChatbotScreen = () => {
                     initialLayout={initialLayout}
                     lazy
                     renderTabBar={renderTabBar}
+                    swipeEnabled={false}
                 />
             </View>
         </View>
