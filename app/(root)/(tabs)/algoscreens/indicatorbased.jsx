@@ -15,7 +15,7 @@ const TABS = ['Bullish', 'Bearish', 'Neutral', 'Others'];
 
 const IndicatorBased = () => {
     const [activeTab, setActiveTab] = useState('Bullish');
-    const router = useRouter(); 
+    const router = useRouter();
 
     const Pattern_Data = [
         { id: '1', name: 'Buy Call', type: 'Bullish' },

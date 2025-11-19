@@ -1,8 +1,8 @@
 // contexts/StrategyContext.jsx
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-const API_BASE_URL = 'http://192.168.1.37:3000/api'; // Change in production
+const API_BASE_URL = 'http://192.168.1.23:3000/api'; // Change in production
 
 // Create Context
 const StrategyContext = createContext(undefined);

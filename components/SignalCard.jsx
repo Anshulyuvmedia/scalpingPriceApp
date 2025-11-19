@@ -8,8 +8,9 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
-const MetricItem = ({ label, value, isQuantity, onDecrease, onIncrease }) => (
+const MetricItem = ({ label, value, isQuantity, onDecrease, onIncrease, valueStyle }) => (
     <LinearGradient
         colors={['#2D2B33', '#1A1A1A']}
         start={{ x: 0, y: 0 }}
@@ -29,7 +30,7 @@ const MetricItem = ({ label, value, isQuantity, onDecrease, onIncrease }) => (
                     </TouchableOpacity>
                 </View>
             ) : (
-                <Text style={styles.metricValue}>
+                <Text style={[styles.metricValue, valueStyle]}>
                     {typeof value === 'number' ? value.toFixed(2) : value}
                 </Text>
             )}
@@ -38,28 +39,34 @@ const MetricItem = ({ label, value, isQuantity, onDecrease, onIncrease }) => (
 );
 
 const SignalCard = ({ item }) => {
-    const [quantity, setQuantity] = useState(1);
+    // Use quantity from API if exists, otherwise default to 1
+    const [quantity, setQuantity] = useState(item.quantity || 1);
+    const navigation = useNavigation();
+    // console.log(item);
+    // Extract real data safely
+    const instrument = item.instruments?.[0] || {};
+    const currentPrice = instrument.price || 0;
+    const symbol = instrument.name || 'NIFTY';
 
-    const handleDecrease = () => quantity > 1 && setQuantity(q => q - 1);
-    const handleIncrease = () => setQuantity(q => q + 1);
+    // === REAL Entry, Target, SL from signal ===
+    const entryPrice = item.entryPrice || currentPrice * 0.98; // fallback
+    const targetPrice = item.targetPrice || entryPrice * 1.08;  // fallback: +8%
+    const stopLossPrice = item.stopLossPrice || entryPrice * 0.97; // fallback: -3%
 
-    // Extract data safely
+    // Live P&L calculation
+    const pnlPercent = entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
+
     const name = item.strategyName || 'Unknown Strategy';
-    const type = item.strategyType === 'indicatorbased' ? 'Indicator Based' :
-        item.strategyType === 'timebased' ? 'Time Based' : 'Custom';
-    const interval = item.orderSettings?.interval
-        ? `${item.orderSettings.interval} min`
-        : 'No Interval (Time-based)';
-    const startTime = item.orderSettings?.startTime || '09:16';
     const days = item.orderSettings?.days?.join(', ') || 'MON-FRI';
-    const created = new Date(item.createdAt).toLocaleDateString('en-IN');
+    const startTime = item.orderSettings?.startTime || '09:16';
+    const interval = item.orderSettings?.interval ? `${item.orderSettings.interval} min` : 'Time-based';
 
-    // Mock live P&L (you'll replace with real later)
-    const entryPrice = 1780;
-    const currentPrice = 1825.50;
-    const target = 1950;
-    const stopLoss = 1720;
-    const pnl = ((currentPrice - entryPrice) / entryPrice * 100).toFixed(2);
+    const handleViewDetails = () => {
+        navigation.navigate('SignalDetails', {
+            signal: item,
+            quantity, // pass current selected quantity
+        });
+    };
 
     return (
         <LinearGradient
@@ -69,7 +76,6 @@ const SignalCard = ({ item }) => {
             style={styles.cardGradient}
         >
             <View style={styles.card}>
-                {/* Header */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
                         <View style={[styles.dot, { backgroundColor: '#05FF93' }]} />
@@ -78,9 +84,10 @@ const SignalCard = ({ item }) => {
                         </View>
                     </View>
                 </View>
+
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.typeText}>{type}</Text>
+                        <Text style={styles.symbolText}>{symbol}</Text>
                         <Text style={styles.dateText}>{days}</Text>
                     </View>
                     <View style={styles.liveBadge}>
@@ -89,48 +96,33 @@ const SignalCard = ({ item }) => {
                     </View>
                 </View>
 
-                {/* Metrics Row 1 */}
+                {/* Metrics */}
                 <View style={styles.metricsRow}>
                     <MetricItem label="Entry Time" value={startTime} />
                     <MetricItem label="Interval" value={interval} />
                 </View>
 
-                {/* Metrics Row 2 - Live Trading */}
                 <View style={styles.metricsRow}>
                     <MetricItem label="Entry" value={entryPrice} />
-                    <MetricItem
-                        label="Current"
-                        value={currentPrice}
-                    />
+                    <MetricItem label="Current" value={currentPrice} />
                     <MetricItem
                         label="P&L"
                         value={
-                            <Text style={{ color: pnl > 0 ? '#05FF93' : '#FF05A1' }}>
-                                {pnl > 0 ? '+' : ''}{pnl}%
+                            <Text style={{ color: pnlPercent > 0 ? '#05FF93' : '#FF05A1' }}>
+                                {pnlPercent > 0 ? '+' : ''}{pnlPercent.toFixed(2)}%
                             </Text>
                         }
                     />
                 </View>
 
-                {/* Metrics Row 3 */}
                 <View style={styles.metricsRow}>
-                    <MetricItem label="Target" value={target} />
-                    <MetricItem label="StopLoss" value={stopLoss} />
-                    <MetricItem
-                        label="Quantity"
-                        value={quantity}
-                        isQuantity
-                        onDecrease={handleDecrease}
-                        onIncrease={handleIncrease}
-                    />
+                    <MetricItem label="Target" value={targetPrice} />
+                    <MetricItem label="StopLoss" value={stopLossPrice} />
+                    <MetricItem label="Quantity" value={quantity} />
                 </View>
 
-                {/* Action Buttons */}
                 <View style={styles.actionsRow}>
-                    <TouchableOpacity style={styles.primaryBtn}>
-                        <Text style={styles.primaryBtnText}>Execute Now</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.secondaryBtn}>
+                    <TouchableOpacity style={styles.secondaryBtn} onPress={handleViewDetails}>
                         <Text style={styles.secondaryBtnText}>View Details</Text>
                     </TouchableOpacity>
                 </View>
@@ -280,5 +272,14 @@ const styles = StyleSheet.create({
         color: '#723CDF',
         fontWeight: 'bold',
         fontSize: 15,
+    },
+    symbolText: {
+        color: '#05FF93',
+        fontSize: 13,
+        fontFamily: 'Sora-Medium',
+        marginTop: 2,
+    },
+    headerRight: {
+        alignItems: 'flex-end',
     },
 });

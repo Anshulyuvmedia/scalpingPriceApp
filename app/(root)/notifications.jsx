@@ -25,7 +25,7 @@ const Notifications = () => {
     const [selectedNotification, setSelectedNotification] = useState(null);
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = 'http://192.168.1.37:3000/api';
+    const API_BASE_URL = 'http://192.168.1.23:3000/api';
 
     // Load read status from AsyncStorage
     const loadReadStatus = useCallback(async () => {

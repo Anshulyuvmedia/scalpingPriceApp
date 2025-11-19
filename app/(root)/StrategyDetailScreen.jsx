@@ -1,17 +1,29 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import { getTemplateLegs } from '@/constants/templateConfigs';
+// app/(tabs)/strategy-detail.tsx
 import HomeHeader from '@/components/HomeHeader';
-import { useLocalSearchParams } from 'expo-router';
+import { getTemplateLegs } from '@/constants/templateConfigs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // or your auth method
-const API_BASE_URL = 'http://192.168.1.37:3000/api'; // Change in production
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React from 'react';
+import {
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    Modal,
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+
+const API_BASE_URL = 'http://192.168.1.23:3000/api';
 
 const StrategyDetailScreen = () => {
     const { name } = useLocalSearchParams();
     const strategyName = Array.isArray(name) ? name[0] : name;
     const [loading, setLoading] = React.useState(false);
+    const [errorModal, setErrorModal] = React.useState(null);
+    const router = useRouter();
 
     const legs = React.useMemo(() => {
         const baseLegs = getTemplateLegs(strategyName || '');
@@ -19,31 +31,27 @@ const StrategyDetailScreen = () => {
     }, [strategyName]);
 
     const handleRunStrategy = async () => {
-        if (!strategyName || legs.length === 0) {
-            Alert.alert('Error', 'Invalid strategy');
-            return;
-        }
+        if (!strategyName || legs.length === 0) return;
 
         setLoading(true);
+        setErrorModal(null); // Clear previous error
 
         try {
-            // Get auth token (adjust based on how you store it)
-            const token = await AsyncStorage.getItem('access_token');
+            const token = await AsyncStorage.getItem('userToken');
             if (!token) {
-                Alert.alert('Authentication Error', 'Please log in again');
+                setErrorModal('Session expired. Please log in again.');
                 setLoading(false);
                 return;
             }
 
-            // Prepare payload exactly as your LoopBack backend expects
             const payload = {
                 strategyName,
                 legs: legs.map(leg => ({
                     action: leg.isBuy ? 'BUY' : 'SELL',
                     qty: leg.currentQty || leg.qty,
-                    optionType: leg.isCE, // 'CE' or 'PE'
+                    optionType: leg.isCE,
                     expiryType: leg.isWeekly ? 'WEEKLY' : 'MONTHLY',
-                    strikeCriteria: leg.firstSelection,     // e.g., "ATM", "ITM 2", etc.
+                    strikeCriteria: leg.firstSelection,
                     strikeValue: leg.secondSelection,
                     slTrigger: leg.slSelection,
                     slQty: leg.slQty,
@@ -52,43 +60,39 @@ const StrategyDetailScreen = () => {
                     entryTiming: leg.onSelection,
                     exitTiming: leg.onSelectionSec,
                 })),
-                executedAt: new Date().toISOString(),
-                status: 'PENDING', // or 'ACTIVE', 'SCANNING'
             };
 
             const response = await axios.post(
-                'https://your-api-domain.com/api/strategies/run', // Change to your actual endpoint
+                `${API_BASE_URL}/indicator-strategies/run`,
                 payload,
                 {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        Authorization: token,
                         'Content-Type': 'application/json',
                     },
                 }
             );
 
-            if (response.data && response.data.id) {
-                Alert.alert(
-                    'Success',
-                    'Strategy submitted successfully! Scanning market now...',
-                    [
-                        {
-                            text: 'OK',
-                            onPress: () => {
-                                // Optionally navigate to active strategies screen
-                            }
-                        }
-                    ]
-                );
-            }
+            const result = response.data.result || response.data;
+
+            // SUCCESS → Go directly to results screen (no modal)
+            router.push({
+                pathname: '/StrategyResult',
+                params: {
+                    strategyName,
+                    strategyId: result.id || result.strategyId || 'N/A',
+                    resultData: JSON.stringify(result),
+                },
+            });
+
         } catch (error) {
-            console.error('Run Strategy Error:', error.response || error);
-
-            const message = error.response?.data?.error?.message ||
+            const msg =
+                error.response?.data?.error?.message ||
                 error.message ||
-                'Failed to run strategy';
+                'Failed to run strategy. Please try again.';
 
-            Alert.alert('Error', message);
+            // Show error in modal
+            setErrorModal(msg);
         } finally {
             setLoading(false);
         }
@@ -105,6 +109,7 @@ const StrategyDetailScreen = () => {
 
     return (
         <View style={styles.container}>
+            {/* Main Content */}
             <View style={styles.bodyHeader}>
                 <HomeHeader page="chatbot" title="Strategy Details" />
             </View>
@@ -117,11 +122,8 @@ const StrategyDetailScreen = () => {
                     style={styles.cardGradient}
                 >
                     <View style={styles.cardBox}>
-                        {/* Header & Legs same as before */}
                         <View style={styles.header}>
-                            <View>
-                                <Text style={styles.strategyName}>{strategyName}</Text>
-                            </View>
+                            <Text style={styles.strategyName}>{strategyName}</Text>
                             <View style={styles.badge}>
                                 <Text style={styles.badgeText}>{legs.length} Legs</Text>
                             </View>
@@ -156,7 +158,7 @@ const StrategyDetailScreen = () => {
                 </LinearGradient>
             </ScrollView>
 
-            {/* Run Button with Loading State */}
+            {/* Run Button */}
             <TouchableOpacity
                 style={[styles.runButton, loading && styles.runButtonDisabled]}
                 onPress={handleRunStrategy}
@@ -168,18 +170,40 @@ const StrategyDetailScreen = () => {
                     <Text style={styles.runButtonText}>Run Strategy</Text>
                 )}
             </TouchableOpacity>
+
+            {/* ERROR MODAL ONLY */}
+            <Modal
+                transparent
+                visible={!!errorModal}
+                animationType="fade"
+                onRequestClose={() => setErrorModal(null)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.errorModal}>
+                        <LinearGradient
+                            colors={['#ff4d4d', '#ff1a1a']}
+                            style={styles.errorGradient}
+                        >
+                            <Text style={styles.errorTitle}>Error</Text>
+                            <Text style={styles.errorMessage}>{errorModal}</Text>
+                            <TouchableOpacity
+                                style={styles.errorButton}
+                                onPress={() => setErrorModal(null)}
+                            >
+                                <Text style={styles.errorButtonText}>Close</Text>
+                            </TouchableOpacity>
+                        </LinearGradient>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
 
-// Beautiful Metric Component
 const Metric = ({ label, value, isBuy }) => (
     <View style={styles.metric}>
         <Text style={styles.metricLabel}>{label}</Text>
-        <Text style={[
-            styles.metricValue,
-            isBuy !== undefined ? (isBuy ? styles.buy : styles.sell) : null
-        ]}>
+        <Text style={[styles.metricValue, isBuy !== undefined && (isBuy ? styles.buy : styles.sell)]}>
             {value}
         </Text>
     </View>
@@ -187,53 +211,15 @@ const Metric = ({ label, value, isBuy }) => (
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
+    bodyHeader: { marginHorizontal: 10 },
     scrollContent: { padding: 16 },
     cardGradient: { borderRadius: 28, padding: 2 },
-    cardBox: {
-        backgroundColor: '#000',
-        borderRadius: 26,
-        padding: 20,
-    },
-    bodyHeader: {
-        marginInline: 10,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    strategyName: {
-        color: '#FFF',
-        fontSize: 24,
-        fontWeight: 'bold',
-        fontFamily: 'Questrial-Regular',
-    },
-    strategyInfo: {
-        color: '#AAA',
-        fontSize: 14,
-        marginTop: 4,
-        fontFamily: 'Questrial-Regular',
-    },
-    badge: {
-        backgroundColor: '#723CDF',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-    },
-    badgeText: {
-        color: '#FFF',
-        fontWeight: 'bold',
-        fontSize: 13,
-    },
-    legCard: {
-        backgroundColor: '#111',
-        borderRadius: 18,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: '#222',
-        marginBottom: 10,
-    },
+    cardBox: { backgroundColor: '#000', borderRadius: 26, padding: 20 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    strategyName: { color: '#FFF', fontSize: 24, fontWeight: 'bold', fontFamily: 'Questrial-Regular' },
+    badge: { backgroundColor: '#723CDF', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+    badgeText: { color: '#FFF', fontWeight: 'bold', fontSize: 13 },
+    legCard: { backgroundColor: '#111', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#222', marginBottom: 10 },
     legTitle: {
         color: '#9E68E4',
         fontSize: 17,
@@ -241,52 +227,61 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         backgroundColor: 'black',
         borderRadius: 10,
-        paddingBlock: 5,
+        paddingVertical: 5,
         marginBottom: 12,
         fontFamily: 'Questrial-Regular',
     },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 12,
-    },
-    metric: {
-        flex: 1,
-        alignItems: 'center',
-        paddingHorizontal: 4,
-    },
-    metricLabel: {
-        color: '#888',
-        fontSize: 12,
-        marginBottom: 4,
-        fontFamily: 'Questrial-Regular',
-    },
-    metricValue: {
-        color: '#FFF',
-        fontSize: 15,
-        fontWeight: 'bold',
-        fontFamily: 'Questrial-Regular',
-    },
+    row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+    metric: { flex: 1, alignItems: 'center', paddingHorizontal: 4 },
+    metricLabel: { color: '#888', fontSize: 12, marginBottom: 4, fontFamily: 'Questrial-Regular' },
+    metricValue: { color: '#FFF', fontSize: 15, fontWeight: 'bold', fontFamily: 'Questrial-Regular' },
     buy: { color: '#4ade80', fontSize: 16 },
     sell: { color: '#f87171', fontSize: 16 },
-    runButton: {
-        backgroundColor: '#723CDF',
-        paddingVertical: 18,
-        borderRadius: 10,
+    runButton: { backgroundColor: '#723CDF', paddingVertical: 18, borderRadius: 10, alignItems: 'center', margin: 10 },
+    runButtonDisabled: { opacity: 0.6 },
+    runButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold', fontFamily: 'Questrial-Regular' },
+    errorText: { color: '#f87171', fontSize: 18, textAlign: 'center', marginTop: 100 },
+
+    // Error Modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
         alignItems: 'center',
-        margin: 10,
     },
-    runButtonText: {
+    errorModal: {
+        width: '85%',
+        borderRadius: 20,
+        overflow: 'hidden',
+        elevation: 20,
+    },
+    errorGradient: {
+        padding: 24,
+        alignItems: 'center',
+    },
+    errorTitle: {
         color: '#FFF',
-        fontSize: 18,
+        fontSize: 26,
         fontWeight: 'bold',
-        fontFamily: 'Questrial-Regular',
+        marginBottom: 12,
     },
-    errorText: {
-        color: '#f87171',
-        fontSize: 18,
+    errorMessage: {
+        color: '#FFF',
+        fontSize: 16,
         textAlign: 'center',
-        marginTop: 100,
+        lineHeight: 24,
+        marginBottom: 24,
+    },
+    errorButton: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 32,
+        paddingVertical: 12,
+        borderRadius: 12,
+    },
+    errorButtonText: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });
 
