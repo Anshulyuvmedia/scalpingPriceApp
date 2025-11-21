@@ -101,7 +101,7 @@ const Signals = () => {
                         Real-time trading signals by SEBI registered analysts
                     </Text>
                 </View>
-                <Feather name="menu" size={28} color="white" />
+                {/* <Feather name="menu" size={28} color="white" /> */}
             </View>
 
             {/* Tab View */}

@@ -13,7 +13,7 @@ const AlgoView = () => {
     const [index, setIndex] = useState(0);
     const [routes] = useState([
         { key: 'Signals', title: 'Signals' },
-        { key: 'IndicatorBased', title: 'Indicator Based' },
+        { key: 'IndicatorBased', title: 'Option Sell' },
         { key: 'Algo', title: 'Algo Trading' },
     ]);
     const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);

@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 
 const MetricItem = ({ label, value, isQuantity, onDecrease, onIncrease, valueStyle }) => (
     <LinearGradient
@@ -41,7 +41,8 @@ const MetricItem = ({ label, value, isQuantity, onDecrease, onIncrease, valueSty
 const SignalCard = ({ item }) => {
     // Use quantity from API if exists, otherwise default to 1
     const [quantity, setQuantity] = useState(item.quantity || 1);
-    const navigation = useNavigation();
+    const router = useRouter();
+
     // console.log(item);
     // Extract real data safely
     const instrument = item.instruments?.[0] || {};
@@ -62,9 +63,12 @@ const SignalCard = ({ item }) => {
     const interval = item.orderSettings?.interval ? `${item.orderSettings.interval} min` : 'Time-based';
 
     const handleViewDetails = () => {
-        navigation.navigate('SignalDetails', {
-            signal: item,
-            quantity, // pass current selected quantity
+        router.push({
+            pathname: '/SignalDetails',
+            params: {
+                signal: JSON.stringify(item),        // MUST stringify objects
+                quantity: 150,                       // optional
+            },
         });
     };
 

@@ -80,6 +80,9 @@ const IndicatorBased = () => {
 
     return (
         <View style={styles.container}>
+            <View>
+                <Text className="text-white text-center pt-3 text-lg">Prebuild Templates</Text>
+            </View>
             {/* Tabs */}
             <View style={styles.tabContainer}>
                 <FlatList

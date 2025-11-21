@@ -34,23 +34,6 @@ const SignalTabView = ({
 
     return (
         <View className="flex-1 mt-3 pr-3">
-            {/* Performance Header */}
-            <View className="flex-row justify-between items-center my-3 px-3">
-                <Text className="text-white text-lg font-sora-bold">Performance Ratio</Text>
-                <View className="flex-row items-center rounded-xl overflow-hidden">
-                    <View className="px-2 py-2 bg-green-600">
-                        <Text className="text-white font-sora-bold">
-                            <MaterialCommunityIcons name="arrow-up-thin" size={20} color="white" />
-                            68.4%</Text>
-                    </View>
-                    <View className="px-2 py-2 bg-red-600">
-                        <Text className="text-white font-sora-bold">
-                            <MaterialCommunityIcons name="arrow-down-thin" size={20} color="white" />
-                            31.6%</Text>
-                    </View>
-                </View>
-                <Feather name="settings" size={24} color="white" />
-            </View>
 
             {/* Signals List */}
             <FlatList

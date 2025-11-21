@@ -1,140 +1,194 @@
 // app/(root)/algoscreens/Algo.jsx
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Switch, ScrollView } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+    View,
+    Text,
+    FlatList,
+    TouchableOpacity,
+    Switch,
+    ScrollView,
+    RefreshControl,
+    ActivityIndicator,
+    Alert,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import AlgoCard from '@/components/AlgoCard';
 import { router } from 'expo-router';
-
-const ALGO_DATA = [
-    { id: '1', name: 'BTC Momentum', subtitle: 'Trend Following', date: '2023-06-10  |  14:30', status: 'Active' },
-    { id: '2', name: 'ETH Scalping', subtitle: 'Scalping', date: '2023-06-09  |  22:15', status: 'Inactive' },
-    { id: '3', name: 'BTC Momentum', subtitle: 'Trend Following', date: '2023-06-10  |  14:30', status: 'Active' },
-    { id: '4', name: 'ETH Scalping', subtitle: 'Scalping', date: '2023-06-09  |  22:15', status: 'Active' },
-    { id: '5', name: 'BTC Momentum', subtitle: 'Trend Following', date: '2023-06-10  |  14:30', status: 'Active' },
-];
+import { useStrategies } from '@/contexts/StrategyContext';
 
 const Algo = () => {
-    const [isEnabled, setIsEnabled] = useState(false);
-    const toggleSwitch = () => setIsEnabled(previousState => !previousState);
+    const { getActiveExecutions, refetch: refetchSignals } = useStrategies();
 
-    const filteredAlgoData = isEnabled
-        ? ALGO_DATA
-        : ALGO_DATA.filter(item => item.status === 'Active');
+    const [executions, setExecutions] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [showPaused, setShowPaused] = useState(false);
 
-    return (
-        <View className="flex-1 bg-black">
-            {/* Fixed Content */}
-            <View style={styles.fixedContainer}>
+    const fetchActive = useCallback(async () => {
+        try {
+            const data = await getActiveExecutions();
+            // console.log('data:', data);
+            setExecutions(data || []);
+        } catch (err) {
+            console.log(err.message)
+            Alert.alert('Error', err.message || 'Failed to load algorithms');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, [getActiveExecutions]);
 
-                <View className="my-5 mx-3">
-                    <Text className="text-white text-xl font-sora-extrabold">Algorithmic Trading</Text>
-                    <Text className="text-[#AEAEB9] text-base font-questrial mt-4">Your Trading Algorithms</Text>
-                    <Text className="text-[#83838D] text-base font-questrial">
-                        Manage and monitor your active trading algorithms
+    useEffect(() => {
+        fetchActive();
+    }, [fetchActive]);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await Promise.all([fetchActive(), refetchSignals?.()]);
+    };
+
+    // Separate Running & Queued
+    const running = executions.filter(e => e.status === 'running');
+    const queued = executions.filter(e => e.status === 'queued');
+    const paused = executions.filter(e => e.status === 'paused');
+
+    const filteredRunning = running;
+    const filteredQueued = queued;
+    const filteredPaused = showPaused ? paused : [];
+
+    const handleView = (executionId, executionData) => {
+        router.push({
+            pathname: 'AgloDetailView',
+            params: {
+                executionId,
+                data: JSON.stringify(executionData), // Must stringify full object
+            },
+        });
+    };
+
+    if (loading) {
+        return (
+            <View className="flex-1 bg-black justify-center items-center">
+                <ActivityIndicator size="large" color="#05FF93" />
+                <Text className="text-white mt-4 font-questrial">Loading algorithms...</Text>
+            </View>
+        );
+    }
+
+    const renderSection = (title, data, color) => {
+        if (data.length === 0) return null;
+
+        return (
+            <View className="px-4">
+                <View className="flex-row items-center mb-3">
+                    <View className={`w-2 h-2 rounded-full ${color} mr-2`} />
+                    <Text className="text-white text-lg font-sora-semibold">
+                        {title} ({data.length})
                     </Text>
                 </View>
 
-                <View className="flex-row justify-between items-center mx-3">
-                    <Switch
-                        trackColor={{ false: '#444', true: '#444' }}
-                        thumbColor={isEnabled ? '#05FF93' : '#f4f3f4'}
-                        ios_backgroundColor="#3e3e3e"
-                        onValueChange={toggleSwitch}
-                        value={isEnabled}
-                    />
-                    <Text className="text-[#AEAEB9] font-questrial">Show Paused Algorithms</Text>
+                <FlatList
+                    data={data}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={{ paddingRight: 16 }}
+                    renderItem={({ item }) => {
+                        const strategy = item.strategy || {};
+                        return (
+                            <AlgoCard
+                                id={item.id}
+                                name={strategy.strategyName || 'Unnamed Strategy'}
+                                subtitle={item.broker || 'Custom'}
+                                date={new Date(item.executedAt).toLocaleDateString() + ' ' + new Date(item.executedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                status={item.status}
+                                onPressView={() => handleView(item.id, item)}
+                                onUpdate={fetchActive}
+                            />
+                        );
+                    }}
+                />
+            </View>
+        );
+    };
+
+    return (
+        <View className="flex-1 bg-black">
+            {/* Header */}
+            <View className="px-4 pt-5 pb-4">
+                <Text className="text-white text-2xl font-sora-extrabold">Algorithmic Trading</Text>
+                <Text className="text-[#AEAEB9] text-base font-questrial mt-2">
+                    Live & Queued Algorithms
+                </Text>
+
+                <View className="flex-row justify-between items-center ">
+                    <View className="flex-row items-center gap-3">
+                        <Switch
+                            trackColor={{ false: '#333', true: '#05FF9333' }}
+                            thumbColor={showPaused ? '#05FF93' : '#666'}
+                            onValueChange={setShowPaused}
+                            value={showPaused}
+                        />
+                        <Text className="text-[#AEAEB9] font-questrial">Show Paused</Text>
+                    </View>
+
                     <LinearGradient
                         colors={['#AEAED4', '#000']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={styles.gradientBorder}
+                        style={{ borderRadius: 999, padding: 1.5 }}
                     >
-                        <TouchableOpacity className="flex-row items-center bg-black px-4 py-2 rounded-full">
-                            <Feather name="refresh-cw" size={16} color="#999" />
-                            <Text className="text-white font-questrial ml-2">Refresh data</Text>
+                        <TouchableOpacity
+                            onPress={onRefresh}
+                            disabled={refreshing}
+                            className="flex-row items-center bg-black px-5 py-3 rounded-full"
+                        >
+                            {refreshing ? (
+                                <ActivityIndicator size="small" color="#999" />
+                            ) : (
+                                <Feather name="refresh-cw" size={18} color="#999" />
+                            )}
+                            <Text className="text-white font-questrial ml-2">
+                                {refreshing ? 'Refreshing...' : 'Refresh'}
+                            </Text>
                         </TouchableOpacity>
                     </LinearGradient>
                 </View>
             </View>
 
-            {/* Vertically Scrollable Container */}
+            {/* Scrollable Content */}
             <ScrollView
-                contentContainerStyle={styles.scrollContainer}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#05FF93" />
+                }
                 showsVerticalScrollIndicator={false}
             >
-                {/* Horizontally Scrollable FlatList */}
-                <FlatList
-                    data={filteredAlgoData}
-                    renderItem={({ item }) => (
-                        <AlgoCard
-                            id={item.id}
-                            name={item.name}
-                            subtitle={item.subtitle}
-                            date={item.date}
-                            status={item.status}
-                        />
-                    )}
-                    horizontal
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.listContainer}
-                    showsHorizontalScrollIndicator={false}
-                />
+                {executions.length === 0 ? (
+                    <View className="items-center mt-20 px-10">
+                        <Feather name="activity" size={80} color="#333" />
+                        <Text className="text-[#666] text-center mt-6" style={{ fontFamily: 'Questrial-Regular', fontSize: 18 }}>
+                            No algorithms running
+                        </Text>
+                        <Text className="text-[#555] text-center mt-2 font-questrial">
+                            Execute a strategy from the Signals tab to see it here
+                        </Text>
+                    </View>
+                ) : (
+                    <>
+                        {/* Running First */}
+                        {renderSection('Running Live', filteredRunning, 'bg-green-500')}
 
-                {/* Optional: Add more horizontal FlatLists or other content */}
-                {/* Example placeholder for additional sections */}
-                <View style={styles.placeholderSection}>
-                    <Text className="text-white font-sora-bold text-lg mb-2">More Algorithms</Text>
-                    <FlatList
-                        data={filteredAlgoData}
-                        renderItem={({ item }) => (
-                            <AlgoCard
-                                id={item.id}
-                                name={item.name}
-                                subtitle={item.subtitle}
-                                date={item.date}
-                                status={item.status}
-                            />
-                        )}
-                        horizontal
-                        keyExtractor={(item) => item.id + '-more'}
-                        contentContainerStyle={styles.listContainer}
-                        showsHorizontalScrollIndicator={false}
-                    />
-                </View>
+                        {/* Then Queued */}
+                        {renderSection('In Queue', filteredQueued, 'bg-yellow-500')}
+
+                        {/* Then Paused (only if toggle on) */}
+                        {showPaused && renderSection('Paused', filteredPaused, 'bg-gray-500')}
+                    </>
+                )}
             </ScrollView>
         </View>
     );
 };
 
 export default Algo;
-
-const styles = StyleSheet.create({
-    fixedContainer: {
-        // paddingHorizontal: 10,
-    },
-    gradientBorder: {
-        borderRadius: 100,
-        padding: 1,
-        marginRight: 10,
-    },
-    gradientBox: {
-        borderRadius: 100,
-        marginRight: 10,
-    },
-    tabBox: {
-        paddingHorizontal: 18,
-        paddingVertical: 10,
-        borderRadius: 100,
-    },
-    scrollContainer: {
-        paddingHorizontal: 10,
-        paddingBottom: 50,
-    },
-    listContainer: {
-        paddingVertical: 10,
-    },
-    placeholderSection: {
-        marginTop: 20,
-    },
-});

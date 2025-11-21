@@ -18,6 +18,8 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="StrategyDetailScreen" options={{ title: 'StrategyDetailScreen' }} />
             <Stack.Screen name="StrategyResult" options={{ title: 'StrategyResult' }} />
             <Stack.Screen name="SignalDetails" options={{ title: 'SignalDetails' }} />
+            <Stack.Screen name="SignalResult" options={{ title: 'SignalResult' }} />
+            <Stack.Screen name="AgloDetailView" options={{ title: 'AgloDetailView' }} />
         </Stack>
     );
 }
