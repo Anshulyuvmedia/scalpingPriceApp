@@ -1,309 +1,194 @@
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, FlatList, RefreshControl, TextInput } from 'react-native';
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+// app/stockdiscovery/[id].tsx
+
+import React, { useState, useRef, useMemo } from 'react';
+import {
+    StyleSheet,
+    Text,
+    View,
+    TouchableOpacity,
+    FlatList,
+    Dimensions,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import HomeHeader from '@/components/HomeHeader';
+import TradingViewChart from '@/components/TradingViewChart';
+import OrderBottomSheet from '@/components/OrderBottomSheet';
 import LinearGradient from 'react-native-linear-gradient';
-import { LineChart } from 'react-native-chart-kit';
-import RBSheet from 'react-native-raw-bottom-sheet';
 
-// Move stockData outside component to prevent re-creation
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 const stockData = [
-    { id: '1', title: 'RELIANCE', company: 'Reliance Industries Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
-    { id: '2', title: 'TCS', company: 'Tata Consultancy Services Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
-    { id: '3', title: 'HDFCBANK', company: 'HDFC Bank Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
-    { id: '4', title: 'INFY', company: 'Infosys Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
-    { id: '5', title: 'ICICIBANK', company: 'ICICI Bank Ltd', value: '2456.75', volume: '1,234,567', mcap: '16.6L Cr', change: '+23.45 (0.96%)' },
+    { id: '1', title: 'RELIANCE', company: 'Reliance Industries Ltd', value: '2,956.75', volume: '1.23 Cr', mcap: '20.1L Cr', change: '+43.45 (1.49%)' },
+    { id: '2', title: 'TCS', company: 'Tata Consultancy Services Ltd', value: '4,185.40', volume: '87.6L', mcap: '15.2L Cr', change: '+65.20 (1.58%)' },
+    { id: '3', title: 'HDFCBANK', company: 'HDFC Bank Ltd', value: '1,724.85', volume: '2.1 Cr', mcap: '13.1L Cr', change: '+12.15 (0.71%)' },
+    { id: '4', title: 'INFY', company: 'Infosys Ltd', value: '1,965.30', volume: '98.7L', mcap: '8.1L Cr', change: '+35.10 (1.82%)' },
+    { id: '5', title: 'ICICIBANK', company: 'ICICI Bank Ltd', value: '1,289.60', volume: '1.8 Cr', mcap: '9.0L Cr', change: '-8.40 (-0.65%)' },
 ];
 
 const StockDetails = () => {
     const { id } = useLocalSearchParams();
-    const sheetRef = useRef(null);
     const router = useRouter();
+    const sheetRef = useRef(null);
 
-    // State management
-    const [priceChartData, setPriceChartData] = useState([
-        { time: '9:30', price: 2600 },
-        { time: '10:30', price: 2610 },
-        { time: '11:30', price: 2595 },
-        { time: '12:00', price: 2605 },
-        { time: '1:00', price: 2600 },
-        { time: '2:00', price: 2615 },
-        { time: '3:00', price: 2600 },
-    ]);
-    const [fundamentalsData, setFundamentalsData] = useState([]);
-    const [refreshing, setRefreshing] = useState(false);
     const [action, setAction] = useState('');
-    const [quantity, setQuantity] = useState(1);
+    const [quantity, setQuantity] = useState('');
     const [orderType, setOrderType] = useState('Market');
 
-    // Memoize stock to prevent unnecessary re-renders
-    const stock = useMemo(() => stockData.find((item) => item.id === id), [id]);
+    const stock = useMemo(() => stockData.find(s => s.id === id), [id]);
 
-    // Calculate total value (always call useMemo, even if stock is undefined)
+    const fundamentalsData = useMemo(() => stock ? [
+        { label: 'Volume', value: stock.volume },
+        { label: 'Market Cap', value: stock.mcap },
+        { label: '52W High', value: '₹3,200' },
+        { label: '52W Low', value: '₹2,100' },
+        { label: 'P/E Ratio', value: '28.4' },
+        { label: 'Div Yield', value: '0.38%' },
+    ] : [], [stock]);
+
     const totalValue = useMemo(() => {
-        if (!stock) return 0;
-        const qty = Number(quantity);
-        const price = Number((stock.value || '0').replace(',', ''));
-        return isNaN(qty) ? 0 : (qty * price).toFixed(2);
-    }, [quantity, stock?.value, stock]);
+        if (!stock || !quantity) return '0.00';
+        const price = parseFloat(stock.value.replace(/,/g, ''));
+        const qty = parseInt(quantity) || 0;
+        return (price * qty).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }, [stock, quantity]);
 
-    // Use useEffect instead of conditional useMemo
-    useEffect(() => {
-        if (stock) {
-            setFundamentalsData([
-                { label: 'P/E Ratio', value: stock.peRatio },
-                { label: 'Volume', value: stock.volume },
-                { label: 'Market Cap', value: stock.mcap },
-                { label: 'Dividend Yield', value: '1.5%' },
-                { label: 'EPS', value: '95.30' },
-                { label: 'Beta', value: '1.2' },
-            ]);
-        }
-    }, [stock]);
-
-    // Early return if stock is not found
     if (!stock) {
         return (
             <View style={styles.container}>
-                <Text style={styles.errorText}>Stock not found</Text>
+                <Text style={styles.error}>Stock not found</Text>
             </View>
         );
     }
 
-    // Calculate dynamic yAxisInterval for LineChart
-    const prices = priceChartData.map((data) => data.price);
-    const priceRange = Math.max(...prices) - Math.min(...prices);
-    const yAxisInterval = Math.max(10, Math.round(priceRange / 5));
+    const openSheet = (type) => {
+        setAction(type);
+        setQuantity('1');
+        setOrderType('Market');
+        sheetRef.current?.open();
+    };
 
-    const chartData = {
-        labels: priceChartData.map((data) => data.time),
-        datasets: [
-            {
-                data: priceChartData.map((data) => data.price),
-                color: (opacity = 1) => `rgba(96, 157, 249, ${opacity})`,
-                strokeWidth: 2,
+    const handleConfirm = () => {
+        if (!quantity || parseInt(quantity) <= 0) {
+            alert('Please enter a valid quantity');
+            return;
+        }
+        router.push({
+            pathname: '/stockdiscovery/confirmorder',
+            params: {
+                stock: stock.title,
+                action,
+                quantity: quantity + ' shares',
+                orderType,
+                price: stock.value,
+                totalValue: '₹' + totalValue,
             },
-        ],
+        });
+        sheetRef.current?.close();
     };
 
-    const screenWidth = Dimensions.get('window').width - 40;
-
-    const onRefresh = () => {
-        setRefreshing(true);
-        setTimeout(() => {
-            setPriceChartData([
-                { time: '9:30', price: 2600 },
-                { time: '10:30', price: 2610 },
-                { time: '11:30', price: 2595 },
-                { time: '12:00', price: 2605 },
-                { time: '1:00', price: 2600 },
-                { time: '2:00', price: 2615 },
-                { time: '3:00', price: 2600 },
-            ]);
-            setFundamentalsData([
-                { label: 'P/E Ratio', value: stock.peRatio },
-                { label: 'Volume', value: stock.volume },
-                { label: 'Market Cap', value: stock.mcap },
-                { label: 'Dividend Yield', value: '1.5%' },
-                { label: 'EPS', value: '95.30' },
-                { label: 'Beta', value: '1.2' },
-            ]);
-            setRefreshing(false);
-        }, 1000);
-    };
-
-    const renderFundamentalItem = ({ item }) => (
-        <LinearGradient
-            colors={['#2A2A3D', '#1E1E2F']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.fundamentalItem}
-        >
+    const renderFundamental = ({ item }) => (
+        <LinearGradient colors={['#2A2A3D', '#1E1E2F']} style={styles.fundamentalItem}>
             <Text style={styles.fundamentalLabel}>{item.label}</Text>
             <Text style={styles.fundamentalValue}>{item.value}</Text>
         </LinearGradient>
     );
 
-    const openSheet = (type) => {
-        setAction(type);
-        setQuantity('');
-        setOrderType('Market');
-        sheetRef.current?.open();
-    };
+    const renderItem = ({ item }) => {
+        if (item.type === 'header') {
+            return (
+                <>
+                    <HomeHeader page="chatbot" title={stock.title} />
 
-    const handleToggleOrderType = (type) => {
-        setOrderType(type);
-    };
-
-    const handleConfirm = () => {
-        if (!quantity || isNaN(quantity) || Number(quantity) <= 0) {
-            alert('Please enter a valid quantity');
-            return;
+                    <View style={styles.header}>
+                        <View>
+                            <Text style={styles.title}>{stock.title}</Text>
+                            <Text style={styles.company}>{stock.company}</Text>
+                        </View>
+                        <View style={styles.priceBox}>
+                            <Text style={styles.price}>₹{stock.value}</Text>
+                            <Text style={[styles.change, stock.change.includes('-') ? styles.red : styles.green]}>
+                                {stock.change}
+                            </Text>
+                        </View>
+                    </View>
+                </>
+            );
         }
-        // Navigate to confirmation screen
-        router.push({
-            pathname: '/stockdiscovery/confirmorder',
-            params: { stock: stock.title, action, quantity: `${quantity} shares`, orderType, price: stock.value, totalValue }
-        });
-        sheetRef.current?.close();
+
+        if (item.type === 'chart') {
+            return (
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Live Chart</Text>
+                    <View style={styles.chartWrapper}>
+                        <TradingViewChart symbol={stock.title} />
+                    </View>
+                </View>
+            );
+        }
+
+        if (item.type === 'metrics') {
+            return (
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Key Metrics</Text>
+                    <FlatList
+                        data={fundamentalsData}
+                        renderItem={renderFundamental}
+                        keyExtractor={(_, i) => i.toString()}
+                        numColumns={2}
+                        columnWrapperStyle={styles.row}
+                        scrollEnabled={false}
+                    />
+                </View>
+            );
+        }
+
+        if (item.type === 'footer') {
+            return (
+                <View style={styles.footerButtons}>
+                    <TouchableOpacity onPress={() => openSheet('Buy')} style={[styles.actionBtn, styles.buyBtn]}>
+                        <Text style={styles.buyText}>Buy</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => openSheet('Sell')} style={[styles.actionBtn, styles.sellBtn]}>
+                        <Text style={styles.sellText}>Sell</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        return null;
     };
+
+    const data = [
+        { type: 'header', key: 'header' },
+        { type: 'chart', key: 'chart' },
+        { type: 'metrics', key: 'metrics' },
+        { type: 'footer', key: 'footer' },
+    ];
 
     return (
-        <View style={styles.container}>
-            <HomeHeader page={'chatbot'} title={stock.title} />
-            <View style={styles.headerSection}>
-                <View>
-                    <Text style={styles.title}>{stock.title}</Text>
-                    <Text style={styles.company}>{stock.company}</Text>
-                </View>
-                <View style={styles.valueContainer}>
-                    <Text style={styles.value}>₹{stock.value}</Text>
-                    <Text style={[styles.change, stock.change.includes('-') ? styles.negativeChange : styles.positiveChange]}>
-                        {stock.change}
-                    </Text>
-                </View>
-            </View>
+        <>
+            <FlatList
+                data={data}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.key}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                style={styles.container}
+            />
 
-            <View style={styles.chartContainer}>
-                <Text style={styles.sectionTitle}>Price Chart</Text>
-                <LineChart
-                    data={chartData}
-                    width={screenWidth}
-                    height={200}
-                    yAxisLabel="₹"
-                    yAxisSuffix=""
-                    yAxisInterval={yAxisInterval}
-                    chartConfig={{
-                        backgroundGradientFrom: '#2A2A3D',
-                        backgroundGradientTo: '#1E1E2F',
-                        decimalPlaces: 0,
-                        color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                        labelColor: (opacity = 1) => `rgba(169, 169, 169, ${opacity})`,
-                        style: {
-                            borderRadius: 16,
-                        },
-                    }}
-                    bezier
-                    withVerticalLines={false}
-                    style={styles.chartLine}
-                />
-            </View>
-
-            <View style={styles.fundamentalsContainer}>
-                <Text style={styles.sectionTitle}>Fundamentals</Text>
-                <FlatList
-                    data={fundamentalsData}
-                    renderItem={renderFundamentalItem}
-                    keyExtractor={(item, index) => index.toString()}
-                    numColumns={2}
-                    columnWrapperStyle={styles.fundamentalsGrid}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.fundamentalsList}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#05FF93']} />
-                    }
-                />
-            </View>
-
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                    onPress={() => openSheet('Buy')}
-                    accessibilityLabel={`Buy ${stock.title} stock`}
-                    style={[styles.actionButton, styles.buyButton]}
-                >
-                    <View>
-                        <Text style={styles.buttonText}>Buy</Text>
-                    </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    onPress={() => openSheet('Sell')}
-                    accessibilityLabel={`Sell ${stock.title} stock`}
-                    style={[styles.actionButton, styles.sellButton]}
-                >
-                    <View>
-                        <Text style={styles.buttonsellText}>Sell</Text>
-                    </View>
-                </TouchableOpacity>
-            </View>
-
-            <RBSheet
+            {/* Bottom Sheet */}
+            <OrderBottomSheet
                 ref={sheetRef}
-                closeOnDragDown={true}
-                closeOnPressMask={true}
-                height={700}
-                customStyles={{
-                    container: styles.sheetContainer,
-                    draggableIcon: styles.draggableIcon,
-                }}
-            >
-                <View style={styles.sheetContent}>
-                    <Text style={styles.sheetTitle}>{action} Order - {stock.title}</Text>
-                    <Text style={styles.sheetPrice}>Current Price: ₹{stock.value}</Text>
-
-                    <View style={styles.orderContainer}>
-                        <Text style={styles.subtitle}>Quantity:</Text>
-                        <TextInput
-                            style={styles.quantityInput}
-                            placeholder="Enter quantity"
-                            keyboardType="numeric"
-                            value={quantity}
-                            onChangeText={(text) => setQuantity(text.replace(/[^0-9]/g, ''))}
-                            placeholderTextColor="#A9A9A9"
-                            accessibilityLabel="Quantity input"
-                        />
-
-                        <Text style={styles.subtitle}>Order Type:</Text>
-                        <View style={styles.toggleContainer}>
-                            <TouchableOpacity
-                                style={[styles.toggleButton, orderType === 'Market' ? styles.toggleButtonActive : null]}
-                                onPress={() => handleToggleOrderType('Market')}
-                            >
-                                <Text style={[styles.orderbuttonText, orderType === 'Market' ? styles.activeButtonText : null]}>
-                                    Market
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.toggleButton, orderType === 'Limit' ? styles.toggleButtonActive : null]}
-                                onPress={() => handleToggleOrderType('Limit')}
-                            >
-                                <Text style={[styles.orderbuttonText, orderType === 'Limit' ? styles.activeButtonText : null]}>
-                                    Limit
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    <View style={styles.orderSummary}>
-                        <Text style={styles.sectionTitle}>Order Summary</Text>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.subtitle}>Current Price:</Text>
-                            <Text style={styles.summaryValue}>₹{stock.value}</Text>
-                        </View>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.subtitle}>Quantity:</Text>
-                            <Text style={styles.summaryValue}>{quantity || 0} shares</Text>
-                        </View>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.subtitle}>Order Type:</Text>
-                            <Text style={styles.summaryValue}>{orderType}</Text>
-                        </View>
-                        <View style={[styles.summaryRow, styles.totalRow]}>
-                            <Text style={styles.subtitle}>Total Value:</Text>
-                            <Text style={styles.totalValue}>₹{totalValue}</Text>
-                        </View>
-
-                        <TouchableOpacity
-                            style={styles.confirmButton}
-                            onPress={handleConfirm}
-                            accessibilityLabel="Confirm transaction"
-                        >
-                            <Text style={styles.confirmButtonText}>Confirm</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </RBSheet>
-        </View>
+                action={action}
+                stock={stock}
+                quantity={quantity}
+                setQuantity={setQuantity}
+                orderType={orderType}
+                setOrderType={setOrderType}
+                totalValue={totalValue}
+                onConfirm={handleConfirm}
+            />
+        </>
     );
 };
 
@@ -313,222 +198,52 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
-        padding: 10,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 12,
+        marginVertical: 16,
+    },
+    title: { color: '#FFF', fontSize: 22, fontWeight: '600' },
+    company: { color: '#888', fontSize: 15, marginTop: 4 },
+    priceBox: { alignItems: 'flex-end' },
+    price: { color: '#FFF', fontSize: 26, fontWeight: '700' },
+    change: { fontSize: 16, marginTop: 4 },
+    green: { color: '#05FF93' },
+    red: { color: '#FF0505' },
+    section: { marginBottom: 20, paddingHorizontal: 12 },
+    sectionTitle: { color: '#FFF', fontSize: 19, fontWeight: '600', marginBottom: 12, marginLeft: 4 },
+    chartWrapper: { height: 400, borderRadius: 16, overflow: 'hidden', backgroundColor: '#000' },
 
-    },
-    headerSection: {
-        marginBottom: 20,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    title: {
-        color: '#FFF',
-        fontSize: 20,
-        fontWeight: '400',
-        marginBottom: 5,
-    },
-    company: {
-        color: '#A9A9A9',
-        fontSize: 16,
-        marginBottom: 10,
-    },
-    valueContainer: {
-        flexDirection: 'column',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-    },
-    value: {
-        color: '#FFF',
-        fontSize: 20,
-        fontWeight: '600',
-    },
-    change: {
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    positiveChange: {
-        color: '#05FF93',
-    },
-    negativeChange: {
-        color: '#FF0505',
-    },
-    chartContainer: {
-        marginBottom: 25,
-    },
-    sectionTitle: {
-        color: '#FFF',
-        fontSize: 20,
-        fontWeight: '600',
-        marginBottom: 10,
-    },
-    chartLine: {
-        borderRadius: 16,
-    },
-    fundamentalsContainer: {
-        marginBottom: 25,
-        flex: 1,
-    },
-    fundamentalsGrid: {
-        justifyContent: 'space-between',
-    },
-    fundamentalsList: {
-        paddingBottom: 10,
-    },
+    row: { justifyContent: 'space-between', marginBottom: 12 },
     fundamentalItem: {
-        borderRadius: 12,
-        padding: 15,
         width: '48%',
-        justifyContent: 'center',
-        marginBottom: 10,
+        padding: 16,
+        borderRadius: 12,
     },
-    fundamentalLabel: {
-        color: '#A9A9A9',
-        fontSize: 14,
-        fontWeight: '500',
-        marginBottom: 5,
-    },
-    fundamentalValue: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    buttonContainer: {
+    fundamentalLabel: { color: '#888', fontSize: 13 },
+    fundamentalValue: { color: '#FFF', fontSize: 16, fontWeight: '600', marginTop: 6 },
+
+    footerButtons: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-    },
-    actionButton: {
-        borderRadius: 12,
-        paddingVertical: 12,
-        paddingHorizontal: 25,
-        alignItems: 'center',
-        width: '48%',
-    },
-    buyButton: {
-        backgroundColor: '#05FF93',
-    },
-    sellButton: {
-        backgroundColor: '#FF0505',
-    },
-    buttonText: {
-        color: '#000',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    buttonsellText: {
-        color: '#fffc',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    errorText: {
-        color: '#FF0505',
-        fontSize: 18,
-        textAlign: 'center',
-        marginTop: 20,
-    },
-    sheetContainer: {
-        backgroundColor: '#1E1E2F',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-    },
-    draggableIcon: {
-        backgroundColor: '#333',
-    },
-    sheetContent: {
-        paddingVertical: 20,
-        paddingHorizontal: 10,
-    },
-    sheetTitle: {
-        color: '#FFF',
-        fontSize: 22,
-        fontWeight: '600',
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    sheetPrice: {
-        color: '#A9A9A9',
-        fontSize: 16,
-        marginBottom: 20,
-        textAlign: 'center',
-    },
-    orderContainer: {
-        backgroundColor: '#0f0f1b',
-        padding: 20,
-        borderRadius: 12,
-        marginBottom: 20,
-    },
-    subtitle: {
-        color: '#A9A9A9',
-        fontSize: 16,
-        marginBottom: 10,
-        textAlign: 'left',
-    },
-    quantityInput: {
-        backgroundColor: '#2A2A3D',
-        borderRadius: 10,
-        padding: 10,
-        color: '#FFF',
-        fontSize: 16,
-        marginBottom: 20,
-    },
-    toggleContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 10,
-    },
-    toggleButton: {
-        backgroundColor: '#181822',
-        borderRadius: 10,
-        paddingVertical: 12,
-        alignItems: 'center',
-        width: '48%',
-    },
-    toggleButtonActive: {
-        backgroundColor: '#05FF93',
-    },
-    confirmButton: {
-        backgroundColor: '#05FF93',
-        borderRadius: 10,
-        paddingVertical: 12,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    orderbuttonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    confirmButtonText: {
-        color: '#000',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    activeButtonText: {
-        color: '#000',
-        fontWeight: '700',
-    },
-    orderSummary: {
-        backgroundColor: '#0f0f1b',
-        padding: 20,
-        borderRadius: 12,
-    },
-    summaryRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 10,
-    },
-    totalRow: {
-        paddingTop: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 16,
+        backgroundColor: '#000',
         borderTopWidth: 1,
-        borderTopColor: '#FFF',
-        marginTop: 10,
+        borderTopColor: '#222',
     },
-    summaryValue: {
-        color: '#FFF',
-        fontSize: 16,
+    actionBtn: {
+        width: '48%',
+        paddingVertical: 18,
+        borderRadius: 14,
+        alignItems: 'center',
     },
-    totalValue: {
-        color: '#FFF',
-        fontSize: 24,
-        fontWeight: '600',
-    },
+    buyBtn: { backgroundColor: '#05FF93' },
+    sellBtn: { backgroundColor: '#FF0505' },
+    buyText: { color: '#000', fontSize: 18, fontWeight: '700' },
+    sellText: { color: '#FFF', fontSize: 18, fontWeight: '700' },
+
+    error: { color: '#FF0505', textAlign: 'center', marginTop: 50, fontSize: 18 },
 });

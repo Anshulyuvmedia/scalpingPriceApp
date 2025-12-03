@@ -7,16 +7,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import {
     ActivityIndicator,
+    Modal,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
-    Modal,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-const API_BASE_URL = 'http://192.168.1.23:3000/api';
+const API_BASE_URL = 'http://192.168.1.50:3000/api';
 
 const StrategyDetailScreen = () => {
     const { name } = useLocalSearchParams();

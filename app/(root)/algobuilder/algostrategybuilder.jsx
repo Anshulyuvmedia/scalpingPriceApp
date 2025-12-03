@@ -439,8 +439,8 @@ const AlgoStrategyBuilder = () => {
                         </View>
                     </LinearGradient>
                 </View>
-            </ScrollView >
-        </View >
+            </ScrollView>
+        </View>
     );
 };
 

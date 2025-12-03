@@ -1,9 +1,9 @@
 // contexts/StrategyContext.jsx
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://192.168.1.23:3000/api'; // Change in production
+const API_BASE_URL = 'http://192.168.1.50:3000/api'; // Change in production
 
 // Global axios instance with automatic access_token injection
 const api = axios.create({

@@ -25,7 +25,7 @@ const Notifications = () => {
     const [selectedNotification, setSelectedNotification] = useState(null);
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = 'http://192.168.1.23:3000/api';
+    const API_BASE_URL = 'http://192.168.1.50:3000/api';
 
     // Load read status from AsyncStorage
     const loadReadStatus = useCallback(async () => {
@@ -191,12 +191,12 @@ const Notifications = () => {
             onPress={() => handleNotificationPress(item)}
         >
             <LinearGradient
-                colors={['#000', !item.isRead ? '#2B6BFD' : '#AEAED4']}
-                start={{ x: 0.3, y: 0.6 }}
-                end={{ x: 0, y: 0 }}
+                colors={['#000', !item.isRead ? '#FFA4E9' : '#AEAED4']}
+                start={{ x: 1, y: 1.3 }}
+                end={{ x: 0.2, y: 0 }}
                 style={styles.notificationBorder}
             >
-                <View style={styles.notificationContent}>
+                <View style={[styles.notificationContent, { backgroundColor: !item.isRead ? '#0F0F1A' : '#000' }]}>
                     <Ionicons
                         name={item.isRead ? 'mail-open-outline' : 'mail-outline'}
                         size={20}
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     notificationContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#28282B',
+        backgroundColor: '#000',
         borderRadius: 12,
         padding: 16,
     },

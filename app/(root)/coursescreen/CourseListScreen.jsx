@@ -14,7 +14,7 @@ const CourseListScreen = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = 'http://192.168.1.23:3000/api';
+    const API_BASE_URL = 'http://192.168.1.50:3000/api';
 
     // Debug logging
     // useEffect(() => {

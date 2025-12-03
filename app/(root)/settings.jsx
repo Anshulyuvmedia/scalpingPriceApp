@@ -9,7 +9,7 @@ import LinearGradient from 'react-native-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
-const API_BASE_URL = 'http://192.168.1.23:3000/api';
+const API_BASE_URL = 'http://192.168.1.50:3000/api';
 
 const Settings = () => {
     const [user, setUser] = useState(null);

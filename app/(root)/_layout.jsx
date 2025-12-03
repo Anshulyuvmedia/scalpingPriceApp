@@ -15,11 +15,12 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="packages/package" options={{ headerShown: false }} />
             <Stack.Screen name="portfolio" options={{ headerShown: false }} />
             <Stack.Screen name="OrderHistoryScreen" options={{ headerShown: false }} />
-            <Stack.Screen name="StrategyDetailScreen" options={{ title: 'StrategyDetailScreen' }} />
-            <Stack.Screen name="StrategyResult" options={{ title: 'StrategyResult' }} />
-            <Stack.Screen name="SignalDetails" options={{ title: 'SignalDetails' }} />
-            <Stack.Screen name="SignalResult" options={{ title: 'SignalResult' }} />
-            <Stack.Screen name="AgloDetailView" options={{ title: 'AgloDetailView' }} />
+            <Stack.Screen name="StrategyDetailScreen" options={{ headerShown: false, title: 'StrategyDetailScreen' }} />
+            <Stack.Screen name="StrategyResult" options={{ headerShown: false, title: 'StrategyResult' }} />
+            <Stack.Screen name="SignalDetails" options={{ headerShown: false, title: 'SignalDetails' }} />
+            <Stack.Screen name="SignalResult" options={{ headerShown: false, title: 'SignalResult' }} />
+            <Stack.Screen name="AgloDetailView" options={{ headerShown: false, title: 'AgloDetailView' }} />
+            <Stack.Screen name="StockListScreen" options={{ headerShown: false, title: 'StockListScreen' }} />
         </Stack>
     );
 }
