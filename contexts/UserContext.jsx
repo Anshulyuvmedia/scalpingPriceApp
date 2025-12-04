@@ -1,12 +1,23 @@
 // contexts/UserContext.js
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
+// 1. Create Context
 export const UserContext = createContext();
 
+// 2. Custom Hook — THIS WAS MISSING!
+export const useUser = () => {
+    const context = useContext(UserContext);
+    if (!context) {
+        throw new Error('useUser must be used within a UserProvider');
+    }
+    return context;
+};
+
+// 3. Provider
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
@@ -18,24 +29,23 @@ export const UserProvider = ({ children }) => {
                 const storedToken = await AsyncStorage.getItem('userToken');
                 const storedUser = await AsyncStorage.getItem('userData');
                 const expiry = await AsyncStorage.getItem('tokenExpiry');
-                const expiryDate = expiry && !isNaN(parseInt(expiry)) ? parseInt(expiry) : 0;
+                const expiryDate = expiry ? parseInt(expiry, 10) : 0;
 
-                if (storedToken && storedUser && expiryDate && Date.now() < expiryDate) {
+                if (storedToken && storedUser && expiryDate > Date.now()) {
                     setUser(JSON.parse(storedUser));
                     setToken(storedToken);
-                    // console.log('userData', storedUser, 'token', storedToken);
-
                 } else {
-                    await logout(expiryDate ? "Your session has expired. Please log in again." : undefined);
+                    await logout(expiryDate ? 'Session expired. Please login again.' : undefined);
                 }
             } catch (err) {
-                console.error("Error loading session:", err);
-                await logout("Failed to load session. Please log in again.");
+                console.error('Error loading session:', err);
+                await logout('Failed to load session.');
             } finally {
                 setLoading(false);
-                SplashScreen.hideAsync();
+                await SplashScreen.hideAsync();
             }
         };
+
         loadSession();
     }, []);
 
@@ -46,14 +56,14 @@ export const UserProvider = ({ children }) => {
                 ['userToken', token],
                 ['userData', JSON.stringify(userData)],
                 ['tokenExpiry', expiry.toString()],
-                ['lastRoute', '(root)/(tabs)']
+                ['lastRoute', '(root)/(tabs)'],
             ]);
             setUser(userData);
             setToken(token);
             router.replace('/(root)/(tabs)');
         } catch (error) {
-            console.error('Error saving session:', error);
-            Alert.alert('Error', 'Failed to save session. Please try again.');
+            console.error('Login save error:', error);
+            Alert.alert('Error', 'Failed to save login session.');
         }
     };
 
@@ -63,12 +73,9 @@ export const UserProvider = ({ children }) => {
             setUser(null);
             setToken(null);
             router.replace('/(auth)/login');
-            if (reason) {
-                Alert.alert("Session Ended", reason);
-            }
+            if (reason) Alert.alert('Logged Out', reason);
         } catch (error) {
-            console.error('Error during logout:', error);
-            Alert.alert('Error', 'Failed to clear session. Please try again.');
+            console.error('Logout error:', error);
         }
     };
 

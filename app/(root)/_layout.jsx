@@ -13,7 +13,7 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="settings" options={{ headerShown: false }} />
             <Stack.Screen name="tradealertscreens" options={{ headerShown: false }} />
             <Stack.Screen name="packages/package" options={{ headerShown: false }} />
-            <Stack.Screen name="portfolio" options={{ headerShown: false }} />
+            <Stack.Screen name="PortfolioScreen" options={{ headerShown: false }} />
             <Stack.Screen name="OrderHistoryScreen" options={{ headerShown: false }} />
             <Stack.Screen name="StrategyDetailScreen" options={{ headerShown: false, title: 'StrategyDetailScreen' }} />
             <Stack.Screen name="StrategyResult" options={{ headerShown: false, title: 'StrategyResult' }} />
@@ -21,6 +21,9 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="SignalResult" options={{ headerShown: false, title: 'SignalResult' }} />
             <Stack.Screen name="AgloDetailView" options={{ headerShown: false, title: 'AgloDetailView' }} />
             <Stack.Screen name="StockListScreen" options={{ headerShown: false, title: 'StockListScreen' }} />
+            <Stack.Screen name="BrokerConnection" options={{ headerShown: false, title: 'BrokerConnection' }} />
+            <Stack.Screen name="BrokerForm" options={{ headerShown: false, title: 'BrokerForm' }} />
+            <Stack.Screen name="oauth/dhan" options={{ headerShown: false, title: 'dhan' }} />
         </Stack>
     );
 }

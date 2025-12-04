@@ -8,10 +8,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState, useContext } from 'react';
 import './globals.css';
 import { UserContext, UserProvider } from '@/contexts/UserContext';
-import { IndexProvider } from '@/contexts/IndexContext'; // Import IndexProvider
+import { IndexProvider } from '@/contexts/IndexContext';
 import { ForexProvider } from '@/contexts/ForexContext';
 import { PackageProvider } from '@/contexts/PackageContext';
 import { StrategyProvider } from '@/contexts/StrategyContext';
+import { BrokerProvider } from '@/contexts/BrokerContext';
 SplashScreen.preventAutoHideAsync();
 
 export default function AppLayout() {
@@ -41,7 +42,9 @@ export default function AppLayout() {
                         <IndexProvider>
                             <ForexProvider>
                                 <StrategyProvider>
-                                    <SafeAreaViewWrapper />
+                                    <BrokerProvider>
+                                        <SafeAreaViewWrapper />
+                                    </BrokerProvider>
                                 </StrategyProvider>
                             </ForexProvider>
                         </IndexProvider>
