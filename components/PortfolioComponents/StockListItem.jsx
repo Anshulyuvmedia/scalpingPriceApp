@@ -1,48 +1,74 @@
 // components/portfolio/StockListItem.jsx
+import React from 'react';
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 export default function StockListItem({ item, onPress }) {
-    const currentPrice = (item.investment + item.profitLoss) / item.qty;
-    const cmpPct = ((currentPrice - item.avgPrice) / item.avgPrice) * 100;
-    const uplPct = (item.profitLoss / item.investment) * 100;
+    if (!item || item.qty === 0) return null;
+
+    const qty = Number(item.qty) || 0;
+    const avgPrice = Number(item.avgPrice) || 0;
+    const ltp = Number(item.ltp) || 0;
+    const investment = Number(item.investment) || (avgPrice * qty);
+    const currentValue = ltp * qty;
+    const unrealizedPL = Number(item.profitLoss) || (currentValue - investment);
+    const realisedPL = Number(item.realisedPL) || 0;
+
+    const plPct = investment > 0 ? (unrealizedPL / investment) * 100 : 0;
+    const dailyChangePct = item.changePercent || 0;
+
+    const isProfit = unrealizedPL >= 0;
+    const isDayUp = dailyChangePct >= 0;
+
+    const f = (n) => Math.abs(n).toLocaleString('en-IN');
 
     return (
-        <TouchableOpacity onPress={onPress} style={{ marginBottom: 12 }}>
-            <View style={styles.border}>
-                <LinearGradient colors={['#4E4E6A', '#2A2A40']} style={styles.gradientBorder}>
-                    <LinearGradient colors={['#000', '#1E1E2F']} style={styles.row}>
-                        {/* Left */}
-                        <View>
-                            <Text style={styles.symbol}>{item.symbol}</Text>
-                            <View style={styles.infoRow}>
-                                <Text style={styles.title}>Qty:</Text><Text style={styles.value}>{item.qty}</Text>
-                                <Text style={styles.title}>Avg:</Text><Text style={styles.value}>₹{item.avgPrice.toFixed(2)}</Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Text style={styles.title}>Mkt Val:</Text>
-                                <Text style={styles.value}>₹{(currentPrice * item.qty).toFixed(2)}</Text>
-                            </View>
-                        </View>
+        <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
+            <View style={styles.container}>
+                {/* Subtle profit/loss glow */}
+                <LinearGradient
+                    colors={isProfit
+                        ? ['rgba(5,255,147,0.08)', 'transparent']
+                        : ['rgba(255,51,102,0.08)', 'transparent']
+                    }
+                    style={StyleSheet.absoluteFill}
+                />
 
-                        {/* Right */}
-                        <View style={{ alignItems: 'flex-end' }}>
-                            <View style={styles.infoRow}>
-                                <Text style={styles.title}>CMP:</Text>
-                                <Text style={[styles.price, cmpPct < 0 ? styles.negative : styles.positive]}>₹{currentPrice.toFixed(2)}</Text>
-                                <Text style={[styles.pct, cmpPct < 0 ? styles.negative : styles.positive]}>({cmpPct.toFixed(2)}%)</Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Text style={styles.title}>U. P&L:</Text>
-                                <Text style={[styles.pct, item.profitLoss < 0 ? styles.negative : styles.positive]}>₹{item.profitLoss.toFixed(2)}</Text>
-                                <Text style={[styles.pct, item.profitLoss < 0 ? styles.negative : styles.positive]}>({uplPct.toFixed(2)}%)</Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Text style={styles.title}>Realised:</Text>
-                                <Text style={[styles.pct, item.realisedPL < 0 ? styles.negative : styles.positive]}>₹{item.realisedPL.toFixed(2)}</Text>
-                            </View>
+                <LinearGradient colors={['#1A1A2A', '#12121A']} style={styles.card}>
+                    {/* Row 1: Symbol + LTP + Daily % */}
+                    <View style={styles.row1}>
+                        <Text style={styles.symbol}>{item.symbol}</Text>
+                        <View style={styles.right}>
+                            <Text style={styles.ltp}>₹{ltp.toFixed(1)}</Text>
+                            <Text style={[styles.dailyPct, isDayUp ? styles.green : styles.red]}>
+                                {isDayUp ? '↑' : '↓'}{Math.abs(dailyChangePct).toFixed(2)}%
+                            </Text>
                         </View>
-                    </LinearGradient>
+                    </View>
+
+                    {/* Row 2: Qty • Avg • Unrealized P&L */}
+                    <View style={styles.row2}>
+                        <View className="flex-row gap-3">
+                            <Text style={styles.info}>Qty: <Text style={styles.bold}>{qty.toLocaleString()}</Text></Text>
+                            <Text style={styles.info}>Avg: <Text style={styles.bold}>₹{avgPrice.toFixed(0)}</Text></Text>
+                        </View>
+                        <View style={styles.plBox}>
+                            <Text style={[styles.pl, isProfit ? styles.green : styles.red]}>
+                                {isProfit ? '+' : '-'}₹{f(unrealizedPL)}
+                            </Text>
+                            <Text style={[styles.plPct, isProfit ? styles.green : styles.red]}>
+                                ({isProfit ? '+' : ''}{plPct.toFixed(1)}%)
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Row 3: Market Value + Realised */}
+                    <View style={styles.row3}>
+                        <Text style={styles.marketVal}>Mkt: <Text style={styles.bold}>₹{currentValue.toLocaleString('en-IN')}</Text></Text>
+                        <Text style={[styles.realised, realisedPL > 0 ? styles.green : realisedPL < 0 ? styles.red : styles.white]}>
+                            Realised: {realisedPL >= 0 ? '+' : '-'}₹{f(realisedPL)}
+                        </Text>
+                    </View>
                 </LinearGradient>
             </View>
         </TouchableOpacity>
@@ -50,15 +76,97 @@ export default function StockListItem({ item, onPress }) {
 }
 
 const styles = StyleSheet.create({
-    border: { borderRadius: 15, overflow: 'hidden' },
-    gradientBorder: { padding: 1.5 },
-    row: { flexDirection: 'row', justifyContent: 'space-between', padding: 14, borderRadius: 13 },
-    symbol: { color: '#FFF', fontSize: 17, fontWeight: '600', marginBottom: 8 },
-    infoRow: { flexDirection: 'row', marginBottom: 6, alignItems: 'center' },
-    title: { color: '#888', fontSize: 13, marginRight: 6 },
-    value: { color: '#FFF', fontSize: 13, marginRight: 12 },
-    price: { color: '#FFF', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
-    pct: { color: '#FFF', fontSize: 13, marginLeft: 8 },
-    positive: { color: '#05FF93' },
-    negative: { color: '#FF0505' },
+    container: {
+        marginBottom: 9,
+        borderRadius: 12,
+        overflow: 'hidden',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+    },
+    card: {
+        paddingVertical: 11,
+        paddingHorizontal: 14,
+        borderRadius: 12,
+    },
+
+    // Row 1
+    row1: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    symbol: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '700',
+        letterSpacing: 0.3,
+    },
+    right: {
+        alignItems: 'flex-end',
+        flexDirection: 'row',
+        gap: 5,
+    },
+    ltp: {
+        color: '#FFF',
+        fontSize: 15,
+        fontWeight: '700',
+    },
+    dailyPct: {
+        fontSize: 11,
+        fontWeight: '700',
+        marginTop: 1,
+    },
+
+    // Row 2
+    row2: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    info: {
+        color: '#AAA',
+        fontSize: 12.5,
+    },
+    bold: {
+        color: '#FFF',
+        fontWeight: '600',
+    },
+    plBox: {
+        alignItems: 'flex-end',
+        flexDirection: 'row',
+        gap: 5,
+    },
+    pl: {
+        fontSize: 13.5,
+        fontWeight: '800',
+    },
+    plPct: {
+        fontSize: 11,
+        marginTop: 1,
+    },
+
+    // Row 3
+    row3: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    marketVal: {
+        color: '#AAA',
+        fontSize: 12.5,
+        fontWeight: '600',
+    },
+    realised: {
+        fontSize: 11.5,
+        fontWeight: '700',
+    },
+
+    green: { color: '#05FF93' },
+    red: { color: '#FF3366' },
+    white: { color: '#fff' },
 });

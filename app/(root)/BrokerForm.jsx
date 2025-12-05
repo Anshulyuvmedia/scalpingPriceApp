@@ -213,7 +213,7 @@ export default function ConnectBrokerForm() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#000' },
+    container: { flex: 1, backgroundColor: '#000', paddingHorizontal: 10 },
     successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
     successIcon: { marginBottom: 24 },
     successTitle: { color: '#00D09C', fontSize: 28, fontWeight: '700', marginBottom: 8 },

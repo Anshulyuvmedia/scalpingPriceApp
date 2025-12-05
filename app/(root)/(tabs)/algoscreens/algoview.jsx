@@ -34,74 +34,68 @@ const AlgoView = () => {
     });
 
     const renderTabBar = (props) => {
-        const { navigationState, position } = props;
+        const { position } = props;
         const inputRange = routes.map((_, i) => i);
 
         return (
-            <LinearGradient
-                colors={['#1A1A1A', '#4B4B7A']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.gradientBoxBorder}
-            >
-                <TabBar
-                    {...props}
-                    scrollEnabled={windowWidth < 600} // Enable scrolling only on smaller screens
-                    indicatorStyle={styles.tabIndicator}
-                    style={styles.tabBar}
-                    renderLabel={({ route, focused }) => (
-                        <View
-                            style={styles.tabContainer}
-                            accessibilityRole="tab"
-                            accessibilityLabel={route.title}
-                            accessible
-                        >
-                            {focused ? (
-                                <LinearGradient
-                                    colors={['#723CDF', '#9E68E4']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.activeTabGradient}
-                                >
-                                    <Text style={[styles.tabLabel, styles.activeTabLabel]}>
-                                        {route.title}
-                                    </Text>
-                                </LinearGradient>
-                            ) : (
-                                <View style={styles.inactiveTab}>
-                                    <Text style={styles.tabLabel}>{route.title}</Text>
-                                </View>
-                            )}
-                        </View>
-                    )}
-                    renderIndicator={(indicatorProps) => {
-                        const { getTabWidth } = indicatorProps;
-                        const translateX = position.interpolate({
-                            inputRange,
-                            outputRange: routes.map((_, i) => getTabWidth(i) * i),
-                        });
 
-                        return (
-                            <Animated.View
-                                style={[
-                                    styles.pillIndicator,
-                                    {
-                                        width: getTabWidth(index),
-                                        transform: [{ translateX }],
-                                    },
-                                ]}
+            <TabBar
+                {...props}
+                scrollEnabled={windowWidth < 600} // Enable scrolling only on smaller screens
+                indicatorStyle={styles.tabIndicator}
+                style={styles.tabBar}
+                renderLabel={({ route, focused }) => (
+                    <View
+                        style={styles.tabContainer}
+                        accessibilityRole="tab"
+                        accessibilityLabel={route.title}
+                        accessible
+                    >
+                        {focused ? (
+                            <LinearGradient
+                                colors={['#723CDF', '#9E68E4']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.activeTabGradient}
                             >
-                                <LinearGradient
-                                    colors={['#723CDF', '#9E68E4']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.pillGradient}
-                                />
-                            </Animated.View>
-                        );
-                    }}
-                />
-            </LinearGradient>
+                                <Text style={[styles.tabLabel, styles.activeTabLabel]}>
+                                    {route.title}
+                                </Text>
+                            </LinearGradient>
+                        ) : (
+                            <View style={styles.inactiveTab}>
+                                <Text style={styles.tabLabel}>{route.title}</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+                renderIndicator={(indicatorProps) => {
+                    const { getTabWidth } = indicatorProps;
+                    const translateX = position.interpolate({
+                        inputRange,
+                        outputRange: routes.map((_, i) => getTabWidth(i) * i),
+                    });
+
+                    return (
+                        <Animated.View
+                            style={[
+                                styles.pillIndicator,
+                                {
+                                    width: getTabWidth(index),
+                                    transform: [{ translateX }],
+                                },
+                            ]}
+                        >
+                            <LinearGradient
+                                colors={['#723CDF', '#9E68E4']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.pillGradient}
+                            />
+                        </Animated.View>
+                    );
+                }}
+            />
         );
     };
 

@@ -1,51 +1,45 @@
-// app/OrderHistoryScreen.jsx
-import React from 'react';
-import { StyleSheet, View, FlatList, Text } from 'react-native';
-import { useLocalSearchParams } from 'expo-router'; // Use expo-router's hook for params
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, FlatList, Text, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import HomeHeader from '@/components/HomeHeader';
+import { useBroker } from '@/contexts/BrokerContext';
 
 const OrderHistoryScreen = () => {
-    const { selectedStock } = useLocalSearchParams(); // Get params using expo-router
-    // console.log('Raw Route params:', selectedStock); // Debug log of raw params
+    const { selectedStock } = useLocalSearchParams();
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const { fetchOrderHistory } = useBroker();
+    let parsedStock = null;
+    try { parsedStock = selectedStock ? JSON.parse(selectedStock) : null }
+    catch (e) { parsedStock = null }
 
-    // Parse the selectedStock parameter, which is a stringified object
-    let parsedSelectedStock = null;
-    try {
-        parsedSelectedStock = selectedStock ? JSON.parse(selectedStock) : null;
-    } catch (error) {
-        console.error('Error parsing selectedStock:', error);
-        parsedSelectedStock = null;
-    }
+    useEffect(() => {
+        if (!parsedStock) return;
 
-    const orderHistory = parsedSelectedStock ? [
-        { date: '14 Oct 2025', action: 'Buy', price: 2500, qty: 2, amount: 5000 },
-        { date: '10 Oct 2025', action: 'Buy', price: 2450, qty: 1, amount: 2450 },
-    ] : [];
+        const getOrders = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await fetchOrderHistory(parsedStock.tradingSymbol);
+                setOrders(data);
+            } catch (err) {
+                setError(err.message || 'Failed to load order history');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const renderOrderHistoryItem = ({ item }) => (
+        getOrders();
+    }, [parsedStock]);
+
+    const renderItem = ({ item }) => (
         <View style={styles.orderRow}>
-            <View style={styles.column}>
-                <Text style={styles.label}>Order:</Text>
-                <View style={[styles.actionBadge, { backgroundColor: item.action === 'Buy' ? 'green' : 'red' }]}>
-                    <Text style={styles.orderCell}>{item.action}</Text>
-                </View>
-            </View>
-            <View style={styles.column}>
-                <Text style={styles.label}>Date:</Text>
-                <Text style={styles.orderCell}>{item.date}</Text>
-            </View>
-            <View style={styles.column}>
-                <Text style={styles.label}>Price:</Text>
-                <Text style={styles.orderCell}>₹{item.price}</Text>
-            </View>
-            <View style={styles.column}>
-                <Text style={styles.label}>Qty:</Text>
-                <Text style={styles.orderCell}>{item.qty}</Text>
-            </View>
-            <View style={styles.column}>
-                <Text style={styles.label}>Amount:</Text>
-                <Text style={styles.orderCell}>₹{item.amount}</Text>
-            </View>
+            <Text style={styles.orderCell}>{item.date}</Text>
+            <Text style={[styles.orderCell, { color: item.action === 'Buy' ? '#05FF93' : '#FF3366' }]}>{item.action}</Text>
+            <Text style={styles.orderCell}>₹{item.price}</Text>
+            <Text style={styles.orderCell}>{item.qty}</Text>
+            <Text style={styles.orderCell}>₹{item.amount}</Text>
         </View>
     );
 
@@ -54,15 +48,21 @@ const OrderHistoryScreen = () => {
             <HomeHeader page={'chatbot'} title={'Order History'} />
             <View style={styles.content}>
                 <Text style={styles.headerText}>
-                    {parsedSelectedStock ? `${parsedSelectedStock.symbol}` : 'Order History'}
+                    {parsedStock ? parsedStock.symbol : 'Order History'}
                 </Text>
-                <FlatList
-                    data={orderHistory}
-                    renderItem={renderOrderHistoryItem}
-                    keyExtractor={(item, index) => index.toString()}
-                    contentContainerStyle={styles.orderList}
-                    ListEmptyComponent={<Text style={styles.emptyText}>No order history available.</Text>}
-                />
+
+                {loading && <ActivityIndicator size="large" color="#05FF93" />}
+                {error && <Text style={styles.errorText}>{error}</Text>}
+
+                {!loading && !error && (
+                    <FlatList
+                        data={orders}
+                        renderItem={renderItem}
+                        keyExtractor={(item, idx) => idx.toString()}
+                        contentContainerStyle={{ paddingBottom: 20 }}
+                        ListEmptyComponent={<Text style={styles.emptyText}>No order history available.</Text>}
+                    />
+                )}
             </View>
         </View>
     );
@@ -71,55 +71,11 @@ const OrderHistoryScreen = () => {
 export default OrderHistoryScreen;
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#000',
-        paddingHorizontal: 10,
-    },
-    content: {
-        flex: 1,
-        paddingTop: 20,
-    },
-    headerText: {
-        color: '#FFF',
-        fontSize: 20,
-        fontWeight: '600',
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    orderList: {
-        paddingBottom: 20,
-    },
-    orderRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#333',
-    },
-    column: {
-        flexDirection: 'column',
-        alignItems: 'center',
-    },
-    label: {
-        color: '#A9A9A9', // Equivalent to text-gray-300
-        fontSize: 12,    // Equivalent to text-sm
-        marginBottom: 5,
-    },
-    orderCell: {
-        color: '#FFF',
-        fontSize: 14,
-        // flex: 1,
-        textAlign: 'center',
-    },
-    actionBadge: {
-        paddingHorizontal: 10,
-        borderRadius: 5,
-    },
-    emptyText: {
-        color: '#A9A9A9',
-        fontSize: 14,
-        textAlign: 'center',
-        marginTop: 20,
-    },
+    container: { flex: 1, backgroundColor: '#000' },
+    content: { flex: 1, padding: 15, paddingTop: 20 },
+    headerText: { color: '#FFF', fontSize: 20, fontWeight: '600', marginBottom: 10, textAlign: 'center' },
+    orderRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomColor: '#333', borderBottomWidth: 1 },
+    orderCell: { color: '#FFF', flex: 1, textAlign: 'center' },
+    emptyText: { color: '#AAA', textAlign: 'center', marginTop: 20 },
+    errorText: { color: '#FF6B6B', textAlign: 'center', marginTop: 20 }
 });
