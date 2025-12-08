@@ -1,212 +1,305 @@
 // contexts/BrokerContext.js
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useUser } from '@/contexts/UserContext';
+import io from 'socket.io-client';
 
 const BrokerContext = createContext();
-const NGROK_URL = 'https://johnson-prevertebral-irradiatingly.ngrok-free.dev';
-const PRODUCTION_URL = 'https://api.yourapp.com';
+
 const BASE_URL = __DEV__
-    ? `${NGROK_URL}/api/BrokerConnections`
-    : `${PRODUCTION_URL}/api/BrokerConnections`;
+    ? 'https://johnson-prevertebral-irradiatingly.ngrok-free.dev'
+    : 'https://api.yourapp.com';
 
 export const BrokerProvider = ({ children }) => {
     const { token } = useUser();
+
+    // Portfolio & Live Data
     const [broker, setBroker] = useState(null);
     const [portfolio, setPortfolio] = useState([]);
     const [holdings, setHoldings] = useState([]);
     const [positions, setPositions] = useState([]);
     const [funds, setFunds] = useState(null);
+    const [summary, setSummary] = useState({ totalInvestment: 0, currentValue: 0, totalPL: 0, overallPnLPercent: 0 });
+    const [todayPnL, setTodayPnL] = useState({ todayTotalPL: 0, todayRealisedPL: 0, todayUnrealisedPL: 0 });
     const [loading, setLoading] = useState(true);
     const [lastSync, setLastSync] = useState(null);
+    const [isLive, setIsLive] = useState(false);
     const [error, setError] = useState(null);
-    const [summary, setSummary] = useState({
-        totalInvestment: 0,
-        currentValue: 0,
-        overallPnL: 0,
-        overallPnLPercent: 0,
+
+    // TradeBook Date Range
+    const [tradeDateRange, setTradeDateRange] = useState({
+        from: new Date().toISOString().split('T')[0],
+        to: new Date().toISOString().split('T')[0],
     });
 
-    const fetchRealData = useCallback(async () => {
-        if (!token) {
-            setLoading(false);
-            return;
-        }
+    // TradeBook Pagination State
+    const [tradebookItems, setTradebookItems] = useState([]);
+    const [tradebookPage, setTradebookPage] = useState(0);
+    const [tradebookHasMore, setTradebookHasMore] = useState(true);
+    const [tradebookLoading, setTradebookLoading] = useState(false);
+    const [tradebookRefreshing, setTradebookRefreshing] = useState(false);
+
+    const socketRef = useRef(null);
+    const livePricesRef = useRef({});
+    const abortControllerRef = useRef();
+    const isConnected = !!broker;
+    // ──────────────────────────────
+    // Portfolio & Live Price Logic
+    // ──────────────────────────────
+    const applyLivePrice = (item, quote) => {
+        const ltp = quote?.ltp ?? item.ltp;
+        const qty = Math.abs(Number(item.netQty || item.qty || item.holdingQuantity || 0));
+        const avg = Number(item.buyAvg || item.avgCostPrice || 0);
+        const current = ltp * qty;
+        const investment = avg * qty;
+        const unrealisedPL = current - investment;
+
+        return {
+            ...item,
+            ltp,
+            change: quote?.change || 0,
+            changePercent: quote?.changePercent || 0,
+            current,
+            investment,
+            profitLoss: unrealisedPL + Number(item.realizedProfit || item.realizedProfitLoss || 0),
+            unrealisedPL,
+        };
+    };
+
+    const recalculateSummary = () => {
+        const items = [...holdings, ...positions];
+        const totalInvestment = items.reduce((s, i) => s + (i.investment || 0), 0);
+        const currentValue = items.reduce((s, i) => s + (i.current || 0), 0);
+        const totalPL = currentValue - totalInvestment;
+        const pct = totalInvestment > 0 ? (totalPL / totalInvestment) * 100 : 0;
+
+        setSummary({
+            totalInvestment: Number(totalInvestment.toFixed(2)),
+            currentValue: Number(currentValue.toFixed(2)),
+            totalPL: Number(totalPL.toFixed(2)),
+            overallPnLPercent: Number(pct.toFixed(2)),
+        });
+    };
+
+    const fetchInitialData = useCallback(async () => {
+        if (!token) return;
 
         try {
-            setError(null);
             setLoading(true);
-
             const headers = { Authorization: `Bearer ${token}` };
 
-            // 1. Fetch all static data
-            const [profileRes, holdingsRes, positionsRes, portfolioRes, fundsRes] = await Promise.all([
-                fetch(`${BASE_URL}/profile`, { headers }),
-                fetch(`${BASE_URL}/holdings`, { headers }),
-                fetch(`${BASE_URL}/positions`, { headers }),
-                fetch(`${BASE_URL}/portfolio`, { headers }),
-                fetch(`${BASE_URL}/funds`, { headers }),
+            const [profileRes, summaryRes, fundsRes, todayPnlRes] = await Promise.all([
+                fetch(`${BASE_URL}/api/BrokerConnections/profile`, { headers }),
+                fetch(`${BASE_URL}/api/BrokerConnections/portfolio-summary`, { headers }),
+                fetch(`${BASE_URL}/api/BrokerConnections/funds`, { headers }),
+                fetch(`${BASE_URL}/api/BrokerConnections/today-pnl`, { headers })
             ]);
 
-            if (![profileRes, holdingsRes, positionsRes, portfolioRes, fundsRes].every(r => r.ok)) {
-                throw new Error("Failed to fetch portfolio data");
-            }
+            if (!profileRes.ok) throw new Error("Not connected to Dhan");
 
-            const [profile, rawHoldings, rawPositions, rawPortfolio, rawFunds] = await Promise.all([
-                profileRes.json(),
-                holdingsRes.json(),
-                positionsRes.json(),
-                portfolioRes.json(),
-                fundsRes.json(),
+            const [profile, summary, funds, todayPnL] = await Promise.all([
+                profileRes.json(), summaryRes.json(), fundsRes.json(), todayPnlRes.json()
             ]);
 
-            // 2. Extract all unique securityIds
-            const allItems = [...rawHoldings, ...rawPositions];
-            const securityIds = [...new Set(
-                allItems
-                    .map(i => i.securityId || i.isin)
-                    .filter(Boolean)
-            )];
+            setBroker({ name: `Dhan • ${profile.dhanClientId}`, broker: 'dhan', clientId: profile.dhanClientId });
+            setFunds(funds);
+            setSummary(summary);
+            setTodayPnL(todayPnL);
 
-            // 3. Fetch LIVE LTP + daily change
-            let liveQuotes = {};
-            if (securityIds.length > 0) {
-                const quoteRes = await fetch(`${BASE_URL}/market-quotes`, {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(securityIds)
-                });
-                if (quoteRes.ok) {
-                    liveQuotes = await quoteRes.json(); // { "1333": { ltp, change, changePercent } }
-                }
-            }
+            const [holdingsRes, positionsRes] = await Promise.all([
+                fetch(`${BASE_URL}/api/BrokerConnections/holdings`, { headers }),
+                fetch(`${BASE_URL}/api/BrokerConnections/positions`, { headers })
+            ]);
 
-            // 4. Apply live prices
-            const applyLivePrice = (item) => {
-                const securityId = item.securityId || item.isin;
-                const quote = securityId ? liveQuotes[securityId] : null;
+            const rawHoldings = await holdingsRes.json();
+            const rawPositions = await positionsRes.json();
 
-                const qty = Math.abs(
-                    Number(item.qty) ||
-                    Number(item.netQty) ||
-                    Number(item.availableQty) ||
-                    Number(item.holdingQuantity) || 0
-                );
-
-                const avgPrice = Number(item.avgCostPrice || item.buyAvg || 0);
-                const investment = avgPrice * qty;
-
-                if (quote && quote.ltp > 0) {
-                    const current = quote.ltp * qty;
-                    const profitLoss = current - investment;
-
-                    return {
-                        ...item,
-                        ltp: quote.ltp,
-                        change: quote.change,
-                        changePercent: quote.changePercent,
-                        current,
-                        investment,
-                        profitLoss,
-                    };
-                }
-
-                // Fallback (old behavior)
-                const fallbackLtp = Number(item.ltp) || avgPrice;
-                const current = fallbackLtp * qty;
-                const profitLoss = Number(item.unrealizedProfitLoss || item.unrealizedProfit || 0);
-
-                return {
-                    ...item,
-                    ltp: fallbackLtp,
-                    change: 0,
-                    changePercent: 0,
-                    current,
-                    investment,
-                    profitLoss,
-                };
-            };
-
-            const enhancedHoldings = rawHoldings.map(applyLivePrice);
-            const enhancedPositions = rawPositions.map(applyLivePrice);
-            const enhancedPortfolio = rawPortfolio.map(applyLivePrice);
-            // 4.1 Compute Portfolio Summary
-            const computeSummary = (items) => {
-                let totalInvestment = 0;
-                let currentValue = 0;
-
-                items.forEach(item => {
-                    totalInvestment += Number(item.investment || 0);
-                    currentValue += Number(item.current || 0);
-                });
-
-                const overallPnL = currentValue - totalInvestment;
-                const overallPnLPercent =
-                    totalInvestment > 0 ? (overallPnL / totalInvestment) * 100 : 0;
-
-                return {
-                    totalInvestment: Number(totalInvestment.toFixed(2)),
-                    currentValue: Number(currentValue.toFixed(2)),
-                    overallPnL: Number(overallPnL.toFixed(2)),
-                    overallPnLPercent: Number(overallPnLPercent.toFixed(2)),
-                };
-            };
-            // 4.2 Set Summary from enhancedPortfolio
-            const summaryData = computeSummary(enhancedPortfolio);
-            setSummary(summaryData);
-
-            // 5. Final state
-            setBroker({
-                name: `Dhan • ${profile.dhanClientId || 'Connected'}`,
-                broker: 'dhan',
-                clientId: profile.dhanClientId || ''
-            });
-
-            setHoldings(transformDhanHoldings(enhancedHoldings));
-            setPositions(transformDhanPositions(enhancedPositions));
-            setPortfolio(transformDhanHoldings(enhancedPortfolio));
-            setFunds(rawFunds);
+            setHoldings(rawHoldings.map(h => applyLivePrice(h, livePricesRef.current[h.securityId || h.isin])));
+            setPositions(rawPositions.map(p => applyLivePrice(p, livePricesRef.current[p.securityId])));
+            setPortfolio([...rawHoldings, ...rawPositions]);
             setLastSync(new Date().toLocaleTimeString('en-IN'));
-            console.log(`LIVE DATA LOADED – ${Object.keys(liveQuotes).length} symbols updated`);
 
+            startWebSocket();
         } catch (err) {
-            console.error("Dhan sync failed:", err);
-            setError(err.message || "Failed to sync with Dhan");
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     }, [token]);
 
-    // Expose refresh
-    const refreshPortfolio = () => fetchRealData();
+    const startWebSocket = async () => {
+        if (!token || socketRef.current?.connected) return;
 
+        await fetch(`${BASE_URL}/api/BrokerConnections/start-live-feed`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        socketRef.current = io(BASE_URL, { query: { token }, transports: ['websocket'] });
+
+        socketRef.current.on('connect', () => {
+            setIsLive(true);
+            const symbols = [...holdings, ...positions]
+                .map(i => i.securityId || i.isin)
+                .filter(Boolean);
+            if (symbols.length > 0) {
+                socketRef.current.emit('market', { type: 'SUBSCRIBE', symbols });
+            }
+        });
+
+        socketRef.current.on('market', (msg) => {
+            if (msg.type === 'LIVE_QUOTE' && msg.data) {
+                const { securityId, ltp, change, changePercent } = msg.data;
+                livePricesRef.current[securityId] = { ltp: Number(ltp), change: Number(change), changePercent: Number(changePercent) };
+
+                setHoldings(prev => prev.map(h => (h.id == securityId) ? applyLivePrice(h, livePricesRef.current[securityId]) : h));
+                setPositions(prev => prev.map(p => (p.id == securityId) ? applyLivePrice(p, livePricesRef.current[securityId]) : p));
+                recalculateSummary();
+            }
+        });
+
+        socketRef.current.on('disconnect', () => setIsLive(false));
+    };
+
+    const refreshPortfolio = () => {
+        livePricesRef.current = {};
+        fetchInitialData();
+    };
+
+    // ──────────────────────────────
+    // TradeBook Pagination Fetcher
+    // ──────────────────────────────
+    const fetchTradebookPage = useCallback(async (page = 0, isRefresh = false) => {
+        if (!token || !isConnected) return;
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        try {
+            setTradebookLoading(true);
+            setTradebookRefreshing(isRefresh);
+
+            const res = await fetch(
+                `${BASE_URL}/api/BrokerConnections/tradebook?from=${tradeDateRange.from}&to=${tradeDateRange.to}&page=${page}`,
+                { signal: controller.signal, headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (!res.ok) throw new Error('Failed to fetch tradebook');
+
+            const data = await res.json();
+
+            // ONLY TRADES – NO LEDGER
+            const newItems = (data.trades || [])
+                .filter(i => i.exchangeTime)
+                .sort((a, b) => new Date(b.exchangeTime) - new Date(a.exchangeTime));
+
+            // Add unique _id if backend didn’t already (safety)
+            newItems.forEach((item, idx) => {
+                item._id = item._id || `${item.exchangeTime}-${item.tradedQuantity}-${item.tradedPrice}-${idx}`;
+            });
+
+            setTradebookItems(prev => isRefresh || page === 0 ? newItems : [...prev, ...newItems]);
+            setTradebookHasMore(data.hasMore === true);
+            setTradebookPage(page);
+        } catch (err) {
+            if (err.name !== 'AbortError') console.error('Tradebook fetch error:', err);
+        } finally {
+            setTradebookLoading(false);
+            setTradebookRefreshing(false);
+        }
+    }, [token, tradeDateRange.from, tradeDateRange.to, isConnected]);
+
+    const loadMoreTradebook = () => {
+        if (!tradebookLoading && tradebookHasMore) {
+            fetchTradebookPage(tradebookPage + 1);
+        }
+    };
+
+    const refreshTradebook = () => {
+        fetchTradebookPage(0, true);
+    };
+
+    // ──────────────────────────────
+    // Order History by Security ID (for per-stock history)
+    // ──────────────────────────────
+    const fetchOrderHistoryBySecurityId = useCallback(async (securityId, fy) => {
+        if (!token || !isConnected || !securityId) {
+            return [];
+        }
+
+        const headers = { Authorization: `Bearer ${token}` };
+        let url = `${BASE_URL}/api/BrokerConnections/order-history-by-security?securityId=${securityId}`;
+        if (fy) {
+            url += `&fy=${encodeURIComponent(fy)}`;
+        }
+        const res = await fetch(url, { headers });
+
+        if (!res.ok) {
+            throw new Error(`Failed to fetch trades: ${res.status}`);
+        }
+
+        return await res.json();
+    }, [token, isConnected]);
+
+    // Reset tradebook when date changes
     useEffect(() => {
-        if (token) fetchRealData();
-        else {
+        if (isConnected) {
+            setTradebookItems([]);
+            setTradebookPage(0);
+            setTradebookHasMore(true);
+            fetchTradebookPage(0, true);
+        }
+    }, [tradeDateRange.from, tradeDateRange.to, isConnected]);
+
+    // Initial load
+    useEffect(() => {
+        if (token) {
+            fetchInitialData();
+        } else {
             setBroker(null);
             setPortfolio([]);
-            setHoldings([]);
-            setPositions([]);
-            setFunds(null);
-            setLoading(false);
+            setIsLive(false);
+            if (socketRef.current) socketRef.current.close();
         }
-    }, [token, fetchRealData]);
+
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.close();
+                socketRef.current = null;
+            }
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, [token]);
 
     return (
         <BrokerContext.Provider value={{
+            // Portfolio
             broker,
             portfolio,
             holdings,
             positions,
             funds,
             summary,
+            todayPnL,
             loading,
             lastSync,
             error,
+            isConnected: !!broker,
+            isLive,
             refreshPortfolio,
-            isConnected: !!broker?.broker,
+
+            // TradeBook
+            tradeDateRange,
+            setTradeDateRange,
+            tradebookItems,
+            tradebookHasMore,
+            tradebookLoading,
+            tradebookRefreshing,
+            loadMoreTradebook,
+            refreshTradebook,
+
+            fetchOrderHistoryBySecurityId,
         }}>
             {children}
         </BrokerContext.Provider>
@@ -214,76 +307,3 @@ export const BrokerProvider = ({ children }) => {
 };
 
 export const useBroker = () => useContext(BrokerContext);
-
-// Add to existing BrokerContext.js
-const transformDhanHoldings = (items = []) => items.map(h => {
-    const qty = Math.abs(Number(h.qty) || Number(h.availableQty) || Number(h.holdingQuantity) || 0);
-    const avgPrice = Number(h.avgCostPrice || h.buyAvg || 0);
-    const current = Number(h.ltp || avgPrice) * qty;
-    const unrealisedPL = current - (avgPrice * qty);
-    return {
-        id: h.isin || h.securityId || h.tradingSymbol,
-        symbol: h.tradingSymbol || 'N/A',
-        name: h.tradingSymbol || 'Unknown',
-        qty,
-        avgPrice,
-        investment: avgPrice * qty,
-        current,
-        profitLoss: unrealisedPL,
-        realisedPL: Number(h.realizedProfitLoss || h.realisedPL || 0),
-        unrealisedPL,
-        ltp: h.ltp,
-        change: h.change || 0,
-        changePercent: h.changePercent || 0,
-        exchange: h.exchange || 'NSE',
-    };
-});
-
-const transformDhanPositions = (items = []) => items.map(p => {
-    const qty = Math.abs(Number(p.netQty) || 0);
-    const avgPrice = Number(p.buyAvg || p.costPrice || 0);
-    const current = Number(p.ltp || avgPrice) * qty;
-    const unrealisedPL = current - (avgPrice * qty);
-    return {
-        id: p.securityId || p.tradingSymbol,
-        symbol: p.tradingSymbol,
-        name: p.tradingSymbol,
-        qty,
-        avgPrice,
-        investment: avgPrice * qty,
-        current,
-        profitLoss: unrealisedPL,
-        realisedPL: Number(p.realizedProfit || p.realisedPL || 0),
-        unrealisedPL,
-        ltp: p.ltp,
-        change: p.change || 0,
-        changePercent: p.changePercent || 0,
-        exchange: p.exchangeSegment?.split('_')[0] || 'NSE',
-        positionType: p.positionType,
-        productType: p.productType,
-    };
-});
-
-// Compute summary based on merged portfolio
-const computeSummary = (items) => {
-    let totalInvestment = 0, currentValue = 0, unrealisedPL = 0, realisedPL = 0;
-
-    items.forEach(i => {
-        totalInvestment += i.investment || 0;
-        currentValue += i.current || 0;
-        unrealisedPL += i.unrealisedPL || 0;
-        realisedPL += i.realisedPL || 0;
-    });
-
-    const totalPL = unrealisedPL + realisedPL;
-    const overallPnLPercent = totalInvestment > 0 ? (totalPL / totalInvestment) * 100 : 0;
-
-    return {
-        totalInvestment: Number(totalInvestment.toFixed(2)),
-        currentValue: Number(currentValue.toFixed(2)),
-        totalPL: Number(totalPL.toFixed(2)),
-        unrealisedPL: Number(unrealisedPL.toFixed(2)),
-        realisedPL: Number(realisedPL.toFixed(2)),
-        overallPnLPercent: Number(overallPnLPercent.toFixed(2)),
-    };
-};

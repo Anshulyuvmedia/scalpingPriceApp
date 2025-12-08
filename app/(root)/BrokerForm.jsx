@@ -1,27 +1,41 @@
 // app/broker/ConnectBrokerForm.jsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    ScrollView,
+    Alert,
+    Linking,
+    Animated,
+    Easing,
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import HomeHeader from '@/components/HomeHeader';
 import * as SecureStore from 'expo-secure-store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useUser } from '@/contexts/UserContext';
 import { useBroker } from '@/contexts/BrokerContext';
+import images from '@/constants/images';
 
 const BROKER_CONFIG = {
     dhan: {
         name: 'Dhan',
+        logo: images.dhanimg,
         fields: ['clientId', 'apiKey', 'apiSecret'],
         placeholders: {
-            clientId: 'e.g. DH123456',
-            apiKey: 'Your API Key',
-            apiSecret: 'Your API Secret',
+            clientId: 'DH123456',
+            apiKey: 'Your API Key (app_id)',
+            apiSecret: 'Your API Secret (app_secret)',
         },
         instructions: [
-            'Login to https://web.dhan.co/',
+            'Login to https://web.dhan.co',
             'Go to Profile → API',
             'Click “Generate API Key”',
             'Copy Client ID, API Key & API Secret',
+            'Enable “Trading” & “Holdings” permissions',
         ],
         helpUrl: 'https://dhanhq.co/docs/v2/authentication/',
     },
@@ -31,43 +45,58 @@ export default function ConnectBrokerForm() {
     const { broker } = useLocalSearchParams();
     const router = useRouter();
     const { token } = useUser();
-    const { broker: connectedBroker, refreshPortfolio } = useBroker();
+    const { broker: connectedBroker, isLive, refreshPortfolio } = useBroker();
 
     const config = broker === 'dhan' ? BROKER_CONFIG.dhan : null;
+    const isConnected = connectedBroker?.broker === 'dhan';
 
     const [formData, setFormData] = useState({});
     const [showSecrets, setShowSecrets] = useState({});
     const [loading, setLoading] = useState(false);
+    const [saved, setSaved] = useState(false);
 
-    // Check if already connected
-    const isConnected = connectedBroker?.broker === 'dhan';
-    console.log('connectedBroker', connectedBroker);
+    const pulseAnim = new Animated.Value(1);
+
     useEffect(() => {
         if (isConnected) {
-            console.log("Already connected to Dhan as", connectedBroker.clientId);
-            // Auto-refresh portfolio when opening this screen
             refreshPortfolio?.();
+            startPulse();
         }
 
-        // Load saved credentials for editing
-        const load = async () => {
+        const loadSaved = async () => {
             const saved = {};
             for (const field of config.fields) {
                 const val = await SecureStore.getItemAsync(`dhan_${field}`);
                 if (val) saved[field] = val;
             }
-            if (Object.keys(saved).length > 0) setFormData(saved);
+            if (Object.keys(saved).length === 3) {
+                setFormData(saved);
+                setSaved(true);
+            }
         };
-        load();
-    }, [isConnected, connectedBroker, refreshPortfolio]);
+        loadSaved();
+    }, [isConnected]);
 
-    const updateField = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
+    const startPulse = () => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, { toValue: 1.15, duration: 800, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+                Animated.timing(pulseAnim, { toValue: 1, duration: 800, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+            ])
+        ).start();
+    };
+
+    const updateField = (key, value) => {
+        setFormData(prev => ({ ...prev, [key]: value }));
+        setSaved(false);
+    };
+
     const toggleSecret = (key) => setShowSecrets(prev => ({ ...prev, [key]: !prev[key] }));
 
     const handleSaveAndConnect = async () => {
         const missing = config.fields.filter(f => !formData[f]?.trim());
         if (missing.length > 0) {
-            Alert.alert('Missing Fields', `Please fill: ${missing.join(', ')}`);
+            Alert.alert('Missing Fields', `Please fill: ${missing.map(m => m === 'clientId' ? 'Client ID' : m.replace('api', 'API ')).join(', ')}`);
             return;
         }
 
@@ -92,54 +121,90 @@ export default function ConnectBrokerForm() {
                 }),
             });
 
-            if (!res.ok) throw new Error(await res.text() || 'Failed');
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text.includes('already') ? 'Credentials already saved' : text || 'Server error');
+            }
 
+            setSaved(true);
             Alert.alert(
-                isConnected ? 'Updated!' : 'Saved!',
-                isConnected
-                    ? 'Your credentials have been updated. Re-login to apply changes.'
-                    : 'Credentials saved! Now login to complete connection.',
+                'Saved!',
+                'Credentials saved securely. Now login to authorize access.',
                 [
-                    { text: 'Login Now', onPress: () => router.replace('/oauth/dhan') },
-                    { text: 'Done', onPress: () => router.back() },
+                    { text: 'Login to Dhan', style: 'default', onPress: () => router.replace('/oauth/dhan') },
+                    { text: 'Later', onPress: () => router.back() },
                 ]
             );
         } catch (err) {
-            Alert.alert('Error', err.message || 'Failed to save');
+            Alert.alert('Save Failed', err.message || 'Please try again');
         } finally {
             setLoading(false);
         }
     };
 
-    // If already connected → show success state
+    const handleDisconnect = () => {
+        Alert.alert(
+            'Disconnect Dhan?',
+            'This will remove access to your portfolio. You can reconnect anytime.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Disconnect',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await SecureStore.deleteItemAsync('dhan_clientId');
+                        await SecureStore.deleteItemAsync('dhan_apiKey');
+                        await SecureStore.deleteItemAsync('dhan_apiSecret');
+                        router.back();
+                    },
+                },
+            ]
+        );
+    };
+
+    // Connected Success Screen
     if (isConnected) {
         return (
             <View style={styles.container}>
                 <HomeHeader page="settings" title="Dhan Connected" />
 
                 <View style={styles.successContainer}>
-                    <View style={styles.successIcon}>
-                        <MaterialIcons name="check-circle" size={80} color="#00D09C" />
+                    <Animated.View style={[styles.logoPulse, { transform: [{ scale: pulseAnim }] }]}>
+                        <View style={styles.successIcon}>
+                            <MaterialIcons name="check-circle" size={90} color="#00D09C" />
+                        </View>
+                    </Animated.View>
+
+                    <Text style={styles.successTitle}>Connected Successfully!</Text>
+                    <Text style={styles.clientId}>Client ID: {connectedBroker.clientId}</Text>
+
+                    <View style={styles.statusRow}>
+                        <View style={[styles.statusDot, isLive ? styles.liveDot : styles.connectedDot]} />
+                        <Text style={styles.statusText}>
+                            {isLive ? 'LIVE • Real-time Updates' : 'Connected • Syncing'}
+                        </Text>
                     </View>
-                    <Text style={styles.successTitle}>Connected to Dhan!</Text>
-                    <Text style={styles.successSubtitle}>
-                        Client ID: {connectedBroker.clientId}
-                    </Text>
+
                     <Text style={styles.successDesc}>
-                        Your portfolio is synced automatically.
+                        Your holdings, positions & funds are now live in the app.
                     </Text>
 
-                    <TouchableOpacity
-                        style={styles.reconnectBtn}
-                        onPress={() => router.replace('/oauth/dhan')}
-                    >
-                        <Text style={styles.reconnectText}>Re-connect Account</Text>
-                    </TouchableOpacity>
+                    <View style={styles.buttonGroup}>
+                        <TouchableOpacity
+                            style={styles.reconnectBtn}
+                            onPress={() => router.replace('/oauth/dhan')}
+                        >
+                            <MaterialIcons name="sync" size={20} color="#00D09C" />
+                            <Text style={styles.reconnectText}>Re-Authenticate</Text>
+                        </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={styles.doneBtn}
-                        onPress={() => router.back()}
-                    >
+                        <TouchableOpacity style={styles.disconnectBtn} onPress={handleDisconnect}>
+                            <MaterialIcons name="link-off" size={20} color="#FF6B6B" />
+                            <Text style={styles.disconnectText}>Disconnect</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity style={styles.doneBtn} onPress={() => router.back()}>
                         <Text style={styles.doneText}>Done</Text>
                     </TouchableOpacity>
                 </View>
@@ -147,23 +212,24 @@ export default function ConnectBrokerForm() {
         );
     }
 
-    // Not connected → show form
+    // Connection Form
     return (
         <View style={styles.container}>
             <HomeHeader page="settings" title="Connect Dhan" />
+
             <ScrollView contentContainerStyle={{ padding: 16 }}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Connect Dhan</Text>
-                    <Text style={styles.subtitle}>Enter your personal API credentials</Text>
+                    <Text style={styles.title}>Connect Your Dhan Account</Text>
+                    <Text style={styles.subtitle}>Enter your API credentials securely</Text>
                 </View>
 
                 <View style={styles.form}>
                     {config.fields.map(field => (
-                        <View key={field}>
+                        <View key={field} style={styles.field}>
                             <Text style={styles.label}>
                                 {field === 'clientId' ? 'Client ID' : field === 'apiKey' ? 'API Key' : 'API Secret'}
                             </Text>
-                            <View style={[styles.inputContainer, field.includes('Secret') && styles.passwordContainer]}>
+                            <View style={styles.inputWrapper}>
                                 <TextInput
                                     style={styles.input}
                                     value={formData[field] || ''}
@@ -171,105 +237,181 @@ export default function ConnectBrokerForm() {
                                     placeholder={config.placeholders[field]}
                                     placeholderTextColor="#666"
                                     secureTextEntry={field.includes('Secret') && !showSecrets[field]}
-                                    autoCapitalize={field === 'clientId' ? 'characters' : 'none'}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
                                 />
                                 {field.includes('Secret') && (
-                                    <TouchableOpacity onPress={() => toggleSecret(field)}>
-                                        <MaterialIcons name={showSecrets[field] ? 'visibility' : 'visibility-off'} size={22} color="#888" />
+                                    <TouchableOpacity onPress={() => toggleSecret(field)} style={styles.eyeIcon}>
+                                        <MaterialIcons
+                                            name={showSecrets[field] ? 'visibility' : 'visibility-off'}
+                                            size={22}
+                                            color="#888"
+                                        />
                                     </TouchableOpacity>
                                 )}
                             </View>
+                            {saved && formData[field] && (
+                                <Text style={styles.savedText}>Saved securely</Text>
+                            )}
                         </View>
                     ))}
                 </View>
 
                 <TouchableOpacity
-                    style={[styles.connectBtn, loading && { opacity: 0.6 }]}
+                    style={[styles.connectBtn, loading && styles.disabledBtn]}
                     onPress={handleSaveAndConnect}
                     disabled={loading}
                 >
-                    <Text style={styles.connectText}>
-                        {loading ? 'Saving...' : 'Save & Connect Dhan'}
-                    </Text>
-                    <MaterialIcons name="arrow-forward" size={20} color="#000" style={{ marginLeft: 8 }} />
+                    {loading ? (
+                        <Text style={styles.connectText}>Saving Credentials...</Text>
+                    ) : (
+                        <>
+                            <Text style={styles.connectText}>Save & Login to Dhan</Text>
+                            <MaterialIcons name="arrow-forward" size={22} color="#000" style={{ marginLeft: 10 }} />
+                        </>
+                    )}
                 </TouchableOpacity>
 
                 <View style={styles.guideCard}>
-                    <Text style={styles.guideTitle}>How to get credentials?</Text>
+                    <Text style={styles.guideTitle}>How to Generate API Keys?</Text>
                     {config.instructions.map((step, i) => (
                         <View key={i} style={styles.step}>
-                            <View style={styles.stepNumber}><Text style={styles.stepText}>{i + 1}</Text></View>
+                            <View style={styles.stepNumber}>
+                                <Text style={styles.stepNumText}>{i + 1}</Text>
+                            </View>
                             <Text style={styles.stepDesc}>{step}</Text>
                         </View>
                     ))}
                     <TouchableOpacity style={styles.helpLink} onPress={() => Linking.openURL(config.helpUrl)}>
-                        <MaterialIcons name="help-outline" size={18} color="#00D09C" />
-                        <Text style={styles.helpText}>Official Dhan API Docs</Text>
+                        <MaterialIcons name="open-in-new" size={18} color="#00D09C" />
+                        <Text style={styles.helpText}>Open Dhan API Documentation</Text>
                     </TouchableOpacity>
                 </View>
+
+                <Text style={styles.footerNote}>
+                    Your credentials are encrypted and never leave your device.
+                </Text>
             </ScrollView>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#000', paddingHorizontal: 10 },
-    successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-    successIcon: { marginBottom: 24 },
-    successTitle: { color: '#00D09C', fontSize: 28, fontWeight: '700', marginBottom: 8 },
-    successSubtitle: { color: '#AAA', fontSize: 16, marginBottom: 8 },
-    successDesc: { color: '#888', fontSize: 15, textAlign: 'center', marginBottom: 40 },
-    reconnectBtn: { backgroundColor: '#1A1A2E', padding: 16, borderRadius: 12, marginBottom: 16 },
-    reconnectText: { color: '#00D09C', fontSize: 16, fontWeight: '600' },
-    doneBtn: { backgroundColor: '#00D09C', padding: 16, borderRadius: 12, width: '100%' },
-    doneText: { color: '#000', fontSize: 16, fontWeight: '700', textAlign: 'center' },
+    container: { flex: 1, backgroundColor: '#000' },
 
-    header: { alignItems: 'center', marginBottom: 30 },
-    title: { color: '#FFF', fontSize: 26, fontWeight: '700' },
-    subtitle: { color: '#AAA', fontSize: 15, marginTop: 8, textAlign: 'center' },
-    form: { marginBottom: 20 },
-    label: { color: '#FFF', fontSize: 15, marginBottom: 8, fontWeight: '500' },
-    inputContainer: {
+    // Success Screen
+    successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+    logoPulse: { marginBottom: 30 },
+    successIcon: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: 'rgba(0,208,156,0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    successTitle: { color: '#00D09C', fontSize: 28, fontWeight: '800', marginBottom: 12 },
+    clientId: { color: '#AAA', fontSize: 16, marginBottom: 16, fontWeight: '600' },
+    statusRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
+    statusDot: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        marginRight: 10,
+    },
+    liveDot: { backgroundColor: '#00D09C', shadowColor: '#00D09C', shadowOpacity: 0.8, shadowRadius: 8 },
+    connectedDot: { backgroundColor: '#00D09C' },
+    statusText: { color: '#00D09C', fontSize: 16, fontWeight: '600' },
+    successDesc: { color: '#888', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 40 },
+    buttonGroup: { flexDirection: 'row', gap: 16, marginBottom: 30 },
+    reconnectBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#1A1A2E',
+        paddingHorizontal: 20,
+        paddingVertical: 14,
         borderRadius: 12,
         borderWidth: 1,
+        borderColor: '#00D09C33',
+    },
+    reconnectText: { color: '#00D09C', marginLeft: 8, fontWeight: '600' },
+    disconnectBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1A1A2E',
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#FF6B6B33',
+    },
+    disconnectText: { color: '#FF6B6B', marginLeft: 8, fontWeight: '600' },
+    doneBtn: {
+        backgroundColor: '#00D09C',
+        paddingHorizontal: 40,
+        paddingVertical: 16,
+        borderRadius: 16,
+        width: '80%',
+    },
+    doneText: { color: '#000', fontSize: 18, fontWeight: '700', textAlign: 'center' },
+
+    // Form
+    header: { alignItems: 'center', marginBottom: 32 },
+    title: { color: '#FFF', fontSize: 28, fontWeight: '800' },
+    subtitle: { color: '#AAA', fontSize: 16, marginTop: 8 },
+    form: { marginBottom: 24 },
+    field: { marginBottom: 20 },
+    label: { color: '#FFF', fontSize: 15, marginBottom: 8, fontWeight: '600' },
+    inputWrapper: {
+        backgroundColor: '#1A1A2E',
+        borderRadius: 14,
+        borderWidth: 1,
         borderColor: '#333',
-        marginBottom: 16,
         flexDirection: 'row',
         alignItems: 'center',
     },
-    passwordContainer: { paddingRight: 15 },
-    input: { flex: 1, color: '#FFF', padding: 16, fontSize: 16 },
+    input: {
+        flex: 1,
+        color: '#FFF',
+        paddingVertical: 16,
+        paddingHorizontal: 18,
+        fontSize: 16,
+    },
+    eyeIcon: { padding: 16 },
+    savedText: { color: '#00D09C', fontSize: 12, marginTop: 6, fontWeight: '500' },
     connectBtn: {
         backgroundColor: '#00D09C',
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 18,
+        paddingVertical: 18,
         borderRadius: 16,
         marginBottom: 30,
     },
-    connectText: { color: '#000', fontSize: 17, fontWeight: '700' },
+    disabledBtn: { opacity: 0.7 },
+    connectText: { color: '#000', fontSize: 18, fontWeight: '700' },
+
     guideCard: {
         backgroundColor: '#1A1A2E',
         borderRadius: 16,
-        padding: 18,
+        padding: 20,
         borderWidth: 1,
         borderColor: '#333',
     },
-    guideTitle: { color: '#00D09C', fontSize: 17, fontWeight: '600', marginBottom: 16 },
-    step: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
+    guideTitle: { color: '#00D09C', fontSize: 18, fontWeight: '700', marginBottom: 16 },
+    step: { flexDirection: 'row', marginBottom: 14, alignItems: 'flex-start' },
     stepNumber: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         backgroundColor: '#00D09C',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 12,
+        marginRight: 14,
     },
-    stepText: { color: '#000', fontWeight: 'bold', fontSize: 14 },
+    stepNumText: { color: '#000', fontWeight: 'bold', fontSize: 15 },
     stepDesc: { color: '#DDD', fontSize: 15, flex: 1, lineHeight: 22 },
-    helpLink: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
-    helpText: { color: '#00D09C', marginLeft: 6, fontSize: 14 },
+    helpLink: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+    helpText: { color: '#00D09C', marginLeft: 8, fontWeight: '600' },
+    footerNote: { color: '#666', fontSize: 13, textAlign: 'center', marginTop: 30, fontStyle: 'italic' },
 });

@@ -16,6 +16,7 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="portfolio/PortfolioScreen" options={{ headerShown: false }} />
             <Stack.Screen name="portfolio/PortfolioViews/PortfolioTabs" options={{ headerShown: false }} />
             <Stack.Screen name="portfolio/PortfolioViews/DematHolding" options={{ headerShown: false }} />
+            <Stack.Screen name="portfolio/PortfolioViews/TradeBook" options={{ headerShown: false }} />
             <Stack.Screen name="portfolio/PortfolioViews/Overview" options={{ headerShown: false }} />
             <Stack.Screen name="portfolio/OpenPositions/OpenPosition" options={{ headerShown: false }} />
             <Stack.Screen name="OrderHistoryScreen" options={{ headerShown: false }} />

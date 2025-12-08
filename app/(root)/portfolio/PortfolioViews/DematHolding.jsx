@@ -11,8 +11,7 @@ import FilterSheet from '@/components/PortfolioComponents/FilterSheet';
 import { useBroker } from '@/contexts/BrokerContext';
 
 const DematHolding = () => {
-    const { holdings, loading, refreshPortfolio, error } = useBroker();  // Use dedicated holdings
-
+    const { holdings, loading, refreshPortfolio, error } = useBroker();
     const [searchQuery, setSearchQuery] = useState('');
     const [exchange, setExchange] = useState('All');
     const [unrealizedLossActive, setUnrealizedLossActive] = useState(false);
@@ -100,7 +99,6 @@ const DematHolding = () => {
                 <Text style={{ color: '#FF6B6B', fontSize: 16, textAlign: 'center' }}>
                     {error}{'\n'}Pull down to retry
                 </Text>
-                <RefreshControl refreshing={loading} onRefresh={refreshPortfolio} />
             </View>
         );
     }
@@ -114,7 +112,12 @@ const DematHolding = () => {
             />
             <ActiveFiltersBar activeFilters={activeFilters} onRemoveFilter={removeFilter} />
 
-            <LinearGradient colors={['#0A0A1F', '#1A1A2E']} style={styles.gradientBg}>
+            <LinearGradient
+                style={styles.gradientBg}
+                colors={['#000', '#000']}
+                start={{ x: 1, y: 0 }}
+                end={{ x: 1, y: 0.2 }}
+            >
                 <FlatList
                     data={filteredHoldings}
                     keyExtractor={item => item.id}
@@ -143,18 +146,18 @@ const DematHolding = () => {
                 />
             </LinearGradient>
 
-            <RBSheet ref={rbSheetRef} height={720} closeOnDragDown closeOnPressMask
-                customStyles={{ container: { backgroundColor: '#1A1A2E', borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}>
+            <RBSheet ref={rbSheetRef} height={600} closeOnDragDown closeOnPressMask
+                customStyles={{ container: { backgroundColor: '#0F0F1A', borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}>
                 <StockDetailSheet stock={selectedStock} showConvertButton={false} />
             </RBSheet>
 
             <RBSheet ref={filterSheetRef} height={560} closeOnDragDown closeOnPressMask
-                customStyles={{ container: { backgroundColor: '#1A1A2E', borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}>
+                customStyles={{ container: { backgroundColor: '#0F0F1A', borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}>
                 <FilterSheet
                     exchange={exchange} setExchange={setExchange}
                     unrealizedLossActive={unrealizedLossActive} setUnrealizedLossActive={setUnrealizedLossActive}
                     unrealizedProfitActive={unrealizedProfitActive} setUnrealizedProfitActive={setUnrealizedProfitActive}
-                    sortBy={sortBy} sortOrder={sortOrder} handleSort={handleSort} // fixed
+                    sortBy={sortBy} sortOrder={sortOrder} handleSort={handleSort}
                     showRealizedFilters={false}
                 />
 

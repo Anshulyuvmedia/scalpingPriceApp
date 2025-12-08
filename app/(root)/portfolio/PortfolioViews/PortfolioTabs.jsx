@@ -12,6 +12,7 @@ import { useStrategies } from '@/contexts/StrategyContext';
 // Tab Components 
 import OverviewTab from './Overview';
 import DematHoldingTab from './DematHolding';
+import TradeBook from './TradeBook';
 
 const initialLayout = { width: Dimensions.get('window').width - 20 };
 
@@ -23,6 +24,7 @@ const PortfolioTabs = () => {
     const [routes] = useState([
         { key: 'overview', title: 'Overview' },
         { key: 'demat', title: 'Demat Holding' },
+        { key: 'tradebook', title: 'Trade Book' },
     ]);
 
     // Pass actual data + loading states properly
@@ -36,6 +38,13 @@ const PortfolioTabs = () => {
         ),
         demat: () => (
             <DematHoldingTab
+                data={dematHoldingData}
+                isLoading={refreshing}
+                onRefresh={refetch}
+            />
+        ),
+        tradebook: () => (
+            <TradeBook
                 data={dematHoldingData}
                 isLoading={refreshing}
                 onRefresh={refetch}
