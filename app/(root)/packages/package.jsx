@@ -2,7 +2,7 @@ import React, { useContext, useRef, useState } from 'react';
 import { FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
-import { UserContext } from '@/contexts/UserContext';
+import { useUser } from '@/contexts/UserContext';
 import { PackageContext } from '@/contexts/PackageContext';
 import HomeHeader from '@/components/HomeHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,7 +22,7 @@ const GradientCard = ({ children, style }) => (
 
 const Package = () => {
     const insets = useSafeAreaInsets();
-    const { user, setUser } = useContext(UserContext);
+    const { user, setUser } = useUser()
     const { plans, loading, error, fetchPlans, subscribeToPlan } = useContext(PackageContext);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);

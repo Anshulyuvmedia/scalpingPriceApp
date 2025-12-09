@@ -6,34 +6,46 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
-const SummaryCard = ({ label, value = 0, change = 0, changePercent = 0 }) => {
-
-    const showChange = change !== 0 || changePercent !== 0;
+const SummaryCard = ({ label, value = 0, change = 0, changePercent }) => {
+    const showChange = change !== 0 || (changePercent != null && changePercent !== 0);
+    const isPositive = change > 0;
+    const isNegative = change < 0;
 
     return (
         <View style={styles.card}>
             <Text style={styles.label}>{label}</Text>
-            <View className="flex-row justify-between">
-                <Text style={styles.value}>{value}</Text>
-                {showChange && (
-                    <View style={styles.changeRow}>
-                        <Text style={[styles.change, change > 0 ? styles.positive : change < 0 ? styles.negative : styles.nuteral]}>
-                            {change > 0 ? '+' : change < 0 ? '-' : ''} ₹{Math.abs(change).toLocaleString('en-IN')}
+            <Text style={styles.value}>{value}</Text>
+            {showChange && (
+                <View style={styles.changeRow}>
+                    <Text style={[
+                        styles.change,
+                        isPositive ? styles.positive : isNegative ? styles.negative : styles.neutral
+                    ]}>
+                        {isPositive ? '+' : isNegative ? '-' : ''} ₹{Math.abs(change).toLocaleString('en-IN')}
+                    </Text>
+                    {changePercent != null && (
+                        <Text style={[
+                            styles.changePercent,
+                            isPositive ? styles.positive : isNegative ? styles.negative : styles.neutral
+                        ]}>
+                            {' '}({isPositive ? '+' : isNegative ? '-' : ''}{changePercent.toFixed(2)}%)
                         </Text>
-                        {changePercent !== null && changePercent !== 0 && (
-                            <Text style={[styles.changePercent, change > 0 ? styles.positive : change < 0 ? styles.negative : styles.nuteral]}>
-                                {change > 0 ? '+' : change < 0 ? '-' : ''} {changePercent.toFixed(2)}%
-                            </Text>
-                        )}
-                    </View>
-                )}
-            </View>
+                    )}
+                </View>
+            )}
         </View>
     );
 };
 
 export default function Overview() {
-    const { summary = {}, funds, loading, todayPnL } = useBroker();
+    const {
+        summary = {},
+        funds,
+        loading,
+        todayPnL = {},
+        isLive,      // ← NOW IMPORTED
+        error        // ← NOW IMPORTED
+    } = useBroker();
 
     const {
         totalInvestment = 0,
@@ -48,40 +60,104 @@ export default function Overview() {
     const format = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
     if (loading) {
-        return <View style={styles.center}><Text style={styles.loadingText}>Syncing...</Text></View>;
+        return (
+            <View style={styles.center}>
+                <Text style={styles.loadingText}>Syncing portfolio...</Text>
+            </View>
+        );
     }
 
     if (currentValue === 0 && availableCash === 0) {
-        return <View style={styles.center}><Text style={styles.emptyTitle}>No Holdings</Text></View>;
+        return (
+            <View style={styles.center}>
+                <Text style={styles.emptyTitle}>No Holdings Yet</Text>
+                <Text style={styles.emptySubtitle}>Your portfolio will appear here once connected</Text>
+            </View>
+        );
     }
 
     return (
         <View style={styles.container}>
+            {/* Hero Card */}
             <LinearGradient colors={["#1A1A2E", "#16213E"]} style={styles.hero}>
                 <Text style={styles.heroLabel}>Total Portfolio Value</Text>
                 <Text style={styles.heroAmount}>{format(currentValue)}</Text>
-                <Text style={[styles.heroPL, totalPL >= 0 ? styles.positive : styles.negative]}>
-                    {totalPL >= 0 ? '+' : ''}{format(totalPL)} • {overallPnLPercent.toFixed(2)}%
+                <Text style={[
+                    styles.heroPL,
+                    totalPL >= 0 ? styles.positive : styles.negative
+                ]}>
+                    {totalPL >= 0 ? '+' : ''}{format(totalPL)} • {overallPnLPercent >= 0 ? '+' : ''}{overallPnLPercent.toFixed(2)}%
                 </Text>
             </LinearGradient>
 
+            {/* Invested + Cash */}
             <View style={styles.statsRow}>
-                <View style={styles.statBox}><Text style={styles.statLabel}>Invested</Text><Text style={styles.statValue}>{format(totalInvestment)}</Text></View>
-                <View style={styles.statBox}><Text style={styles.statLabel}>Cash</Text><Text style={styles.statValue}>{format(availableCash)}</Text></View>
+                <View style={styles.statBox}>
+                    <Text style={styles.statLabel}>Invested</Text>
+                    <Text style={styles.statValue}>{format(totalInvestment)}</Text>
+                </View>
+                <View style={styles.statBox}>
+                    <Text style={styles.statLabel}>Cash Balance</Text>
+                    <Text style={styles.statValue}>{format(availableCash)}</Text>
+                </View>
             </View>
 
+            {/* Summary Cards */}
             <View style={styles.summaryContainer}>
-                <SummaryCard label="Current Value" value={format(currentValue)} change={unrealisedPL} changePercent={totalInvestment > 0 ? (unrealisedPL / totalInvestment) * 100 : 0} />
-                <SummaryCard label="Total P&L" value={format(totalPL)} change={totalPL} changePercent={overallPnLPercent} />
-                <SummaryCard label="Unrealised" value={format(unrealisedPL)} change={unrealisedPL} />
-                <SummaryCard label="Realised" value={format(realisedPL)} change={realisedPL} />
-                <SummaryCard label="Cash Balance" value={format(availableCash)} />
-                <SummaryCard label="Today's P&L" value={format(todayPnL.todayTotalPL)} change={todayPnL.todayTotalPL} changePercent={null} />
+                <SummaryCard
+                    label="Current Value"
+                    value={format(currentValue)}
+                    change={unrealisedPL}
+                    changePercent={totalInvestment > 0 ? (unrealisedPL / totalInvestment) * 100 : 0}
+                />
+                <SummaryCard
+                    label="Total P&L"
+                    value={format(totalPL)}
+                    change={totalPL}
+                    changePercent={overallPnLPercent}
+                />
+                <SummaryCard
+                    label="Unrealised P&L"
+                    value={format(unrealisedPL)}
+                    change={unrealisedPL}
+                />
+                <SummaryCard
+                    label="Realised P&L"
+                    value={format(realisedPL)}
+                    change={realisedPL}
+                />
+                <SummaryCard
+                    label="Cash Balance"
+                    value={format(availableCash)}
+                />
+                <SummaryCard
+                    label="Today's P&L"
+                    value={format(todayPnL.todayTotalPL || 0)}
+                    change={todayPnL.todayTotalPL || 0}
+                // Optional: add % if you calculate it on backend
+                />
+            </View>
+
+            {/* Live Status Indicator (React Native Safe) */}
+            <View style={styles.statusContainer}>
+                {isLive ? (
+                    <View style={styles.liveStatus}>
+                        <View style={styles.liveDot} />
+                        <Text style={styles.liveText}>Live prices active</Text>
+                    </View>
+                ) : (
+                    <View style={styles.offlineStatus}>
+                        <Text style={styles.offlineText}>
+                            {error || "Connecting to live prices..."}
+                        </Text>
+                    </View>
+                )}
             </View>
         </View>
     );
 }
 
+// Add these new styles
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#0F0F1A" },
     center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F0F1A" },
@@ -102,7 +178,7 @@ const styles = StyleSheet.create({
 
     positive: { color: "#05FF93" },
     negative: { color: "#FF3366" },
-    nuteral: { color: "#fff" },
+    neutral: { color: "#888" },
 
     statsRow: {
         flexDirection: "row",
@@ -132,7 +208,7 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
         justifyContent: "space-between",
         paddingHorizontal: 16,
-        // paddingTop: 8,
+        paddingTop: 8,
     },
     card: {
         backgroundColor: "rgba(30, 30, 50, 0.7)",
@@ -149,5 +225,40 @@ const styles = StyleSheet.create({
 
     changeRow: { flexDirection: "row", marginTop: 8, alignItems: "center", flexWrap: "wrap" },
     change: { fontSize: 13.5, fontWeight: "700" },
-    changePercent: { fontSize: 14, fontWeight: "600" },
+    changePercent: { fontSize: 13, fontWeight: "600", marginLeft: 4 },
+
+    // Live Status
+    statusContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        alignItems: "center",
+    },
+    liveStatus: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    liveDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: "#05FF93",
+        marginRight: 8,
+    },
+    liveText: {
+        color: "#05FF93",
+        fontSize: 14,
+        fontWeight: "600",
+    },
+    offlineStatus: {
+        backgroundColor: "rgba(255, 51, 102, 0.15)",
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "rgba(255, 51, 102, 0.3)",
+    },
+    offlineText: {
+        color: "#FF3366",
+        fontSize: 14,
+        textAlign: "center",
+    },
 });

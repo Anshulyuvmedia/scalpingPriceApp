@@ -1,18 +1,21 @@
+// app/_layout.tsx
+import React, { useEffect } from 'react';
 import { Stack, usePathname, router } from 'expo-router';
-import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState, useContext } from 'react';
 import './globals.css';
-import { UserContext, UserProvider } from '@/contexts/UserContext';
+
+import { UserProvider, useUser } from '@/contexts/UserContext';
 import { IndexProvider } from '@/contexts/IndexContext';
 import { ForexProvider } from '@/contexts/ForexContext';
 import { PackageProvider } from '@/contexts/PackageContext';
 import { StrategyProvider } from '@/contexts/StrategyContext';
 import { BrokerProvider } from '@/contexts/BrokerContext';
+
 SplashScreen.preventAutoHideAsync();
 
 export default function AppLayout() {
@@ -25,6 +28,12 @@ export default function AppLayout() {
         'Sora-Light': require('../assets/fonts/Sora-Light.ttf'),
         'Sora-SemiBold': require('../assets/fonts/Sora-SemiBold.ttf'),
     });
+
+    useEffect(() => {
+        if (fontsLoaded || fontError) {
+            SplashScreen.hideAsync();
+        }
+    }, [fontsLoaded, fontError]);
 
     if (!fontsLoaded && !fontError) {
         return (
@@ -43,7 +52,7 @@ export default function AppLayout() {
                             <ForexProvider>
                                 <StrategyProvider>
                                     <BrokerProvider>
-                                        <SafeAreaViewWrapper />
+                                        <AppContent />
                                     </BrokerProvider>
                                 </StrategyProvider>
                             </ForexProvider>
@@ -55,62 +64,60 @@ export default function AppLayout() {
     );
 }
 
-function SafeAreaViewWrapper() {
+// Separate component — now has access to UserContext
+function AppContent() {
     const insets = useSafeAreaInsets();
     const pathname = usePathname();
-    const { user, token, loading } = useContext(UserContext); // Move context usage here
-    const [hasRedirected, setHasRedirected] = useState(false);
+    const { user, token, loading } = useUser(); // Now safe!
 
     useEffect(() => {
         if (loading) return;
 
-        const normalizedPath = pathname.toLowerCase().replace(/^\/|\/$/g, '');
-        const isLoginRoute = normalizedPath.includes('login');
+        const currentPath = pathname.toLowerCase().replace(/^\/|\/$/g, '');
+        const isAuthRoute = currentPath.includes('login') || currentPath.includes('auth');
 
-        if (user && token && !isLoginRoute && !hasRedirected) {
-            setHasRedirected(true);
+        if (user && token && isAuthRoute) {
             router.replace('/(root)/(tabs)');
-        } else if (!user && !token && !isLoginRoute && !hasRedirected) {
-            setHasRedirected(true);
+        } else if (!user && !token && !isAuthRoute) {
             router.replace('/(auth)/login');
         }
-    }, [loading, user, token, pathname, hasRedirected]);
+    }, [loading, user, token, pathname]);
 
-    const normalizedPath = pathname.toLowerCase().replace(/^\/|\/$/g, '');
-    const isTradeAlertsRoute = normalizedPath.includes('tradealertscreens/tradealerts');
-    const statusBarColor = isTradeAlertsRoute ? '#723CDF' : '#000';
+    const currentPath = pathname.toLowerCase().replace(/^\/|\/$/g, '');
+    const isTradeAlerts = currentPath.includes('tradealertscreens/tradealerts');
+    const statusBarColor = isTradeAlerts ? '#723CDF' : '#000';
 
     return (
-        <SafeAreaView
-            style={{
-                flex: 1,
-                backgroundColor: '#000',
-            }}
-            edges={['top', 'left', 'right']}
-        >
-            <View
-                style={{
+        <>
+            {/* StatusBar outside — no flickering */}
+            <StatusBar style="light" backgroundColor={statusBarColor} />
+
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }} edges={['top', 'left', 'right']}>
+                {/* Custom top padding bar */}
+                <View style={{
                     height: insets.top,
                     backgroundColor: statusBarColor,
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     right: 0,
-                }}
-            />
-            <StatusBar style="light" />
-            <Stack
-                screenOptions={{
-                    headerShown: false,
-                    contentStyle: {
-                        backgroundColor: '#000',
-                        paddingBottom: insets.bottom,
-                    },
-                }}
-            >
-                <Stack.Screen name="(root)" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            </Stack>
-        </SafeAreaView>
+                    zIndex: 9999,
+                }} />
+
+                <Stack
+                    screenOptions={{
+                        headerShown: false,
+                        contentStyle: {
+                            backgroundColor: '#000',
+                            paddingBottom: insets.bottom,
+                        },
+                        animation: 'slide_from_right',
+                    }}
+                >
+                    <Stack.Screen name="(root)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                </Stack>
+            </SafeAreaView>
+        </>
     );
 }

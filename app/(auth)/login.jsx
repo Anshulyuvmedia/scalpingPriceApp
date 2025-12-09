@@ -1,5 +1,5 @@
 import images from '@/constants/images';
-import { UserContext } from '@/contexts/UserContext';
+import { useUser } from '@/contexts/UserContext';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -14,7 +14,7 @@ const API_BASE_URL = 'http://192.168.1.18:3000/api'; // Confirm this IP; use you
 
 const Login = () => {
     const insets = useSafeAreaInsets();
-    const { login } = useContext(UserContext);
+    const { login } = useUser();
     const { expired } = useLocalSearchParams();
     const [phone, setPhone] = useState('');
     const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
