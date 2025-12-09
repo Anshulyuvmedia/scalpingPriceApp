@@ -1,22 +1,22 @@
 // app/(tabs)/screener.tsx
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    FlatList,
-    TouchableOpacity,
-    StyleSheet,
-    ActivityIndicator,
-    RefreshControl,
-    ScrollView,
-} from 'react-native';
-import { router } from 'expo-router';
 import HomeHeader from '@/components/HomeHeader';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
-import LinearGradient from 'react-native-linear-gradient';
 import axios from 'axios';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
-const API_URL = 'http://192.168.1.50:3000/api';
+const API_URL = 'http://192.168.1.18:3000/api';
 
 export default function Screener() {
     const [screeners, setScreeners] = useState([]);

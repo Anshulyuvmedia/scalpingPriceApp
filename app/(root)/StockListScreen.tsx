@@ -1,17 +1,17 @@
 // app/StockListScreen.tsx
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    FlatList,
-    StyleSheet,
-    ActivityIndicator,
-    RefreshControl,
-} from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
 import axios from 'axios';
+import { useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
-const API_URL = 'http://192.168.1.50:3000/api';
+const API_URL = 'http://192.168.1.18:3000/api';
 
 export default function StockListScreen() {
     const { screenerId, title } = useLocalSearchParams(); // This is the magic

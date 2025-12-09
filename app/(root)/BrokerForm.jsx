@@ -166,7 +166,9 @@ export default function ConnectBrokerForm() {
     if (isConnected) {
         return (
             <View style={styles.container}>
-                <HomeHeader page="settings" title="Dhan Connected" />
+                <View className="px-3">
+                    <HomeHeader page="settings" title="Broker Connected" />
+                </View>
 
                 <View style={styles.successContainer}>
                     <Animated.View style={[styles.logoPulse, { transform: [{ scale: pulseAnim }] }]}>
@@ -215,7 +217,9 @@ export default function ConnectBrokerForm() {
     // Connection Form
     return (
         <View style={styles.container}>
-            <HomeHeader page="settings" title="Connect Dhan" />
+            <View className="px-3">
+                <HomeHeader page="settings" title="Connect Broker" />
+            </View>
 
             <ScrollView contentContainerStyle={{ padding: 16 }}>
                 <View style={styles.header}>

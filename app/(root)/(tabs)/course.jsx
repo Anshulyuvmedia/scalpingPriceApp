@@ -27,7 +27,7 @@ const Course = () => {
     const screenWidth = Dimensions.get('window').width;
 
     // Get API base URL from app.json with fallback
-    const API_BASE_URL = 'http://192.168.1.50:3000/api';
+    const API_BASE_URL = 'http://192.168.1.18:3000/api';
 
     // Function to fetch courses
     const fetchCourses = useCallback(async () => {
