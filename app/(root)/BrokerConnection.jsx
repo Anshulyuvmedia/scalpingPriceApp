@@ -22,31 +22,49 @@ import * as Haptics from 'expo-haptics';
 
 const brokers = [
     { id: 'dhan', name: 'Dhan', logo: images.dhanimg, description: 'Lightning fast' },
-    // { id: 'zerodha', name: 'Zerodha', logo: images.zerodha, description: 'Coming Soon' },
+    // confirm key in images: images.angelone or images.angleone ?
     { id: 'upstox', name: 'Upstox', logo: images.upstox, description: 'Coming Soon' },
-    { id: 'angelone', name: 'Angel One', logo: images.angleone, description: 'Coming Soon' },
+    { id: 'angelone', name: 'Angel One', logo: images.angelone ?? images.angleone, description: 'Coming Soon' },
     { id: 'groww', name: 'Groww', logo: images.groww, description: 'Coming Soon' },
 ];
 
 const BrokerCard = ({ broker, isConnected, isLive, onPress }) => {
     const isAvailable = broker.id === 'dhan';
-    const scaleValue = new Animated.Value(1);
+    // keep animated value stable across renders
+    const scaleValueRef = React.useRef(new Animated.Value(1));
 
     React.useEffect(() => {
         if (isLive && isConnected) {
             const pulse = Animated.loop(
                 Animated.sequence([
-                    Animated.timing(scaleValue, { toValue: 1.3, duration: 600, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-                    Animated.timing(scaleValue, { toValue: 1, duration: 600, easing: Easing.in(Easing.ease), useNativeDriver: true }),
+                    Animated.timing(scaleValueRef.current, {
+                        toValue: 1.3,
+                        duration: 600,
+                        easing: Easing.out(Easing.ease),
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(scaleValueRef.current, {
+                        toValue: 1,
+                        duration: 600,
+                        easing: Easing.in(Easing.ease),
+                        useNativeDriver: true,
+                    }),
                 ])
             );
             pulse.start();
             return () => pulse.stop();
         }
+        // when not live, ensure value reset
+        scaleValueRef.current.setValue(1);
     }, [isLive, isConnected]);
 
     return (
-        <TouchableOpacity onPress={onPress} disabled={!isAvailable} style={[styles.card, !isAvailable && styles.disabledCard]}>
+        <TouchableOpacity
+            onPress={onPress}
+            disabled={!isAvailable}
+            activeOpacity={isAvailable ? 0.8 : 1}
+            style={[styles.card, !isAvailable && styles.disabledCard]}
+        >
             <View style={styles.cardContent}>
                 <View style={styles.logoContainer}>
                     <Image source={broker.logo} style={styles.logo} resizeMode="contain" />
@@ -58,7 +76,7 @@ const BrokerCard = ({ broker, isConnected, isLive, onPress }) => {
                     )}
 
                     {isConnected && isLive && (
-                        <Animated.View style={[styles.livePulse, { transform: [{ scale: scaleValue }] }]} />
+                        <Animated.View style={[styles.livePulse, { transform: [{ scale: scaleValueRef.current }] }]} />
                     )}
 
                     {isAvailable && !isConnected && (
@@ -81,7 +99,6 @@ const BrokerCard = ({ broker, isConnected, isLive, onPress }) => {
                                 {isLive ? 'LIVE' : 'Connected'}
                             </Text>
                         </View>
-                        {/* <MaterialIcons name="check-circle" size={20} color="#00D09C" /> */}
                     </View>
                 ) : isAvailable ? (
                     <MaterialIcons name="arrow-forward-ios" size={20} color="#00D09C" />
@@ -101,14 +118,13 @@ const BrokerConnection = () => {
 
     const onRefresh = React.useCallback(async () => {
         setRefreshing(true);
-        Haptics.selectionAsync();
-        await refreshPortfolio();
-        setRefreshing(false);
+        try {
+            await Haptics.selectionAsync(); // optional await
+            await refreshPortfolio?.();
+        } finally {
+            setRefreshing(false);
+        }
     }, [refreshPortfolio]);
-
-    React.useEffect(() => {
-        if (isConnected) refreshPortfolio();
-    }, []);
 
     const [currentTime, setCurrentTime] = React.useState(new Date().toLocaleTimeString('en-IN'));
 
@@ -123,12 +139,11 @@ const BrokerConnection = () => {
         }
     }, [isLive, lastSync]);
 
-    // CRITICAL FIX: Only show error if NOT connected AND not live
     const showError = error && !isConnected && !isLive;
 
     return (
         <View style={styles.container}>
-            <View className="px-3">
+            <View style={{ paddingHorizontal: 12 }}>
                 <HomeHeader page="settings" title="Broker Connection" />
             </View>
 
@@ -153,8 +168,6 @@ const BrokerConnection = () => {
                     Link your trading account to view holdings, live PnL & place orders
                 </Text>
 
-
-                {/* Success / Live status */}
                 {isConnected && !loading && (
                     <View style={styles.syncStatus}>
                         <View style={styles.statusRow}>
@@ -169,7 +182,6 @@ const BrokerConnection = () => {
                     </View>
                 )}
 
-                {/* Only show error when truly disconnected */}
                 {showError && (
                     <TouchableOpacity onPress={onRefresh} style={styles.errorContainer}>
                         <MaterialIcons name="error-outline" size={18} color="#FF6B6B" />
@@ -207,6 +219,7 @@ const BrokerConnection = () => {
 
 export default BrokerConnection;
 
+// styles (unchanged)
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
     loadingOverlay: {
@@ -235,7 +248,7 @@ const styles = StyleSheet.create({
     disabledCard: { opacity: 0.4 },
     cardContent: { flexDirection: 'row', alignItems: 'center', padding: 20 },
     logoContainer: { position: 'relative', width: 70, height: 70 },
-    logo: { width: 70, height: 70, borderRadius: 18, backgroundColor: '#111' },
+    logo: { width: 70, height: 70, borderRadius: 100, backgroundColor: '#111' },
 
     connectedBadge: {
         position: 'absolute',

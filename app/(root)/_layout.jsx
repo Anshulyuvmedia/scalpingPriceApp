@@ -5,6 +5,7 @@ export default function RootMainStackLayout() {
     return (
         <Stack screenOptions={{ headerShown: false }} >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="auth/dhanOauth" options={{ headerShown: false }} />
             <Stack.Screen name="dashboard" options={{ headerShown: false }} />
             <Stack.Screen name="aigeneratedtrade" options={{ headerShown: false }} />
             <Stack.Screen name="strategybacktesting" options={{ headerShown: false }} />
@@ -28,7 +29,6 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="StockListScreen" options={{ headerShown: false, title: 'StockListScreen' }} />
             <Stack.Screen name="BrokerConnection" options={{ headerShown: false, title: 'BrokerConnection' }} />
             <Stack.Screen name="BrokerForm" options={{ headerShown: false, title: 'BrokerForm' }} />
-            <Stack.Screen name="oauth/dhan" options={{ headerShown: false, title: 'dhan' }} />
         </Stack>
     );
 }

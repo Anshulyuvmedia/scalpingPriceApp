@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, FlatList, RefreshControl, Text, StyleSheet } from 'react-native';
+import { View, FlatList, RefreshControl, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import SearchAndFilterBar from '@/components/PortfolioComponents/SearchAndFilterBar';
@@ -7,6 +7,8 @@ import ActiveFiltersBar from '@/components/PortfolioComponents/ActiveFiltersBar'
 import StockListItem from '@/components/PortfolioComponents/StockListItem';
 import StockDetailSheet from '@/components/PortfolioComponents/StockDetailSheet';
 import FilterSheet from '@/components/PortfolioComponents/FilterSheet';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 import { useBroker } from '@/contexts/BrokerContext';
 
@@ -96,9 +98,11 @@ const DematHolding = () => {
     if (error) {
         return (
             <View style={styles.center}>
-                <Text style={{ color: '#FF6B6B', fontSize: 16, textAlign: 'center' }}>
-                    {error}{'\n'}Pull down to retry
-                </Text>
+                <Ionicons name="link-outline" size={80} color="#444" />
+                <Text style={styles.connectTitle}>No Broker Connected</Text>
+                <TouchableOpacity style={styles.connectBtn} onPress={() => router.push('/BrokerConnection')}>
+                    <Text style={styles.connectBtnText}>Connect Broker</Text>
+                </TouchableOpacity>
             </View>
         );
     }
@@ -176,4 +180,8 @@ const styles = StyleSheet.create({
     emptyState: { alignItems: 'center', marginTop: 60 },
     emptyText: { color: '#FFF', fontSize: 18, fontWeight: '600' },
     emptySubtext: { color: '#888', fontSize: 14, marginTop: 8 },
+    connectTitle: { color: '#FFF', fontSize: 24, fontWeight: '700', marginTop: 20 },
+    connectText: { color: '#888', fontSize: 16, textAlign: 'center', marginTop: 10 },
+    connectBtn: { backgroundColor: '#05FF93', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16, marginTop: 30 },
+    connectBtnText: { color: '#000', fontSize: 18, fontWeight: '700' },
 });

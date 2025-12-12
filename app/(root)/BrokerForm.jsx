@@ -1,17 +1,6 @@
 // app/broker/ConnectBrokerForm.jsx
 import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    ScrollView,
-    Alert,
-    Linking,
-    Animated,
-    Easing,
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Linking, Animated, Easing, } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import HomeHeader from '@/components/HomeHeader';
 import * as SecureStore from 'expo-secure-store';
@@ -44,8 +33,12 @@ const BROKER_CONFIG = {
 export default function ConnectBrokerForm() {
     const { broker } = useLocalSearchParams();
     const router = useRouter();
-    const { token } = useUser();
-    const { broker: connectedBroker, isLive, refreshPortfolio } = useBroker();
+    const { appToken } = useUser();
+    const {
+        broker: connectedBroker = null,
+        isLive = false,
+        refreshPortfolio
+    } = useBroker() || {};
 
     const config = broker === 'dhan' ? BROKER_CONFIG.dhan : null;
     const isConnected = connectedBroker?.broker === 'dhan';
@@ -111,7 +104,7 @@ export default function ConnectBrokerForm() {
             const res = await fetch('https://johnson-prevertebral-irradiatingly.ngrok-free.dev/api/BrokerConnections/save-credentials', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': `Bearer ${appToken}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -131,7 +124,7 @@ export default function ConnectBrokerForm() {
                 'Saved!',
                 'Credentials saved securely. Now login to authorize access.',
                 [
-                    { text: 'Login to Dhan', style: 'default', onPress: () => router.replace('/oauth/dhan') },
+                    { text: 'Login to Dhan', style: 'default', onPress: () => router.push('/auth/DhanOAuth') },
                     { text: 'Later', onPress: () => router.back() },
                 ]
             );
@@ -178,6 +171,7 @@ export default function ConnectBrokerForm() {
                     </Animated.View>
 
                     <Text style={styles.successTitle}>Connected Successfully!</Text>
+                    <Text style={styles.statusText}>Env: {connectedBroker.environment}</Text>
                     <Text style={styles.clientId}>Client ID: {connectedBroker.clientId}</Text>
 
                     <View style={styles.statusRow}>
@@ -194,7 +188,14 @@ export default function ConnectBrokerForm() {
                     <View style={styles.buttonGroup}>
                         <TouchableOpacity
                             style={styles.reconnectBtn}
-                            onPress={() => router.replace('/oauth/dhan')}
+                            onPress={() => {
+                                if (!formData.clientId) {
+                                    Alert.alert("Credentials Missing", "Please save your API keys first.");
+                                    return;
+                                } else {
+                                    router.push("/auth/DhanOAuth");
+                                }
+                            }}
                         >
                             <MaterialIcons name="sync" size={20} color="#00D09C" />
                             <Text style={styles.reconnectText}>Re-Authenticate</Text>
@@ -230,9 +231,14 @@ export default function ConnectBrokerForm() {
                 <View style={styles.form}>
                     {config.fields.map(field => (
                         <View key={field} style={styles.field}>
-                            <Text style={styles.label}>
-                                {field === 'clientId' ? 'Client ID' : field === 'apiKey' ? 'API Key' : 'API Secret'}
-                            </Text>
+                            <View className="flex-row gap-3">
+                                <Text style={styles.label}>
+                                    {field === 'clientId' ? 'Client ID' : field === 'apiKey' ? 'API Key' : 'API Secret'}
+                                </Text>
+                                {saved && formData[field] && (
+                                    <Text style={styles.savedText}>Saved securely</Text>
+                                )}
+                            </View>
                             <View style={styles.inputWrapper}>
                                 <TextInput
                                     style={styles.input}
@@ -254,9 +260,7 @@ export default function ConnectBrokerForm() {
                                     </TouchableOpacity>
                                 )}
                             </View>
-                            {saved && formData[field] && (
-                                <Text style={styles.savedText}>Saved securely</Text>
-                            )}
+
                         </View>
                     ))}
                 </View>
@@ -270,7 +274,7 @@ export default function ConnectBrokerForm() {
                         <Text style={styles.connectText}>Saving Credentials...</Text>
                     ) : (
                         <>
-                            <Text style={styles.connectText}>Save & Login to Dhan</Text>
+                            <Text style={styles.connectText}>Save & Login</Text>
                             <MaterialIcons name="arrow-forward" size={22} color="#000" style={{ marginLeft: 10 }} />
                         </>
                     )}
@@ -363,7 +367,7 @@ const styles = StyleSheet.create({
     header: { alignItems: 'center', marginBottom: 32 },
     title: { color: '#FFF', fontSize: 28, fontWeight: '800' },
     subtitle: { color: '#AAA', fontSize: 16, marginTop: 8 },
-    form: { marginBottom: 24 },
+    form: { marginBottom: 5 },
     field: { marginBottom: 20 },
     label: { color: '#FFF', fontSize: 15, marginBottom: 8, fontWeight: '600' },
     inputWrapper: {
@@ -382,7 +386,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     eyeIcon: { padding: 16 },
-    savedText: { color: '#00D09C', fontSize: 12, marginTop: 6, fontWeight: '500' },
+    savedText: { color: '#00D09C', fontSize: 12, marginTop: 3, fontWeight: '500' },
     connectBtn: {
         backgroundColor: '#00D09C',
         flexDirection: 'row',

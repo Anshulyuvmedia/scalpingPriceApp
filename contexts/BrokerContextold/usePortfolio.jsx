@@ -1,6 +1,7 @@
 // contexts/BrokerContext/usePortfolio.js
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useUser } from '@/contexts/UserContext';
+import { useBroker } from '@/contexts/BrokerContext';
 
 const PortfolioContext = createContext();
 
@@ -9,7 +10,8 @@ const BASE_URL = __DEV__
     : 'https://api.yourapp.com';
 
 export const PortfolioProvider = ({ children }) => {
-    const { token } = useUser();
+    const { appToken } = useUser();
+    const { brokerToken } = useBroker();
 
     const [broker, setBroker] = useState(null);
     const [holdings, setHoldings] = useState([]);
@@ -21,13 +23,13 @@ export const PortfolioProvider = ({ children }) => {
     const [error, setError] = useState(null);
 
     const fetchData = useCallback(async () => {
-        if (!token) return;
+        if (!brokerToken) return;
 
         try {
             setLoading(true);
             setError(null);
 
-            const headers = { Authorization: `Bearer ${token}` };
+            const headers = { Authorization: `Bearer ${brokerToken}` };
 
             const responses = await Promise.all([
                 fetch(`${BASE_URL}/api/BrokerConnections/profile`, { headers }),
@@ -57,10 +59,10 @@ export const PortfolioProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [brokerToken]);
 
     useEffect(() => {
-        if (token) fetchData();
+        if (brokerToken) fetchData();
         else {
             setBroker(null);
             setHoldings([]);
@@ -70,7 +72,7 @@ export const PortfolioProvider = ({ children }) => {
             setTodayPnL({ todayTotalPL: 0 });
             setError(null);
         }
-    }, [token, fetchData]);
+    }, [brokerToken, fetchData]);
 
     // Full cleanup on unmount
     useEffect(() => {

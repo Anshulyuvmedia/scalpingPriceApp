@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { usePortfolio } from './usePortfolio';
+import { useBroker } from '@/contexts/BrokerContext';
 
 const TradebookContext = createContext();
 
@@ -10,8 +11,9 @@ const BASE_URL = __DEV__
     : 'https://api.yourapp.com';
 
 export const TradebookProvider = ({ children }) => {
-    const { token } = useUser();
+    const { appToken } = useUser();
     const { isConnected } = usePortfolio();
+    const { brokerToken } = useBroker();
 
     const [tradeDateRange, setTradeDateRange] = useState({
         from: new Date().toISOString().split('T')[0],
@@ -26,7 +28,7 @@ export const TradebookProvider = ({ children }) => {
     const abortControllerRef = useRef(null);
 
     const fetchTradebookPage = useCallback(async (page = 0, isRefresh = false) => {
-        if (!token || !isConnected) return;
+        if (!brokerToken || !isConnected) return;
 
         // Cancel previous request
         if (abortControllerRef.current) {
@@ -40,7 +42,7 @@ export const TradebookProvider = ({ children }) => {
                 `${BASE_URL}/api/BrokerConnections/tradebook?from=${tradeDateRange.from}&to=${tradeDateRange.to}&page=${page}`,
                 {
                     signal: abortControllerRef.current.signal,
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${brokerToken}` },
                 }
             );
 
@@ -63,7 +65,7 @@ export const TradebookProvider = ({ children }) => {
         } finally {
             setTradebookLoading(false);
         }
-    }, [token, isConnected, tradeDateRange]);
+    }, [brokerToken, isConnected, tradeDateRange]);
 
     useEffect(() => {
         if (isConnected) {

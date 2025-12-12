@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useCallback } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { usePortfolio } from './usePortfolio';
+import { useBroker } from '@/contexts/BrokerContext';
 
 const OrderHistoryContext = createContext();
 
@@ -10,19 +11,20 @@ const BASE_URL = __DEV__
     : 'https://api.yourapp.com';
 
 export const OrderHistoryProvider = ({ children }) => {
-    const { token } = useUser();
+    const { appToken } = useUser();
     const { isConnected } = usePortfolio();
+    const { brokerToken } = useBroker();
 
     const fetchOrderHistoryBySecurityId = useCallback(async (securityId, fy) => {
-        if (!token || !isConnected || !securityId) return [];
+        if (!brokerToken || !isConnected || !securityId) return [];
 
         let url = `${BASE_URL}/api/BrokerConnections/order-history-by-security?securityId=${securityId}`;
         if (fy) url += `&fy=${encodeURIComponent(fy)}`;
 
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${brokerToken}` } });
         if (!res.ok) throw new Error('Failed');
         return await res.json();
-    }, [token, isConnected]);
+    }, [brokerToken, isConnected]);
 
     return (
         <OrderHistoryContext.Provider value={{ fetchOrderHistoryBySecurityId }}>

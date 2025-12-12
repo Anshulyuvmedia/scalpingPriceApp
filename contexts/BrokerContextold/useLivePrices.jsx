@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { usePortfolio } from './usePortfolio';
 import io from 'socket.io-client';
+import { useBroker } from '@/contexts/BrokerContext';
 
 const LivePricesContext = createContext();
 
@@ -11,7 +12,8 @@ const BASE_URL = __DEV__
     : 'https://api.yourapp.com';
 
 export const LivePricesProvider = ({ children }) => {
-    const { token } = useUser();
+    const { appToken } = useUser();
+    const { brokerToken } = useBroker();
     const { holdings, positions } = usePortfolio();
 
     const socketRef = useRef(null);
@@ -20,7 +22,7 @@ export const LivePricesProvider = ({ children }) => {
     const intervalRef = useRef(null);
 
     useEffect(() => {
-        if (!token) {
+        if (!brokerToken) {
             // Cleanup on logout
             if (socketRef.current) {
                 socketRef.current.close();
@@ -35,13 +37,13 @@ export const LivePricesProvider = ({ children }) => {
         // Start feed once
         fetch(`${BASE_URL}/api/BrokerConnections/start-live-feed`, {
             method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${brokerToken}` },
         }).catch(() => { });
 
         // Create socket only once
         if (!socketRef.current) {
             socketRef.current = io(BASE_URL, {
-                query: { token },
+                query: { brokerToken },
                 transports: ['websocket'],
                 reconnection: true,
                 reconnectionAttempts: 10,
@@ -100,7 +102,7 @@ export const LivePricesProvider = ({ children }) => {
             livePricesRef.current = {};
             subscribedRef.current = false;
         };
-    }, [token, holdings, positions]);
+    }, [brokerToken, holdings, positions]);
 
     return (
         <LivePricesContext.Provider value={{

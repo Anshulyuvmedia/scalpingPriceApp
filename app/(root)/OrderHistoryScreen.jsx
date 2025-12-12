@@ -32,7 +32,7 @@ const OrderHistoryScreen = () => {
         setError(null);
         try {
             const data = await fetchOrderHistoryBySecurityId(securityId, selectedFY);
-            console.log('fetchOrderHistoryBySecurityId', data);
+            // console.log('fetchOrderHistoryBySecurityId', data);
             setOrders(data || []);
         } catch (err) {
             setError(err.message || "Failed to load trades");

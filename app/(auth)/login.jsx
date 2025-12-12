@@ -152,6 +152,7 @@ const Login = () => {
     };
 
     const verifyOtp = async (otp) => {
+        if (isLoading) return;
         setIsLoading(true);
         const payload = {
             phone: normalizePhoneNumber(phone),
@@ -165,13 +166,18 @@ const Login = () => {
             );
             // console.log('verifyOtp response:', JSON.stringify(response.data, null, 2)); // Keep for debugging
             if (response.status === 200 && response.data?.user && response.data?.token) {
-                // Store userToken and userId in AsyncStorage
                 await AsyncStorage.setItem('userToken', response.data.token.id);
-                await AsyncStorage.setItem('userId', response.data.user.id);
                 // Call login from UserContext
                 await login(response.data.user, response.data.token.id);
+
+
                 showModal('Success', 'Logged in successfully', false);
                 rbSheetRef.current?.close();
+                setIsOtpSent(false);
+                setOtpDigits(['', '', '', '', '', '']);
+                router.replace('/(root)/(tabs)');   // ⬅ Navigation ONLY here
+
+
             } else {
                 console.log('Unexpected verifyOtp response:', JSON.stringify(response.data, null, 2));
                 throw new Error(response.data?.message || response.data?.error?.message || 'Unexpected response from server');
@@ -237,16 +243,21 @@ const Login = () => {
     };
 
     const handleVerify = async () => {
+        // Prevent double click
+        if (isLoading) return;
+
         setOtpError('');
         if (otpExpiry && new Date() > new Date(otpExpiry)) {
             setOtpError('OTP expired. Please request a new one.');
             return;
         }
+
         const otp = otpDigits.join('');
         if (otp.length !== 6) {
             setOtpError('Please enter a valid 6-digit OTP');
             return;
         }
+
         await verifyOtp(otp);
     };
 
@@ -376,7 +387,7 @@ const Login = () => {
                 <View style={styles.rbSheetContainer}>
                     <Text style={styles.rbSheetTitle}>Verify OTP</Text>
                     <Text style={styles.rbSheetSubtitle}>
-                        Enter the 6-digit OTP displayed below for {phone}
+                        Enter the OTP sent to {phone}
                     </Text>
                     <Text style={styles.rbSheetSubtitle}>OTP: {newOtp}</Text>
                     <View style={styles.otpContainer}>
@@ -511,6 +522,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         justifyContent: 'center',
         alignItems: 'center',
+        borderRadius: 12,
     },
     buttonText: {
         color: '#FFFFFF',

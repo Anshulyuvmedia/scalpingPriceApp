@@ -1,4 +1,4 @@
-// app/broker/oauth/DhanOAuthWebView.jsx
+// app/broker/auth/DhanOAuth.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import WebView from 'react-native-webview';
@@ -8,49 +8,47 @@ import { useRouter } from 'expo-router';
 
 const BASE_URL = 'https://johnson-prevertebral-irradiatingly.ngrok-free.dev/api/BrokerConnections';
 
-export default function DhanOAuthWebView() {
-    const { token } = useUser();
-    const { refreshPortfolio } = useBroker();
+export default function DhanOAuth() {
+    const { appToken } = useUser();           // ← Only to start OAuth
+    const { setBrokerToken, refreshPortfolio } = useBroker();
     const router = useRouter();
     const [loginUrl, setLoginUrl] = useState(null);
     const webviewRef = useRef(null);
 
     useEffect(() => {
-        const getLoginUrl = async () => {
+        const startLogin = async () => {
             try {
                 const res = await fetch(`${BASE_URL}/start-login`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${appToken}` },
                 });
-                if (!res.ok) throw new Error('Failed to start login');
-                const { loginUrl } = await res.json();
-                setLoginUrl(loginUrl);
+                const data = await res.json();
+                setLoginUrl(data.loginUrl);
             } catch (err) {
-                alert('Error: ' + err.message);
+                alert('Failed to start Dhan login');
                 router.back();
             }
         };
-        getLoginUrl();
-    }, [token]);
+        if (appToken) startLogin();
+    }, [appToken]);
 
     const handleMessage = (event) => {
         const data = event.nativeEvent.data;
 
-        console.log("WebView message:", data); // Keep this!
-
-        if (data.includes('DHAN_OAUTH_SUCCESS') || data.includes('DHAN_CLOSE_WEBVIEW')) {
-            refreshPortfolio?.();
-            router.back();
-            return;
-        }
-
         try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === 'DHAN_OAUTH_SUCCESS' || parsed.type === 'DHAN_CLOSE_WEBVIEW') {
-                refreshPortfolio?.();
+            const msg = JSON.parse(data);
+
+            if (msg.type === 'DHAN_OAUTH_SUCCESS' && msg.brokerToken) {
+                // SUCCESS: Save broker token ONLY
+                setBrokerToken(msg.brokerToken);
+                refreshPortfolio();
                 router.back();
+                return;
             }
-        } catch (e) {
-            // ignore
+        } catch (e) { }
+
+        if (data === 'DHAN_OAUTH_SUCCESS') {
+            refreshPortfolio();
+            router.back();
         }
     };
 
@@ -69,23 +67,14 @@ export default function DhanOAuthWebView() {
             source={{ uri: loginUrl }}
             onMessage={handleMessage}
             injectedJavaScript={`
-            (function() {
-                window.ReactNativeWebView = window.ReactNativeWebView || {};
-                window.ReactNativeWebView.postMessage = window.ReactNativeWebView.postMessage || function(msg) {
-                window.postMessage(msg, '*');
-                };
-            })();
-            true;
-            `}
-            injectedJavaScriptBeforeContentLoad={`
-                // Ensures postMessage works even if ReactNativeWebView is undefined
-                window.ReactNativeWebView = window.ReactNativeWebView || {
-                    postMessage: (msg) => {
-                    window.parent.postMessage(msg, '*');
-                    }
-                };
-                true;
-            `}
+        (function() {
+            window.originalPostMessage = window.postMessage;
+            window.postMessage = function(message) {
+                window.ReactNativeWebView.postMessage(message);
+            };
+        })();
+        true;
+    `}
             javaScriptEnabled={true}
             domStorageEnabled={true}
             startInLoadingState={true}
@@ -97,6 +86,7 @@ export default function DhanOAuthWebView() {
             )}
             style={{ backgroundColor: '#000' }}
         />
+
     );
 }
 
