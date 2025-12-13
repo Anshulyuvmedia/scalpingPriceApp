@@ -64,9 +64,6 @@ export const BrokerProvider = ({ children }) => {
 
     const isConnected = !!broker;
 
-    // -------------------------------------------------
-    // Local Helpers
-    // -------------------------------------------------
     const applyLivePrice = (item, quote) => {
         const ltp = quote?.ltp ?? item.ltp ?? 0;
         const qty = Math.abs(
@@ -113,9 +110,6 @@ export const BrokerProvider = ({ children }) => {
         });
     }, [holdings, positions]);
 
-    // -------------------------------------------------
-    // Local Token Persistence (BrokerToken)
-    // -------------------------------------------------
     useEffect(() => {
         AsyncStorage.getItem('brokerToken')
             .then((token) => token && setBrokerToken(token))
@@ -215,7 +209,7 @@ export const BrokerProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    }, [appToken]);
+    }, [appToken, startWebSocket]);
 
     // -------------------------------------------------
     // WebSocket Live Price Connection
@@ -352,7 +346,7 @@ export const BrokerProvider = ({ children }) => {
         if (isConnected) {
             fetchTradebookPage(0, true);
         }
-    }, [tradeDateRange.from, tradeDateRange.to, isConnected]);
+    }, [tradeDateRange.from, tradeDateRange.to, isConnected, fetchTradebookPage]);
 
     useEffect(() => {
         return () => {

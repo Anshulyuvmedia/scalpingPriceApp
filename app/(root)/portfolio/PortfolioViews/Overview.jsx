@@ -43,9 +43,16 @@ export default function Overview() {
         funds,
         loading,
         todayPnL = {},
-        isLive,      // ← NOW IMPORTED
-        error        // ← NOW IMPORTED
+        isLive,
+        error
     } = useBroker();
+
+    // console.log('summary:', summary);
+    // console.log('funds:', funds);
+    // console.log('loading:', loading);
+    // console.log('todayPnL:', todayPnL);
+    // console.log('isLive:', isLive);
+    // console.log('error:', error);
 
     const {
         totalInvestment = 0,
@@ -79,32 +86,20 @@ export default function Overview() {
     return (
         <View style={styles.container}>
             {/* Hero Card */}
-            <LinearGradient colors={["#1A1A2E", "#16213E"]} style={styles.hero}>
+            <LinearGradient colors={["#000", "#16213E"]} style={styles.hero}>
                 <Text style={styles.heroLabel}>Total Portfolio Value</Text>
                 <Text style={styles.heroAmount}>{format(currentValue)}</Text>
-                <Text style={[
+                {/* <Text style={[
                     styles.heroPL,
                     totalPL >= 0 ? styles.positive : styles.negative
                 ]}>
                     {totalPL >= 0 ? '+' : ''}{format(totalPL)} • {overallPnLPercent >= 0 ? '+' : ''}{overallPnLPercent.toFixed(2)}%
-                </Text>
+                </Text> */}
             </LinearGradient>
-
-            {/* Invested + Cash */}
-            <View style={styles.statsRow}>
-                <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>Invested</Text>
-                    <Text style={styles.statValue}>{format(totalInvestment)}</Text>
-                </View>
-                <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>Cash Balance</Text>
-                    <Text style={styles.statValue}>{format(availableCash)}</Text>
-                </View>
-            </View>
 
             {/* Summary Cards */}
             <View style={styles.summaryContainer}>
-                <SummaryCard
+                {/*<SummaryCard
                     label="Current Value"
                     value={format(currentValue)}
                     change={unrealisedPL}
@@ -133,13 +128,13 @@ export default function Overview() {
                 <SummaryCard
                     label="Today's P&L"
                     value={format(todayPnL.todayTotalPL || 0)}
-                    change={todayPnL.todayTotalPL || 0}
+                    change={todayPnL.todayTotalPL || 0} 
                 // Optional: add % if you calculate it on backend
-                />
+                />*/}
             </View>
 
             {/* Live Status Indicator (React Native Safe) */}
-            <View style={styles.statusContainer}>
+            {/* <View style={styles.statusContainer}>
                 {isLive ? (
                     <View style={styles.liveStatus}>
                         <View style={styles.liveDot} />
@@ -152,7 +147,7 @@ export default function Overview() {
                         </Text>
                     </View>
                 )}
-            </View>
+            </View> */}
         </View>
     );
 }
@@ -208,7 +203,7 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
         justifyContent: "space-between",
         paddingHorizontal: 16,
-        paddingTop: 8,
+        paddingTop: 16,
     },
     card: {
         backgroundColor: "rgba(30, 30, 50, 0.7)",

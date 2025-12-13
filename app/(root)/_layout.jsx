@@ -5,7 +5,7 @@ export default function RootMainStackLayout() {
     return (
         <Stack screenOptions={{ headerShown: false }} >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="auth/dhanOauth" options={{ headerShown: false }} />
+            <Stack.Screen name="auth/DhanOAuth" options={{ headerShown: false }} />
             <Stack.Screen name="dashboard" options={{ headerShown: false }} />
             <Stack.Screen name="aigeneratedtrade" options={{ headerShown: false }} />
             <Stack.Screen name="strategybacktesting" options={{ headerShown: false }} />

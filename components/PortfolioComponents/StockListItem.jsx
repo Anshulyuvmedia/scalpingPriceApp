@@ -83,7 +83,7 @@ const StockListItem = React.memo(({ item, onPress }) => {
                                 </Text>
                             <View style={styles.right}>
                                 <Text className="text-white">
-                                    LTP: <Text style={[styles.ltp, ltp > 0 ? styles.green : ltp < 0 ? styles.red : styles.gray,]}>₹{ltp.toFixed(2)}</Text>
+                                    LTP: <Text style={[styles.ltp, ltp > 0 ? styles.green : ltp < 0 ? styles.red : styles.gray]}>₹{ltp.toFixed(2)}</Text>
                                 </Text>
                                 {/* <Text
                                     style={[
