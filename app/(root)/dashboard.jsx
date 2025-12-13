@@ -16,6 +16,7 @@ const menuItems = [
     // { name: 'Algo Builder', route: 'algobuilder', icon: 'rocket' },
     { name: 'Broker Connection', route: 'BrokerConnection', icon: 'history' },
     { name: 'Portfolio', route: 'portfolio/PortfolioScreen', icon: 'chart-bar' },
+    { name: 'Order Book', route: 'orderbook/OrderBookTabs', icon: 'rocket' },
     { name: 'Packages', route: 'packages/package', icon: 'rocket' },
     { name: 'Settings', route: 'settings', icon: 'robot' },
 ];

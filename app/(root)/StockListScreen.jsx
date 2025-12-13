@@ -24,7 +24,7 @@ export default function StockListScreen() {
 
 
 
-    
+
     const fetchStocks = async (pull = false) => {
         try {
             if (!pull) setLoading(true);
@@ -48,7 +48,7 @@ export default function StockListScreen() {
         fetchStocks(true);
     };
 
-    const renderStock = ({ item }: any) => (
+    const renderStock = ({ item }) => (
         <View style={styles.stockItem}>
             <View>
                 <Text style={styles.symbol}>{item.symbol || item.name}</Text>

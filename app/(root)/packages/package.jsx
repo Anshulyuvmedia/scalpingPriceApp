@@ -122,7 +122,7 @@ const Package = () => {
 
     return (
         <View style={styles.container}>
-            <HomeHeader page="packages" title="Subscription Plans" action="refresh" onAction={fetchPlans} />
+            <HomeHeader page="chatbot" title="Subscription Plans" action="refresh" onAction={fetchPlans} />
             <FlatList
                 data={plans}
                 renderItem={renderPlan}

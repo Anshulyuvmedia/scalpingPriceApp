@@ -45,6 +45,10 @@ export const BrokerProvider = ({ children }) => {
     const [isLive, setIsLive] = useState(false);
     const [error, setError] = useState(null);
 
+    // === NEW: Dedicated state for Today's Orders ===
+    const [todayOrders, setTodayOrders] = useState([]);
+    const [todayOrdersLoading, setTodayOrdersLoading] = useState(false);
+    const [todayOrdersRefreshing, setTodayOrdersRefreshing] = useState(false);
     // TradeBook
     const [tradeDateRange, setTradeDateRange] = useState({
         from: new Date().toISOString().split('T')[0],
@@ -335,6 +339,70 @@ export const BrokerProvider = ({ children }) => {
         [appToken, tradeDateRange.from, tradeDateRange.to, isConnected]
     );
 
+    const fetchTodayOrders = useCallback(
+        async (isRefresh = false) => {
+            if (!appToken || !isConnected) {
+                setTodayOrders([]);
+                return;
+            }
+
+            // Cancel previous request
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
+            try {
+                setTodayOrdersLoading(true);
+                setTodayOrdersRefreshing(isRefresh);
+
+                const res = await fetch(`${BASE_URL}/api/BrokerConnections/todayOrders`, {
+                    signal: controller.signal,
+                    headers: {
+                        Authorization: `Bearer ${appToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`Failed to fetch today's orders: ${res.status} ${text || res.statusText}`);
+                }
+
+                const data = await res.json();
+                
+                const orders = Array.isArray(data.orders) ? data.orders : [];
+                
+                // console.log('Todays data', orders);
+                // Sort by latest first
+                const sortedOrders = orders.sort((a, b) => {
+                    const timeA = a.orderDateTime || a.exchangeTime || 0;
+                    const timeB = b.orderDateTime || b.exchangeTime || 0;
+                    return new Date(timeB) - new Date(timeA);
+                });
+
+                // Ensure unique stable key using Dhan's orderId
+                const ordersWithKey = sortedOrders.map((order) => ({
+                    ...order,
+                    _id: order.orderId || `fallback-${Date.now()}-${Math.random()}`,
+                }));
+
+                setTodayOrders(ordersWithKey);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Fetch today orders error:', err);
+                    setTodayOrders([]);
+                    // Optional: show toast
+                }
+            } finally {
+                setTodayOrdersLoading(false);
+                setTodayOrdersRefreshing(false);
+            }
+        },
+        [appToken, isConnected]
+    );
+
     // -------------------------------------------------
     // Effects
     // -------------------------------------------------
@@ -403,6 +471,13 @@ export const BrokerProvider = ({ children }) => {
                 isConnected,
                 isLive,
                 refreshPortfolio,
+
+                // Today's Orders (New!)
+                todayOrders,
+                todayOrdersLoading,
+                todayOrdersRefreshing,
+                fetchTodayOrders,           // Call this manually from Orders screen
+                refreshTodayOrders: () => fetchTodayOrders(true),
 
                 // TradeBook
                 tradeDateRange,

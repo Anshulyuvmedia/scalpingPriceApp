@@ -29,6 +29,8 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="StockListScreen" options={{ headerShown: false, title: 'StockListScreen' }} />
             <Stack.Screen name="BrokerConnection" options={{ headerShown: false, title: 'BrokerConnection' }} />
             <Stack.Screen name="BrokerForm" options={{ headerShown: false, title: 'BrokerForm' }} />
+            <Stack.Screen name="orderbook/OrderBookTabs" options={{ headerShown: false, title: 'Order Book' }} />
+            <Stack.Screen name="orderbook/ModifyOrder" options={{ headerShown: false, title: 'Modify Order' }} />
         </Stack>
     );
 }
