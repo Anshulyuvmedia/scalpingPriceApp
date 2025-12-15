@@ -159,7 +159,7 @@ const PendingOrders = () => {
                 <Ionicons name="link-outline" size={80} color="#444" />
                 <Text style={styles.connectTitle}>No Broker Connected</Text>
                 <Text style={styles.connectSubtitle}>Connect your broker to view orders</Text>
-                <TouchableOpacity style={styles.connectBtn} onPress={() => router.push('/BrokerConnection')}>
+                <TouchableOpacity style={styles.connectBtn} onPress={() => router.push('auth/BrokerConnection')}>
                     <Text style={styles.connectBtnText}>Connect Broker</Text>
                 </TouchableOpacity>
             </View>

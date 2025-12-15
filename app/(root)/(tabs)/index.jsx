@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import CallPut from '../../../components/CallPut';
 import { useIndex } from '@/contexts/IndexContext'; // Simplified import
 import React, { useState, useEffect } from 'react';
+import { useBroker } from '@/contexts/BrokerContext';
 
 const Index = () => {
   const { indicesData, loading, error } = useIndex();
@@ -15,6 +16,7 @@ const Index = () => {
   const [sensexValue, setSensexValue] = useState('61,232.45');
   const [niftyChange, setNiftyChange] = useState('1.2%');
   const [sensexChange, setSensexChange] = useState('0.8%');
+  const { isConnected, isLive } = useBroker();
 
   useEffect(() => {
     if (!loading && !error && indicesData) {
@@ -46,6 +48,14 @@ const Index = () => {
   return (
     <View style={styles.container}>
       <HomeHeader page={'home'} />
+      {!isConnected && (
+        <View style={styles.connectedBanner}>
+          <TouchableOpacity style={styles.connectBtn} onPress={() => router.push('auth/BrokerConnection')}>
+            <Text style={styles.connectTitle}>No Broker Connected</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* News and FX Signal Buttons */}
         <View style={styles.buttonRow}>
@@ -165,6 +175,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     padding: 10,
     paddingBottom: 0,
+  },
+  connectedBanner: {
+    backgroundColor: 'red',
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  connectTitle: {
+    textAlign: 'center',
+    color: '#fff',
+    fontWeight: 'bold',
   },
   gradientBorder: {
     borderRadius: 100,

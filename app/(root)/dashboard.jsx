@@ -14,7 +14,7 @@ const API_BASE_URL = 'http://192.168.1.48:3000/api';
 
 const menuItems = [
     // { name: 'Algo Builder', route: 'algobuilder', icon: 'rocket' },
-    { name: 'Broker Connection', route: 'BrokerConnection', icon: 'history' },
+    { name: 'Broker Connection', route: 'auth/BrokerConnection', icon: 'history' },
     { name: 'Portfolio', route: 'portfolio/PortfolioScreen', icon: 'chart-bar' },
     { name: 'Order Book', route: 'orderbook/OrderBookTabs', icon: 'rocket' },
     { name: 'Packages', route: 'packages/package', icon: 'rocket' },

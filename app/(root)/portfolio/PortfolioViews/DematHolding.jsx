@@ -26,7 +26,10 @@ const DematHolding = () => {
     const filterSheetRef = React.useRef(null);
 
     const filteredHoldings = useMemo(() => {
-        let result = [...holdings];
+        let result = holdings.filter(
+            h => h && Number(h.qty) !== 0
+        );
+
 
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
@@ -100,7 +103,7 @@ const DematHolding = () => {
             <View style={styles.center}>
                 <Ionicons name="link-outline" size={80} color="#444" />
                 <Text style={styles.connectTitle}>No Broker Connected</Text>
-                <TouchableOpacity style={styles.connectBtn} onPress={() => router.push('/BrokerConnection')}>
+                <TouchableOpacity style={styles.connectBtn} onPress={() => router.push('auth/BrokerConnection')}>
                     <Text style={styles.connectBtnText}>Connect Broker</Text>
                 </TouchableOpacity>
             </View>
@@ -124,7 +127,10 @@ const DematHolding = () => {
             >
                 <FlatList
                     data={filteredHoldings}
-                    keyExtractor={item => item.id}
+                    keyExtractor={(item) =>
+                        `${item.tradingSymbol}_${item.exchange}`
+                    }
+
                     refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshPortfolio} colors={['#05FF93']} />}
                     ListHeaderComponent={
                         <Text style={styles.sectionTitle}>

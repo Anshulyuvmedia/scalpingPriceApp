@@ -169,11 +169,16 @@ export const BrokerProvider = ({ children }) => {
                 fundsRes.json(),
                 todayPnlRes.json(),
             ]);
-
+            // console.log('profile', profile);
             setBroker({
-                name: `Dhan • ${profile.dhanClientId}`,
                 broker: 'dhan',
                 clientId: profile.dhanClientId,
+                activeSegment: profile.activeSegment,
+                dataPlan: profile.dataPlan,
+                dataValidity: profile.dataValidity,
+                ddpi: profile.ddpi,
+                mtf: profile.mtf,
+                tokenValidity: profile.tokenValidity,
             });
 
             setFunds(funds);
@@ -371,9 +376,9 @@ export const BrokerProvider = ({ children }) => {
                 }
 
                 const data = await res.json();
-                
+
                 const orders = Array.isArray(data.orders) ? data.orders : [];
-                
+
                 // console.log('Todays data', orders);
                 // Sort by latest first
                 const sortedOrders = orders.sort((a, b) => {

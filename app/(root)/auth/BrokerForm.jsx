@@ -1,6 +1,16 @@
 // app/broker/ConnectBrokerForm.jsx
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Linking, Animated, Easing, } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    ScrollView,
+    Linking,
+    Animated,
+    Easing,
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import HomeHeader from '@/components/HomeHeader';
 import * as SecureStore from 'expo-secure-store';
@@ -8,6 +18,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useUser } from '@/contexts/UserContext';
 import { useBroker } from '@/contexts/BrokerContext';
 import images from '@/constants/images';
+import RBSheet from 'react-native-raw-bottom-sheet';
 
 const BROKER_CONFIG = {
     dhan: {
@@ -37,7 +48,7 @@ export default function ConnectBrokerForm() {
     const {
         broker: connectedBroker = null,
         isLive = false,
-        refreshPortfolio
+        refreshPortfolio,
     } = useBroker() || {};
 
     const config = broker === 'dhan' ? BROKER_CONFIG.dhan : null;
@@ -47,6 +58,10 @@ export default function ConnectBrokerForm() {
     const [showSecrets, setShowSecrets] = useState({});
     const [loading, setLoading] = useState(false);
     const [saved, setSaved] = useState(false);
+
+    // RBSheet control
+    const sheetRef = useRef(null);
+    const [sheetContent, setSheetContent] = useState(null);
 
     const pulseAnim = new Animated.Value(1);
 
@@ -73,23 +88,55 @@ export default function ConnectBrokerForm() {
     const startPulse = () => {
         Animated.loop(
             Animated.sequence([
-                Animated.timing(pulseAnim, { toValue: 1.15, duration: 800, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-                Animated.timing(pulseAnim, { toValue: 1, duration: 800, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+                Animated.timing(pulseAnim, {
+                    toValue: 1.15,
+                    duration: 800,
+                    easing: Easing.out(Easing.quad),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 1,
+                    duration: 800,
+                    easing: Easing.in(Easing.quad),
+                    useNativeDriver: true,
+                }),
             ])
         ).start();
     };
 
     const updateField = (key, value) => {
-        setFormData(prev => ({ ...prev, [key]: value }));
+        setFormData((prev) => ({ ...prev, [key]: value }));
         setSaved(false);
     };
 
-    const toggleSecret = (key) => setShowSecrets(prev => ({ ...prev, [key]: !prev[key] }));
+    const toggleSecret = (key) =>
+        setShowSecrets((prev) => ({ ...prev, [key]: !prev[key] }));
+
+    const openSheet = (content) => {
+        setSheetContent(content);
+        sheetRef.current?.open();
+    };
+
+    const closeSheet = () => sheetRef.current?.close();
 
     const handleSaveAndConnect = async () => {
-        const missing = config.fields.filter(f => !formData[f]?.trim());
+        const missing = config.fields.filter((f) => !formData[f]?.trim());
         if (missing.length > 0) {
-            Alert.alert('Missing Fields', `Please fill: ${missing.map(m => m === 'clientId' ? 'Client ID' : m.replace('api', 'API ')).join(', ')}`);
+            const missingLabels = missing
+                .map((m) =>
+                    m === 'clientId'
+                        ? 'Client ID'
+                        : m === 'apiKey'
+                            ? 'API Key'
+                            : 'API Secret'
+                )
+                .join(', ');
+
+            openSheet({
+                title: 'Missing Fields',
+                message: `Please fill in: ${missingLabels}`,
+                buttons: [{ text: 'OK', onPress: closeSheet, primary: true }],
+            });
             return;
         }
 
@@ -101,58 +148,97 @@ export default function ConnectBrokerForm() {
             }
 
             // Save to backend
-            const res = await fetch('https://johnson-prevertebral-irradiatingly.ngrok-free.dev/api/BrokerConnections/save-credentials', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${appToken}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    clientId: formData.clientId.trim(),
-                    apiKey: formData.apiKey.trim(),
-                    apiSecret: formData.apiSecret.trim(),
-                }),
-            });
+            const res = await fetch(
+                'https://johnson-prevertebral-irradiatingly.ngrok-free.dev/api/BrokerConnections/save-credentials',
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${appToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        clientId: formData.clientId.trim(),
+                        apiKey: formData.apiKey.trim(),
+                        apiSecret: formData.apiSecret.trim(),
+                    }),
+                }
+            );
 
             if (!res.ok) {
                 const text = await res.text();
-                throw new Error(text.includes('already') ? 'Credentials already saved' : text || 'Server error');
+                throw new Error(
+                    text.includes('already')
+                        ? 'Credentials already saved'
+                        : text || 'Server error'
+                );
             }
 
             setSaved(true);
-            Alert.alert(
-                'Saved!',
-                'Credentials saved securely. Now login to authorize access.',
-                [
-                    { text: 'Login to Dhan', style: 'default', onPress: () => router.push('/auth/DhanOAuth') },
-                    { text: 'Later', onPress: () => router.back() },
-                ]
-            );
+
+            openSheet({
+                title: 'Saved!',
+                message: 'Credentials saved securely. Now login to authorize access.',
+                buttons: [
+                    {
+                        text: 'Login to Dhan',
+                        onPress: () => {
+                            closeSheet();
+                            router.push('/auth/DhanOAuth');
+                        },
+                        primary: true,
+                    },
+                    {
+                        text: 'Later',
+                        onPress: () => {
+                            closeSheet();
+                            router.back();
+                        },
+                    },
+                ],
+            });
         } catch (err) {
-            Alert.alert('Save Failed', err.message || 'Please try again');
+            openSheet({
+                title: 'Save Failed',
+                message: err.message || 'Please try again later.',
+                buttons: [{ text: 'OK', onPress: closeSheet, primary: true }],
+            });
         } finally {
             setLoading(false);
         }
     };
 
     const handleDisconnect = () => {
-        Alert.alert(
-            'Disconnect Dhan?',
-            'This will remove access to your portfolio. You can reconnect anytime.',
-            [
-                { text: 'Cancel', style: 'cancel' },
+        openSheet({
+            title: 'Disconnect Dhan?',
+            message:
+                'This will remove access to your portfolio. You can reconnect anytime.',
+            buttons: [
+                { text: 'Cancel', onPress: closeSheet },
                 {
                     text: 'Disconnect',
-                    style: 'destructive',
                     onPress: async () => {
+                        closeSheet();
                         await SecureStore.deleteItemAsync('dhan_clientId');
                         await SecureStore.deleteItemAsync('dhan_apiKey');
                         await SecureStore.deleteItemAsync('dhan_apiSecret');
                         router.back();
                     },
+                    destructive: true,
                 },
-            ]
-        );
+            ],
+        });
+    };
+
+    const handleReauthenticate = () => {
+        if (!formData.clientId) {
+            openSheet({
+                title: 'Credentials Missing',
+                message: 'Please save your API keys first.',
+                buttons: [{ text: 'OK', onPress: closeSheet, primary: true }],
+            });
+            return;
+        }
+        router.push('/auth/DhanOAuth');
     };
 
     // Connected Success Screen
@@ -164,18 +250,29 @@ export default function ConnectBrokerForm() {
                 </View>
 
                 <View style={styles.successContainer}>
-                    <Animated.View style={[styles.logoPulse, { transform: [{ scale: pulseAnim }] }]}>
+                    <Animated.View
+                        style={[styles.logoPulse, { transform: [{ scale: pulseAnim }] }]}
+                    >
                         <View style={styles.successIcon}>
                             <MaterialIcons name="check-circle" size={90} color="#00D09C" />
                         </View>
                     </Animated.View>
 
                     <Text style={styles.successTitle}>Connected Successfully!</Text>
-                    <Text style={styles.statusText}>Env: {connectedBroker.environment}</Text>
-                    <Text style={styles.clientId}>Client ID: {connectedBroker.clientId}</Text>
+                    <Text style={styles.statusText}>
+                        Env: {connectedBroker.environment}
+                    </Text>
+                    <Text style={styles.clientId}>
+                        Client ID: {connectedBroker.clientId}
+                    </Text>
 
                     <View style={styles.statusRow}>
-                        <View style={[styles.statusDot, isLive ? styles.liveDot : styles.connectedDot]} />
+                        <View
+                            style={[
+                                styles.statusDot,
+                                isLive ? styles.liveDot : styles.connectedDot,
+                            ]}
+                        />
                         <Text style={styles.statusText}>
                             {isLive ? 'LIVE • Real-time Updates' : 'Connected • Syncing'}
                         </Text>
@@ -188,26 +285,25 @@ export default function ConnectBrokerForm() {
                     <View style={styles.buttonGroup}>
                         <TouchableOpacity
                             style={styles.reconnectBtn}
-                            onPress={() => {
-                                if (!formData.clientId) {
-                                    Alert.alert("Credentials Missing", "Please save your API keys first.");
-                                    return;
-                                } else {
-                                    router.push("/auth/DhanOAuth");
-                                }
-                            }}
+                            onPress={handleReauthenticate}
                         >
                             <MaterialIcons name="sync" size={20} color="#00D09C" />
                             <Text style={styles.reconnectText}>Re-Authenticate</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.disconnectBtn} onPress={handleDisconnect}>
+                        <TouchableOpacity
+                            style={styles.disconnectBtn}
+                            onPress={handleDisconnect}
+                        >
                             <MaterialIcons name="link-off" size={20} color="#FF6B6B" />
                             <Text style={styles.disconnectText}>Disconnect</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity style={styles.doneBtn} onPress={() => router.back()}>
+                    <TouchableOpacity
+                        style={styles.doneBtn}
+                        onPress={() => router.back()}
+                    >
                         <Text style={styles.doneText}>Done</Text>
                     </TouchableOpacity>
                 </View>
@@ -229,11 +325,15 @@ export default function ConnectBrokerForm() {
                 </View>
 
                 <View style={styles.form}>
-                    {config.fields.map(field => (
+                    {config.fields.map((field) => (
                         <View key={field} style={styles.field}>
                             <View className="flex-row gap-3">
                                 <Text style={styles.label}>
-                                    {field === 'clientId' ? 'Client ID' : field === 'apiKey' ? 'API Key' : 'API Secret'}
+                                    {field === 'clientId'
+                                        ? 'Client ID'
+                                        : field === 'apiKey'
+                                            ? 'API Key'
+                                            : 'API Secret'}
                                 </Text>
                                 {saved && formData[field] && (
                                     <Text style={styles.savedText}>Saved securely</Text>
@@ -243,7 +343,7 @@ export default function ConnectBrokerForm() {
                                 <TextInput
                                     style={styles.input}
                                     value={formData[field] || ''}
-                                    onChangeText={v => updateField(field, v)}
+                                    onChangeText={(v) => updateField(field, v)}
                                     placeholder={config.placeholders[field]}
                                     placeholderTextColor="#666"
                                     secureTextEntry={field.includes('Secret') && !showSecrets[field]}
@@ -251,7 +351,10 @@ export default function ConnectBrokerForm() {
                                     autoCorrect={false}
                                 />
                                 {field.includes('Secret') && (
-                                    <TouchableOpacity onPress={() => toggleSecret(field)} style={styles.eyeIcon}>
+                                    <TouchableOpacity
+                                        onPress={() => toggleSecret(field)}
+                                        style={styles.eyeIcon}
+                                    >
                                         <MaterialIcons
                                             name={showSecrets[field] ? 'visibility' : 'visibility-off'}
                                             size={22}
@@ -260,7 +363,6 @@ export default function ConnectBrokerForm() {
                                     </TouchableOpacity>
                                 )}
                             </View>
-
                         </View>
                     ))}
                 </View>
@@ -275,7 +377,12 @@ export default function ConnectBrokerForm() {
                     ) : (
                         <>
                             <Text style={styles.connectText}>Save & Login</Text>
-                            <MaterialIcons name="arrow-forward" size={22} color="#000" style={{ marginLeft: 10 }} />
+                            <MaterialIcons
+                                name="arrow-forward"
+                                size={22}
+                                color="#000"
+                                style={{ marginLeft: 10 }}
+                            />
                         </>
                     )}
                 </TouchableOpacity>
@@ -290,7 +397,10 @@ export default function ConnectBrokerForm() {
                             <Text style={styles.stepDesc}>{step}</Text>
                         </View>
                     ))}
-                    <TouchableOpacity style={styles.helpLink} onPress={() => Linking.openURL(config.helpUrl)}>
+                    <TouchableOpacity
+                        style={styles.helpLink}
+                        onPress={() => Linking.openURL(config.helpUrl)}
+                    >
                         <MaterialIcons name="open-in-new" size={18} color="#00D09C" />
                         <Text style={styles.helpText}>Open Dhan API Documentation</Text>
                     </TouchableOpacity>
@@ -300,6 +410,55 @@ export default function ConnectBrokerForm() {
                     Your credentials are encrypted and never leave your device.
                 </Text>
             </ScrollView>
+
+            {/* Reusable Professional Bottom Sheet */}
+            <RBSheet
+                ref={sheetRef}
+                height={sheetContent?.buttons?.length > 1 ? 320 : 280}
+                closeOnDragDown
+                closeOnPressMask
+                customStyles={{
+                    wrapper: { backgroundColor: 'rgba(0,0,0,0.6)' },
+                    draggableIcon: { backgroundColor: '#444' },
+                    container: {
+                        borderTopLeftRadius: 20,
+                        borderTopRightRadius: 20,
+                        backgroundColor: '#111',
+                        padding: 24,
+                    },
+                }}
+            >
+                {sheetContent && (
+                    <View style={{ alignItems: 'center' }}>
+                        <Text style={styles.sheetTitle}>{sheetContent.title}</Text>
+                        <Text style={styles.sheetMessage}>{sheetContent.message}</Text>
+
+                        <View style={styles.sheetButtonContainer}>
+                            {sheetContent.buttons.map((btn, idx) => (
+                                <TouchableOpacity
+                                    key={idx}
+                                    style={[
+                                        styles.sheetButton,
+                                        btn.primary && styles.sheetPrimaryButton,
+                                        btn.destructive && styles.sheetDestructiveButton,
+                                    ]}
+                                    onPress={btn.onPress}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.sheetButtonText,
+                                            btn.primary && styles.sheetPrimaryText,
+                                            btn.destructive && styles.sheetDestructiveText,
+                                        ]}
+                                    >
+                                        {btn.text}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                )}
+            </RBSheet>
         </View>
     );
 }
@@ -308,7 +467,12 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
 
     // Success Screen
-    successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+    successContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 32,
+    },
     logoPulse: { marginBottom: 30 },
     successIcon: {
         width: 120,
@@ -318,19 +482,30 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    successTitle: { color: '#00D09C', fontSize: 28, fontWeight: '800', marginBottom: 12 },
+    successTitle: {
+        color: '#00D09C',
+        fontSize: 28,
+        fontWeight: '800',
+        marginBottom: 12,
+    },
     clientId: { color: '#AAA', fontSize: 16, marginBottom: 16, fontWeight: '600' },
     statusRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
-    statusDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        marginRight: 10,
+    statusDot: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
+    liveDot: {
+        backgroundColor: '#00D09C',
+        shadowColor: '#00D09C',
+        shadowOpacity: 0.8,
+        shadowRadius: 8,
     },
-    liveDot: { backgroundColor: '#00D09C', shadowColor: '#00D09C', shadowOpacity: 0.8, shadowRadius: 8 },
     connectedDot: { backgroundColor: '#00D09C' },
     statusText: { color: '#00D09C', fontSize: 16, fontWeight: '600' },
-    successDesc: { color: '#888', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 40 },
+    successDesc: {
+        color: '#888',
+        fontSize: 15,
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 40,
+    },
     buttonGroup: { flexDirection: 'row', gap: 16, marginBottom: 30 },
     reconnectBtn: {
         flexDirection: 'row',
@@ -421,5 +596,57 @@ const styles = StyleSheet.create({
     stepDesc: { color: '#DDD', fontSize: 15, flex: 1, lineHeight: 22 },
     helpLink: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
     helpText: { color: '#00D09C', marginLeft: 8, fontWeight: '600' },
-    footerNote: { color: '#666', fontSize: 13, textAlign: 'center', marginTop: 30, fontStyle: 'italic' },
+    footerNote: {
+        color: '#666',
+        fontSize: 13,
+        textAlign: 'center',
+        marginTop: 30,
+        fontStyle: 'italic',
+    },
+
+    // RBSheet Styles
+    sheetTitle: {
+        color: '#FFF',
+        fontSize: 22,
+        fontWeight: '700',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    sheetMessage: {
+        color: '#CCC',
+        fontSize: 16,
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 32,
+    },
+    sheetButtonContainer: {
+        width: '100%',
+        gap: 12,
+    },
+    sheetButton: {
+        paddingVertical: 16,
+        borderRadius: 14,
+        backgroundColor: '#1A1A2E',
+        alignItems: 'center',
+    },
+    sheetPrimaryButton: {
+        backgroundColor: '#00D09C',
+    },
+    sheetDestructiveButton: {
+        backgroundColor: '#FF6B6B33',
+        borderWidth: 1,
+        borderColor: '#FF6B6B66',
+    },
+    sheetButtonText: {
+        color: '#FFF',
+        fontSize: 17,
+        fontWeight: '600',
+    },
+    sheetPrimaryText: {
+        color: '#000',
+        fontWeight: '700',
+    },
+    sheetDestructiveText: {
+        color: '#FF6B6B',
+    },
 });

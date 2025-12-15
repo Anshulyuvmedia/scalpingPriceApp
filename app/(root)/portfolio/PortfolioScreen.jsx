@@ -96,7 +96,7 @@ const PortfolioScreen = () => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <HomeHeader page="chatbot" title="Portfolio" />
+                <HomeHeader page="chatbot" title="My Portfolio" />
             </View>
 
             <TabView
@@ -104,7 +104,7 @@ const PortfolioScreen = () => {
                 renderScene={renderScene}
                 onIndexChange={setIndex}
                 renderTabBar={renderTabBar}
-                swipeEnabled={false}           // Swipe disabled
+                swipeEnabled={false}
                 initialLayout={{ width: layout.width }}
                 lazy={true}
                 animationEnabled={true}

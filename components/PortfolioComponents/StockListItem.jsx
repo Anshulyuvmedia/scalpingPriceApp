@@ -38,10 +38,6 @@ const StockListItem = React.memo(({ item, onPress }) => {
         }
     }, [item.ltp, item.profitLoss]);
 
-    // Safe early return after hooks
-    if (!item || Number(item.qty) === 0) {
-        return null;
-    }
     // Calculations
     const qty = Math.abs(Number(item.availableQty) || 0);
     const avgPrice = Number(item.avgCostPrice) || 0;

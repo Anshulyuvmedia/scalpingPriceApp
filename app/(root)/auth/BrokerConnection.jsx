@@ -198,7 +198,7 @@ const BrokerConnection = () => {
                         onPress={() => {
                             if (b.id === 'dhan') {
                                 router.push({
-                                    pathname: 'BrokerForm',
+                                    pathname: 'auth/BrokerForm',
                                     params: { broker: 'dhan' },
                                 });
                             } else {
