@@ -1,15 +1,9 @@
 // contexts/BrokerContext.js
-import React, {
-    createContext,
-    useContext,
-    useState,
-    useEffect,
-    useCallback,
-    useRef,
-} from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
+import { Alert } from 'react-native';
 
 const BrokerContext = createContext();
 
@@ -344,6 +338,9 @@ export const BrokerProvider = ({ children }) => {
         [appToken, tradeDateRange.from, tradeDateRange.to, isConnected]
     );
 
+    // -------------------------------------------------
+    // OrderBook
+    // -------------------------------------------------
     const fetchTodayOrders = useCallback(
         async (isRefresh = false) => {
             if (!appToken || !isConnected) {
@@ -403,6 +400,69 @@ export const BrokerProvider = ({ children }) => {
             } finally {
                 setTodayOrdersLoading(false);
                 setTodayOrdersRefreshing(false);
+            }
+        },
+        [appToken, isConnected]
+    );
+
+    const modifyPendingOrder = useCallback(
+        async (payload) => {
+            if (!appToken || !isConnected) {
+                return { success: false, message: 'No broker connected or app token missing' };
+            }
+
+            // Cancel previous request
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
+            try {
+                setLoading(true);
+
+                const res = await fetch(`${BASE_URL}/api/BrokerConnections/modifypendingorder`, {
+                    method: 'PUT',
+                    signal: controller.signal,
+                    headers: {
+                        Authorization: `Bearer ${appToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`Modify pending order failed: ${res.status} ${text || res.statusText}`);
+                }
+
+                const data = await res.json();
+
+                const orders = Array.isArray(data.orders) ? data.orders : [];
+
+                // Sort by latest first
+                const sortedOrders = orders.sort((a, b) => {
+                    const timeA = a.orderDateTime || a.exchangeTime || 0;
+                    const timeB = b.orderDateTime || b.exchangeTime || 0;
+                    return new Date(timeB) - new Date(timeA);
+                });
+
+                const ordersWithKey = sortedOrders.map((order) => ({
+                    ...order,
+                    _id: order.orderId || `fallback-${Date.now()}-${Math.random()}`,
+                }));
+
+                setTodayOrders(ordersWithKey);
+
+                return { success: true, data: ordersWithKey };
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Modify pending order error:', err);
+                    // Alert.alert('Error', err.message || 'Failed to modify order');
+                }
+                return { error: false, message: err.message || 'Failed to modify order' };
+            } finally {
+                setLoading(false);
             }
         },
         [appToken, isConnected]
@@ -481,9 +541,9 @@ export const BrokerProvider = ({ children }) => {
                 todayOrders,
                 todayOrdersLoading,
                 todayOrdersRefreshing,
-                fetchTodayOrders,           // Call this manually from Orders screen
+                fetchTodayOrders,
                 refreshTodayOrders: () => fetchTodayOrders(true),
-
+                modifyPendingOrder,
                 // TradeBook
                 tradeDateRange,
                 setTradeDateRange,

@@ -26,17 +26,21 @@ const DematHolding = () => {
     const filterSheetRef = React.useRef(null);
 
     const filteredHoldings = useMemo(() => {
-        let result = holdings.filter(
-            h => h && Number(h.qty) !== 0
-        );
+        let result = holdings
+            .filter(h => h && Number(h.qty) !== 0)
+            .map(h => ({
+                ...h,
+                searchKey: (
+                    h.tradingSymbol ||
+                    h.symbol ||
+                    h.name ||
+                    ''
+                ).toLowerCase()
+            }));
 
-
-        if (searchQuery) {
+        if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
-            result = result.filter(s =>
-                s.symbol.toLowerCase().includes(q) ||
-                s.name.toLowerCase().includes(q)
-            );
+            result = result.filter(s => s.searchKey.includes(q));
         }
 
         if (exchange !== 'All') {

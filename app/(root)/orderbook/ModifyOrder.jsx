@@ -1,19 +1,24 @@
-import React, { useMemo, useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-    Alert,
-} from 'react-native';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import HomeHeader from '@/components/HomeHeader';
+import RBSheet from 'react-native-raw-bottom-sheet';
+import { useBroker } from '@/contexts/BrokerContext';
 
 const ModifyOrder = () => {
     const params = useLocalSearchParams();
-    console.log('params', params);
-    // IMPORTANT: stock comes as string from router
+    const bottomSheetRef = useRef(null);
+    const [sheetMessage, setSheetMessage] = useState('');
+    const { modifyPendingOrder, refreshTodayOrders } = useBroker();
+
+    const [price, setPrice] = useState('');
+    const [quantity, setQuantity] = useState('');
+    const [orderType, setOrderType] = useState('LIMIT');
+    const [validity, setValidity] = useState('DAY');
+    const [legName, setLegName] = useState('NA');
+    const [loading, setLoading] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
+    // Parse stock from params
     const stock = useMemo(() => {
         try {
             return params.stock ? JSON.parse(params.stock) : null;
@@ -22,237 +27,362 @@ const ModifyOrder = () => {
             return null;
         }
     }, [params.stock]);
-
-    // ─────────────────────────────────────
-    // Editable State
-    // ─────────────────────────────────────
-    const [price, setPrice] = useState('');
-    const [quantity, setQuantity] = useState('');
-    const [loading, setLoading] = useState(false);
-    // Guard
-    if (!stock) {
-        return (
-            <View style={styles.container}>
-                <HomeHeader title="Modify Order" />
-                <Text style={{ color: '#FFF', textAlign: 'center' }}>
-                    Invalid order data
-                </Text>
-            </View>
-        );
-    }
     console.log('stock', stock);
-    // ─────────────────────────────────────
-    // Order-safe extraction
-    // ─────────────────────────────────────
-    const qty = Number(stock.quantity || 0);
-    const tradedQty = Number(stock.tradedQuantity || 0);
-    const remainingQty = Number(stock.remainingQuantity || 0);
-    const orderPrice = Number(stock.price || 0);
+    // Store the original price from the order (only once)
+    const originalPrice = useMemo(() => stock ? String(stock.price ?? '') : '', [stock]);
+    const isMultiLegOrder = ['BO', 'BRACKET', 'FOREVER', 'OCO'].includes(stock?.productType);
 
-    const isLimitOrder = stock.orderType === 'LIMIT';
+    // Initialize states (including price)
+    useEffect(() => {
+        if (!stock) return;
+
+        setPrice(String(stock.price ?? ''));
+        setQuantity(String(stock.remainingQuantity ?? ''));
+        setOrderType(stock.orderType || 'LIMIT');
+        setValidity(stock.orderValidity || 'DAY');
+        setLegName(isMultiLegOrder ? 'ENTRY_LEG' : 'NA');
+
+        setIsInitialized(true); // mark states initialized
+    }, [stock, isMultiLegOrder]);
+
+    useEffect(() => {
+        if (orderType === 'MARKET') {
+            setPrice('');
+        } else if (orderType === 'LIMIT' && price === '' && originalPrice) {
+            setPrice(originalPrice);
+        }
+    }, [orderType, originalPrice, price]);
+
+    // Order meta
+    const remainingQty = Number(stock.remainingQuantity || 0);
     const canModify = stock.orderStatus === 'PENDING' && remainingQty > 0;
 
+    const isBuy = stock.transactionType === 'BUY';
+    const primaryColor = isBuy ? '#05FF93' : '#FF5C5C';
+    const secondaryColor = isBuy ? 'rgba(5,255,147,0.15)' : 'rgba(255,92,92,0.15)';
+    const textColor = isBuy ? '#05FF93' : '#FF5C5C';
 
+    // ─────────────────────────────────────
+    // Correct Payload using useMemo
+    // ─────────────────────────────────────
+    const payload = useMemo(() => {
+        if (!stock) return null;
 
+        const currentTotalQty = Number(stock.quantity || 0);
+        const currentRemainingQty = Number(stock.remainingQuantity || 0);
+        const currentPrice = Number(stock.price || 0);
+
+        const newQty = Number(quantity || currentRemainingQty);
+        const newPrice = Number(price || currentPrice);
+
+        const base = {
+            orderId: stock.orderId,
+            orderType,
+            validity,
+            legName: isMultiLegOrder ? legName : "",
+        };
+
+        let hasChanges = false;
+
+        // PRICE
+        if (orderType === 'LIMIT' && newPrice > 0 && newPrice !== currentPrice) {
+            base.price = newPrice;
+            hasChanges = true;
+        } else if (orderType === 'LIMIT' && newPrice > 0) {
+            base.price = newPrice; // Always send for LIMIT
+        }
+
+        // QUANTITY
+        if (newQty !== currentTotalQty && newQty >= currentRemainingQty) {
+            base.quantity = newQty;
+            hasChanges = true;
+        }
+
+        // Order type/validity
+        if (orderType !== stock.orderType) hasChanges = true;
+        if (validity !== stock.orderValidity) hasChanges = true;
+
+        return hasChanges ? base : null; // null if no changes
+    }, [stock, orderType, validity, quantity, price, legName]);
 
 
     // ─────────────────────────────────────
-    // Actions
+    // Modify Action
     // ─────────────────────────────────────
     const onModify = async () => {
         if (!canModify) return;
 
-        if (isLimitOrder && (!price || Number(price) <= 0)) {
-            Alert.alert('Invalid Price', 'Please enter a valid price');
+        const newQty = Number(quantity || 0);
+        if (newQty < remainingQty) {
+            setSheetMessage(`Cannot reduce below remaining: ${remainingQty}`);
+            bottomSheetRef.current?.open();
             return;
         }
 
-        if (!quantity || Number(quantity) <= 0) {
-            Alert.alert('Invalid Quantity', 'Please enter a valid quantity');
+        if (!payload || Object.keys(payload).length <= 4) {
+            setSheetMessage('No changes detected. Modify price, quantity, type, or validity.');
+            bottomSheetRef.current?.open();
             return;
+        }
+        // Only validate price for LIMIT orders
+        if (orderType === 'LIMIT') {
+            const priceNum = Number(price);
+            if (!price || priceNum <= 0) {
+                setSheetMessage(
+                    legName === 'STOP_LOSS_LEG'
+                        ? 'Please enter a valid trigger price'
+                        : 'Please enter a valid price'
+                );
+                bottomSheetRef.current?.open();
+                return;
+            }
         }
 
         setLoading(true);
+        console.log('MODIFY ORDER PAYLOAD →', payload);
 
-        /**
-         * API PAYLOAD (example)
-         * {
-         *   orderId: stock.orderId,
-         *   price: Number(price),
-         *   quantity: Number(quantity)
-         * }
-         */
+        const result = await modifyPendingOrder(payload);
 
-        console.log('MODIFY ORDER PAYLOAD', {
-            orderId: stock.orderId,
-            price: Number(price),
-            quantity: Number(quantity),
-        });
+        if (result.success) {
+            setSheetMessage('Order modified successfully');
+            refreshTodayOrders?.(); // Refresh order list
+        } else {
+            setSheetMessage(result.message || 'Failed to modify order');
+        }
 
-        // Call API here
-        setTimeout(() => {
-            setLoading(false);
-            Alert.alert('Success', 'Order modified successfully', [
-                { text: 'OK', onPress: () => router.back() },
-            ]);
-        }, 800);
+        bottomSheetRef.current?.open();
+        setLoading(false);
+
+
+        if (result.success) {
+            setSheetMessage('Order modified successfully');
+            refreshTodayOrders?.();
+            setTimeout(() => {
+                bottomSheetRef.current?.close();
+            }, 1500);
+            // Auto navigate back after a short delay
+            setTimeout(() => {
+                router.push('orderbook/OrderBookTabs');
+            }, 1500);
+        }
     };
+
+    const hasChanges = useMemo(() => !!payload, [payload]);
+
+
+    if (!stock) {
+        return (
+            <View className="flex-1 bg-black px-4 justify-center items-center">
+                <HomeHeader title="Modify Order" />
+                <Text className="text-white text-center">Invalid order data</Text>
+            </View>
+        );
+    }
 
     // ─────────────────────────────────────
     // UI
     // ─────────────────────────────────────
     return (
-        <View style={styles.container}>
+        <View className="flex-1 bg-black px-4">
             <HomeHeader page="chatbot" title="Modify Order" />
 
-            {/* Order Summary */}
-            <View style={styles.card}>
-                <Text style={styles.symbol}>{stock.tradingSymbol}</Text>
-                <Text style={styles.subTitle}>
-                    {stock.transactionType} • {stock.orderType} • {stock.productType}
-                </Text>
-            </View>
+            {/* SYMBOL HEADER */}
+            <View className="mt-4 flex-row justify-between">
+                <View className="flex-col items-start mt-2">
+                    <Text className="text-2xl font-extrabold text-white">
+                        {stock.tradingSymbol}
+                    </Text>
+                    <Text className="text-base text-gray-400 mt-1">
+                        {stock.transactionType} • {stock.orderType} • {stock.productType} • {stock.orderValidity}
+                    </Text>
+                </View>
 
-            {/* Static Info */}
-            <View style={styles.card}>
-                <InfoRow label="Order ID" value={stock.orderId} />
-                <InfoRow label="Order Status" value={stock.orderStatus} />
-                <InfoRow label="Total Qty" value={qty} />
-                <InfoRow label="Traded Qty" value={tradedQty} />
-                <InfoRow label="Remaining Qty" value={remainingQty} />
-            </View>
-
-            {/* Editable Section */}
-            <View style={styles.card}>
-                {isLimitOrder && (
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Price</Text>
-                        <TextInput
-                            value={price}
-                            onChangeText={setPrice}
-                            keyboardType="numeric"
-                            style={styles.input}
-                            editable={canModify}
-                        />
+                <View className="flex-col items-end mt-2">
+                    <View style={{ backgroundColor: secondaryColor, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
+                        <Text style={{ color: textColor, fontWeight: '700', fontSize: 12 }}>
+                            {stock.orderStatus}
+                        </Text>
                     </View>
-                )}
+                    <Text className="text-base text-gray-500 mt-3">
+                        {stock.orderDateTime}
+                    </Text>
+                </View>
+            </View>
 
-                <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Quantity</Text>
-                    <TextInput
-                        value={quantity}
-                        onChangeText={setQuantity}
-                        keyboardType="numeric"
-                        style={styles.input}
-                        editable={canModify}
+            <View className="h-px bg-gray-800 my-5" />
+
+            <View className="flex-row justify-between">
+                <Meta label="Order ID" value={stock.orderId} />
+                <Meta label="Exchange" value={stock.exchangeSegment} />
+            </View>
+
+            <View className="flex-row justify-between mt-3">
+                <Meta label="Total Qty" value={stock.quantity} />
+                <Meta label="Remaining" value={remainingQty} />
+            </View>
+
+            <View className="h-px bg-gray-800 my-6" />
+
+            <Text className="text-white text-lg font-semibold mb-4">Modify Order</Text>
+
+            {/* LEG SELECTOR */}
+            {isMultiLegOrder && (
+                <View className="mb-5">
+                    <Label>Order Leg</Label>
+                    <SegmentedControl
+                        options={['ENTRY_LEG', 'STOP_LOSS_LEG', 'TARGET_LEG']}
+                        value={legName}
+                        onChange={setLegName}
+                        color={primaryColor}
+                    />
+                </View>
+            )}
+
+            <View className="flex-row gap-4 mt-5">
+                <View className="flex-1">
+                    <Label>Order Type</Label>
+                    <SegmentedControl
+                        options={['LIMIT', 'MARKET']}
+                        value={orderType}
+                        onChange={setOrderType}
+                        color={primaryColor}
+                    />
+                </View>
+                <View className="flex-1">
+                    <Label>Validity</Label>
+                    <SegmentedControl
+                        options={['DAY', 'IOC']}
+                        value={validity}
+                        onChange={setValidity}
+                        color={primaryColor}
                     />
                 </View>
             </View>
 
-            {/* Action Button */}
+            <View className="flex-row gap-4 mt-5">
+                {orderType === 'LIMIT' && (
+                    <View className="flex-1">
+                        <Label>
+                            {legName === 'STOP_LOSS_LEG' ? 'Trigger Price' : 'Price'}
+                        </Label>
+                        <Input
+                            value={price}
+                            onChangeText={setPrice}
+                            editable={canModify}
+                            keyboardType="decimal-pad"
+                        />
+                    </View>
+                )}
+
+                <View className="flex-1">
+                    <Label>Quantity</Label>
+                    <Input
+                        value={quantity}
+                        onChangeText={(text) => setQuantity(text.replace(/[^0-9]/g, ''))}
+                        editable={canModify}
+                        keyboardType="number-pad"
+                    />
+                </View>
+            </View>
+
             <TouchableOpacity
-                disabled={!canModify || loading}
+                disabled={!canModify || loading || !hasChanges}
                 onPress={onModify}
-                style={[
-                    styles.modifyBtn,
-                    (!canModify || loading) && styles.disabledBtn,
-                ]}
+                style={{
+                    marginTop: 32,
+                    borderRadius: 20,
+                    paddingVertical: 16,
+                    alignItems: 'center',
+                    backgroundColor: !canModify || loading || !hasChanges ? `${primaryColor}66` : primaryColor,
+                }}
             >
-                <Text style={styles.modifyText}>
-                    {loading ? 'Updating...' : 'Modify Order'}
+                <Text style={{ color: '#000', fontWeight: '800', fontSize: 16 }}>
+                    {loading ? 'Updating...' : 'Update Order'}
                 </Text>
             </TouchableOpacity>
+
+
+            <RBSheet
+                ref={bottomSheetRef}
+                height={200}
+                openDuration={250}
+                closeOnDragDown
+                customStyles={{
+                    container: {
+                        borderTopLeftRadius: 20,
+                        borderTopRightRadius: 20,
+                        padding: 20,
+                        backgroundColor: '#111',
+                    },
+                }}
+            >
+                <View className="flex-1 justify-center items-center">
+                    <Text className="text-lg text-white font-semibold text-center">
+                        {sheetMessage}
+                    </Text>
+                    <TouchableOpacity
+                        onPress={() => bottomSheetRef.current?.close()}
+                        style={{
+                            marginTop: 20,
+                            backgroundColor: primaryColor,
+                            paddingVertical: 12,
+                            paddingHorizontal: 24,
+                            borderRadius: 16,
+                        }}
+                    >
+                        <Text style={{ color: '#000', fontWeight: '700' }}>OK</Text>
+                    </TouchableOpacity>
+                </View>
+            </RBSheet>
         </View>
     );
 };
 
 export default ModifyOrder;
 
-// ─────────────────────────────────────
-// Reusable row
-// ─────────────────────────────────────
-const InfoRow = ({ label, value }) => (
-    <View style={styles.row}>
-        <Text style={styles.label}>{label}</Text>
-        <Text style={styles.value}>{value}</Text>
+// Helper Components (updated to respect props)
+const Meta = ({ label, value }) => (
+    <View>
+        <Text className="text-sm text-gray-400">{label}</Text>
+        <Text className="text-base text-white font-semibold mt-1">{value}</Text>
     </View>
 );
 
+const Label = ({ children }) => (
+    <Text className="text-sm text-gray-400 mb-2">{children}</Text>
+);
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#000',
-        padding: 12,
-    },
+const Input = (props) => (
+    <TextInput
+        {...props}
+        className="bg-[#0F0F1C] text-white px-4 py-3 rounded-xl border border-gray-800"
+        placeholderTextColor="#666"
+    />
+);
 
-    card: {
-        backgroundColor: '#1A1A2E',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 14,
-        borderWidth: 1,
-        borderColor: '#2A2A3A',
-    },
-
-    symbol: {
-        color: '#FFF',
-        fontSize: 24,
-        fontWeight: '800',
-    },
-    subTitle: {
-        color: '#9AA0B4',
-        fontSize: 14,
-        marginTop: 6,
-    },
-
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingVertical: 8,
-    },
-    label: {
-        color: '#A0A0C0',
-        fontSize: 14,
-    },
-    value: {
-        color: '#FFF',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-
-    inputGroup: {
-        marginBottom: 14,
-    },
-    inputLabel: {
-        color: '#A0A0C0',
-        fontSize: 14,
-        marginBottom: 6,
-    },
-    input: {
-        backgroundColor: '#0F0F1C',
-        borderRadius: 12,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        color: '#FFF',
-        fontSize: 16,
-        borderWidth: 1,
-        borderColor: '#2A2A3A',
-    },
-
-    modifyBtn: {
-        backgroundColor: '#05FF93',
-        paddingVertical: 16,
-        borderRadius: 16,
-        alignItems: 'center',
-        marginTop: 8,
-    },
-    disabledBtn: {
-        opacity: 0.4,
-    },
-    modifyText: {
-        color: '#000',
-        fontSize: 16,
-        fontWeight: '800',
-    },
-});
+const SegmentedControl = ({ options, value, onChange, color }) => (
+    <View className="flex-row bg-[#0F0F1C] rounded-xl p-1 border border-gray-800">
+        {options.map((opt) => (
+            <TouchableOpacity
+                key={opt}
+                onPress={() => onChange(opt)}
+                style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    backgroundColor: value === opt ? color : '#0F0F1C',
+                }}
+            >
+                <Text
+                    style={{
+                        fontWeight: '700',
+                        color: value === opt ? '#000' : '#A0A0C0',
+                    }}
+                >
+                    {opt.replace('_', ' ')}
+                </Text>
+            </TouchableOpacity>
+        ))}
+    </View>
+);
