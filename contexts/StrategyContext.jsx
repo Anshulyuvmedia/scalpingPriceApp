@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-const API_BASE_URL = 'http://192.168.1.18:3000/api'; // Change in production
+const API_BASE_URL = 'http://192.168.1.48:3000/api'; // Change in production
 
 // Global axios instance with automatic access_token injection
 const api = axios.create({

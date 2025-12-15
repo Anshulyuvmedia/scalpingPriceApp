@@ -4,13 +4,13 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const API_BASE_URL = 'http://192.168.1.18:3000/api'; // Confirm this IP; use your machine's IP if different
+const API_BASE_URL = 'http://192.168.1.48:3000/api'; // Confirm this IP; use your machine's IP if different
 
 const Login = () => {
     const insets = useSafeAreaInsets();

@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-const API_URL = 'http://192.168.1.18:3000/api';
+const API_URL = 'http://192.168.1.48:3000/api';
 
 export default function Screener() {
     const [screeners, setScreeners] = useState([]);

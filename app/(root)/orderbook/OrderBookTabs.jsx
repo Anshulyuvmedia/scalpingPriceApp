@@ -121,7 +121,7 @@ export default OrderBookTabs
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
-    header: { paddingHorizontal: 16, paddingBottom: 4 },
+    header: { paddingHorizontal: 10, paddingBottom: 4 },
     tabBarWrapper: { paddingHorizontal: 16, paddingBottom: 5 },
     tabBar: {
         flexDirection: 'row',

@@ -11,7 +11,7 @@ import {
     View,
 } from 'react-native';
 
-const API_URL = 'http://192.168.1.18:3000/api';
+const API_URL = 'http://192.168.1.48:3000/api';
 
 export default function StockListScreen() {
     const { screenerId, title } = useLocalSearchParams(); // This is the magic
