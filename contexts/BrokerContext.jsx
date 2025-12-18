@@ -3,7 +3,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useUser } from '@/contexts/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
-import { Alert } from 'react-native';
 
 const BrokerContext = createContext();
 
@@ -519,6 +518,45 @@ export const BrokerProvider = ({ children }) => {
         [appToken]
     );
 
+    // Add this inside BrokerProvider, near other functions
+    const disconnectBroker = useCallback(async () => {
+        // Close WebSocket
+        socketRef.current?.close();
+        socketRef.current = null;
+
+        // Clear all broker-related state
+        setBroker(null);
+        setPortfolio([]);
+        setHoldings([]);
+        setPositions([]);
+        setFunds(null);
+        setSummary({
+            totalInvestment: 0,
+            currentValue: 0,
+            totalPL: 0,
+            overallPnLPercent: 0,
+        });
+        setTodayPnL({
+            todayTotalPL: 0,
+            todayRealisedPL: 0,
+            todayUnrealisedPL: 0,
+        });
+        setTodayOrders([]);
+        setTradebookItems([]);
+        setIsLive(false);
+        setLastSync(null);
+        setError(null);
+
+        // Reset live prices cache
+        livePricesRef.current = {};
+
+        // Abort any pending requests
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+    }, []);
+
     return (
         <BrokerContext.Provider
             value={{
@@ -536,6 +574,7 @@ export const BrokerProvider = ({ children }) => {
                 isConnected,
                 isLive,
                 refreshPortfolio,
+                disconnectBroker,
 
                 // Today's Orders (New!)
                 todayOrders,

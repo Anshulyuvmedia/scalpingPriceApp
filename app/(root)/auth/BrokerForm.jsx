@@ -19,7 +19,11 @@ import { useUser } from '@/contexts/UserContext';
 import { useBroker } from '@/contexts/BrokerContext';
 import images from '@/constants/images';
 import RBSheet from 'react-native-raw-bottom-sheet';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const BASE_URL = __DEV__
+    ? 'https://johnson-prevertebral-irradiatingly.ngrok-free.dev'
+    : 'https://api.yourapp.com';
 const BROKER_CONFIG = {
     dhan: {
         name: 'Dhan',
@@ -49,8 +53,9 @@ export default function ConnectBrokerForm() {
         broker: connectedBroker = null,
         isLive = false,
         refreshPortfolio,
+        disconnectBroker,
     } = useBroker() || {};
-
+    // console.log('connectedBroker', connectedBroker);
     const config = broker === 'dhan' ? BROKER_CONFIG.dhan : null;
     const isConnected = connectedBroker?.broker === 'dhan';
 
@@ -62,7 +67,7 @@ export default function ConnectBrokerForm() {
     // RBSheet control
     const sheetRef = useRef(null);
     const [sheetContent, setSheetContent] = useState(null);
-
+    const [disconnecting, setDisconnecting] = useState(false);
     const pulseAnim = new Animated.Value(1);
 
     useEffect(() => {
@@ -113,9 +118,11 @@ export default function ConnectBrokerForm() {
         setShowSecrets((prev) => ({ ...prev, [key]: !prev[key] }));
 
     const openSheet = (content) => {
+        // console.log('Opening sheet with content:', content.title); // For debugging
         setSheetContent(content);
         sheetRef.current?.open();
     };
+
 
     const closeSheet = () => sheetRef.current?.close();
 
@@ -208,47 +215,118 @@ export default function ConnectBrokerForm() {
     };
 
     const handleDisconnect = () => {
-        openSheet({
+        // console.log('Disconnect button pressed - opening confirmation');
+        // console.log('sheetRef.current:', sheetRef.current); // Should not be null
+        openSheet({  // ← Use regular openSheet, not openSheetSafe
             title: 'Disconnect Dhan?',
-            message:
-                'This will remove access to your portfolio. You can reconnect anytime.',
+            message: 'This will remove access to your portfolio.',
             buttons: [
-                { text: 'Cancel', onPress: closeSheet },
+                {
+                    text: 'Cancel',
+                    onPress: () => {
+                        setDisconnecting(false);  // Reset if somehow set
+                        // console.log('Cancel pressed');
+                        closeSheet();
+                    },
+                },
                 {
                     text: 'Disconnect',
-                    onPress: async () => {
-                        closeSheet();
-                        await SecureStore.deleteItemAsync('dhan_clientId');
-                        await SecureStore.deleteItemAsync('dhan_apiKey');
-                        await SecureStore.deleteItemAsync('dhan_apiSecret');
-                        router.back();
-                    },
                     destructive: true,
+                    onPress: async () => {
+                        // console.log('User confirmed disconnect');
+                        closeSheet();
+
+                        setTimeout(async () => {
+                            setDisconnecting(true);  // ← Only now show "Disconnecting..."
+                            try {
+                                setLoading(true);
+                                // console.log('Sending disconnect request to backend...');
+
+                                const res = await fetch(`${BASE_URL}/api/BrokerConnections/disconnect`, {
+                                    method: 'POST',
+                                    headers: {
+                                        Authorization: `Bearer ${appToken}`,
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({}),
+                                });
+
+                                // console.log('Backend response status:', res.status);
+
+                                if (!res.ok) {
+                                    const text = await res.text();
+                                    console.error('Disconnect failed:', text);
+                                    throw new Error(text || 'Failed to disconnect');
+                                }
+
+                                // console.log('Backend disconnect successful - clearing local data');
+
+                                await Promise.all([
+                                    SecureStore.deleteItemAsync('dhan_clientId'),
+                                    SecureStore.deleteItemAsync('dhan_apiKey'),
+                                    SecureStore.deleteItemAsync('dhan_apiSecret'),
+                                    AsyncStorage.removeItem('brokerToken'),
+                                ]);
+
+                                await disconnectBroker();  // Clears context state → should switch to form view
+
+                                // console.log('Local cleanup complete');
+
+                                openSheet({
+                                    title: 'Disconnected',
+                                    message: 'Dhan account disconnected successfully.',
+                                    buttons: [{ text: 'OK', onPress: () => router.back() }],
+                                });
+                            } catch (err) {
+                                console.error('Disconnect error:', err);
+                                openSheet({
+                                    title: 'Disconnect Failed',
+                                    message: err.message || 'Please try again later.',
+                                    buttons: [{ text: 'OK', onPress: closeSheet }],
+                                });
+                            } finally {
+                                setLoading(false);
+                                setDisconnecting(false);
+                            }
+                        }, 300);  // Small delay for smooth close → open transition
+                    },
                 },
             ],
         });
     };
 
-    const handleReauthenticate = () => {
-        if (!formData.clientId) {
+
+    const handleReauthenticate = async () => {
+        try {
+            const clientId = await SecureStore.getItemAsync('dhan_clientId');
+            if (!clientId) {
+                openSheet({
+                    title: 'Credentials Missing',
+                    message: 'Please save your API keys first before re-authenticating.',
+                    buttons: [{ text: 'OK', onPress: closeSheet, primary: true }],
+                });
+                return;
+            }
+
+            router.push('/auth/DhanOAuth');
+        } catch (err) {
             openSheet({
-                title: 'Credentials Missing',
-                message: 'Please save your API keys first.',
-                buttons: [{ text: 'OK', onPress: closeSheet, primary: true }],
+                title: 'Error',
+                message: 'Failed to prepare for re-authentication.',
+                buttons: [{ text: 'OK', onPress: closeSheet }],
             });
-            return;
         }
-        router.push('/auth/DhanOAuth');
     };
 
-    // Connected Success Screen
-    if (isConnected) {
-        return (
-            <View style={styles.container}>
-                <View className="px-3">
-                    <HomeHeader page="settings" title="Broker Connected" />
-                </View>
+    // Connection Form
+    return (
+        <View style={styles.container}>
+            <View className="px-3">
+                <HomeHeader page="settings" title="Connect Broker" />
+            </View>
 
+            {/* Connected Success Screen */}
+            {isConnected ? (
                 <View style={styles.successContainer}>
                     <Animated.View
                         style={[styles.logoPulse, { transform: [{ scale: pulseAnim }] }]}
@@ -259,9 +337,9 @@ export default function ConnectBrokerForm() {
                     </Animated.View>
 
                     <Text style={styles.successTitle}>Connected Successfully!</Text>
-                    <Text style={styles.statusText}>
+                    {/* <Text style={styles.statusText}>
                         Env: {connectedBroker.environment}
-                    </Text>
+                    </Text> */}
                     <Text style={styles.clientId}>
                         Client ID: {connectedBroker.clientId}
                     </Text>
@@ -296,7 +374,11 @@ export default function ConnectBrokerForm() {
                             onPress={handleDisconnect}
                         >
                             <MaterialIcons name="link-off" size={20} color="#FF6B6B" />
-                            <Text style={styles.disconnectText}>Disconnect</Text>
+                            {disconnecting ? (
+                                <Text style={styles.disconnectText}>Disconnecting...</Text>
+                            ) : (
+                                <Text style={styles.disconnectText}>Disconnect</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
 
@@ -307,114 +389,106 @@ export default function ConnectBrokerForm() {
                         <Text style={styles.doneText}>Done</Text>
                     </TouchableOpacity>
                 </View>
-            </View>
-        );
-    }
+            ) : (
+                <ScrollView contentContainerStyle={{ padding: 16 }}>
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Connect Your Dhan Account</Text>
+                        <Text style={styles.subtitle}>Enter your API credentials securely</Text>
+                    </View>
 
-    // Connection Form
-    return (
-        <View style={styles.container}>
-            <View className="px-3">
-                <HomeHeader page="settings" title="Connect Broker" />
-            </View>
-
-            <ScrollView contentContainerStyle={{ padding: 16 }}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>Connect Your Dhan Account</Text>
-                    <Text style={styles.subtitle}>Enter your API credentials securely</Text>
-                </View>
-
-                <View style={styles.form}>
-                    {config.fields.map((field) => (
-                        <View key={field} style={styles.field}>
-                            <View className="flex-row gap-3">
-                                <Text style={styles.label}>
-                                    {field === 'clientId'
-                                        ? 'Client ID'
-                                        : field === 'apiKey'
-                                            ? 'API Key'
-                                            : 'API Secret'}
-                                </Text>
-                                {saved && formData[field] && (
-                                    <Text style={styles.savedText}>Saved securely</Text>
-                                )}
+                    <View style={styles.form}>
+                        {config.fields.map((field) => (
+                            <View key={field} style={styles.field}>
+                                <View className="flex-row gap-3">
+                                    <Text style={styles.label}>
+                                        {field === 'clientId'
+                                            ? 'Client ID'
+                                            : field === 'apiKey'
+                                                ? 'API Key'
+                                                : 'API Secret'}
+                                    </Text>
+                                    {saved && formData[field] && (
+                                        <Text style={styles.savedText}>Saved securely</Text>
+                                    )}
+                                </View>
+                                <View style={styles.inputWrapper}>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={formData[field] || ''}
+                                        onChangeText={(v) => updateField(field, v)}
+                                        placeholder={config.placeholders[field]}
+                                        placeholderTextColor="#666"
+                                        secureTextEntry={field.includes('Secret') && !showSecrets[field]}
+                                        autoCapitalize="none"
+                                        autoCorrect={false}
+                                    />
+                                    {field.includes('Secret') && (
+                                        <TouchableOpacity
+                                            onPress={() => toggleSecret(field)}
+                                            style={styles.eyeIcon}
+                                        >
+                                            <MaterialIcons
+                                                name={showSecrets[field] ? 'visibility' : 'visibility-off'}
+                                                size={22}
+                                                color="#888"
+                                            />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
                             </View>
-                            <View style={styles.inputWrapper}>
-                                <TextInput
-                                    style={styles.input}
-                                    value={formData[field] || ''}
-                                    onChangeText={(v) => updateField(field, v)}
-                                    placeholder={config.placeholders[field]}
-                                    placeholderTextColor="#666"
-                                    secureTextEntry={field.includes('Secret') && !showSecrets[field]}
-                                    autoCapitalize="none"
-                                    autoCorrect={false}
-                                />
-                                {field.includes('Secret') && (
-                                    <TouchableOpacity
-                                        onPress={() => toggleSecret(field)}
-                                        style={styles.eyeIcon}
-                                    >
-                                        <MaterialIcons
-                                            name={showSecrets[field] ? 'visibility' : 'visibility-off'}
-                                            size={22}
-                                            color="#888"
-                                        />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-                    ))}
-                </View>
+                        ))}
+                    </View>
 
-                <TouchableOpacity
-                    style={[styles.connectBtn, loading && styles.disabledBtn]}
-                    onPress={handleSaveAndConnect}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <Text style={styles.connectText}>Saving Credentials...</Text>
-                    ) : (
-                        <>
-                            <Text style={styles.connectText}>Save & Login</Text>
-                            <MaterialIcons
-                                name="arrow-forward"
-                                size={22}
-                                color="#000"
-                                style={{ marginLeft: 10 }}
-                            />
-                        </>
-                    )}
-                </TouchableOpacity>
-
-                <View style={styles.guideCard}>
-                    <Text style={styles.guideTitle}>How to Generate API Keys?</Text>
-                    {config.instructions.map((step, i) => (
-                        <View key={i} style={styles.step}>
-                            <View style={styles.stepNumber}>
-                                <Text style={styles.stepNumText}>{i + 1}</Text>
-                            </View>
-                            <Text style={styles.stepDesc}>{step}</Text>
-                        </View>
-                    ))}
                     <TouchableOpacity
-                        style={styles.helpLink}
-                        onPress={() => Linking.openURL(config.helpUrl)}
+                        style={[styles.connectBtn, loading && styles.disabledBtn]}
+                        onPress={handleSaveAndConnect}
+                        disabled={loading}
                     >
-                        <MaterialIcons name="open-in-new" size={18} color="#00D09C" />
-                        <Text style={styles.helpText}>Open Dhan API Documentation</Text>
+                        {loading ? (
+                            <Text style={styles.connectText}>Saving Credentials...</Text>
+                        ) : (
+                            <>
+                                <Text style={styles.connectText}>Save & Login</Text>
+                                <MaterialIcons
+                                    name="arrow-forward"
+                                    size={22}
+                                    color="#000"
+                                    style={{ marginLeft: 10 }}
+                                />
+                            </>
+                        )}
                     </TouchableOpacity>
-                </View>
 
-                <Text style={styles.footerNote}>
-                    Your credentials are encrypted and never leave your device.
-                </Text>
-            </ScrollView>
+                    <View style={styles.guideCard}>
+                        <Text style={styles.guideTitle}>How to Generate API Keys?</Text>
+                        {config.instructions.map((step, i) => (
+                            <View key={i} style={styles.step}>
+                                <View style={styles.stepNumber}>
+                                    <Text style={styles.stepNumText}>{i + 1}</Text>
+                                </View>
+                                <Text style={styles.stepDesc}>{step}</Text>
+                            </View>
+                        ))}
+                        <TouchableOpacity
+                            style={styles.helpLink}
+                            onPress={() => Linking.openURL(config.helpUrl)}
+                        >
+                            <MaterialIcons name="open-in-new" size={18} color="#00D09C" />
+                            <Text style={styles.helpText}>Open Dhan API Documentation</Text>
+                        </TouchableOpacity>
+                    </View>
 
+                    <Text style={styles.footerNote}>
+                        Your credentials are encrypted and never leave your device.
+                    </Text>
+                </ScrollView>
+            )}
             {/* Reusable Professional Bottom Sheet */}
             <RBSheet
                 ref={sheetRef}
-                height={sheetContent?.buttons?.length > 1 ? 320 : 280}
+                height={sheetContent?.buttons?.length > 1 ? 370 : 280}
+                // onOpen={() => console.log('Sheet opened successfully')}
+                // onClose={() => console.log('Sheet closed')}
                 closeOnDragDown
                 closeOnPressMask
                 customStyles={{

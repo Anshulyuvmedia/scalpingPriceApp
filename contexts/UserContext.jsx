@@ -63,11 +63,11 @@ export const UserProvider = ({ children }) => {
 
         setAppToken(token);
         setUser(userData);
-        return true; 
+        return true;
     };
 
     const logout = async () => {
-        await AsyncStorage.multiRemove(['userToken', 'userData', 'tokenExpiry']);
+        await AsyncStorage.multiRemove(['userToken', 'userData', 'tokenExpiry', 'lastRoute']);
         setAppToken(null);
         setUser(null);
     };

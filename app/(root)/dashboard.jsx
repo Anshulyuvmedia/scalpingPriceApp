@@ -7,7 +7,7 @@ import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import * as Haptics from 'react-native-haptic-feedback';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-
+import { useUser } from '@/contexts/UserContext';  // Adjust path if needed
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
 const API_BASE_URL = 'http://192.168.1.48:3000/api';
@@ -68,27 +68,46 @@ const MenuButton = ({ item, onPress, isLogout = false }) => {
 };
 
 const Dashboard = () => {
+    const { logout: contextLogout } = useUser();  // Get the real logout function
     // Handle logout
     const handleLogout = async () => {
-        try {
-            const token = await AsyncStorage.getItem('userToken');
-            if (token) {
-                await axios.post(
-                    `${API_BASE_URL}/TdUsers/logout`,
-                    {},
-                    { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }
-                );
-            }
-            await AsyncStorage.removeItem('userToken');
-            await AsyncStorage.removeItem('userData');
-            await AsyncStorage.removeItem('lastRoute');
-            await AsyncStorage.removeItem('tokenExpiry');
-            Alert.alert('Success', 'Logged out successfully');
-            router.replace('/(auth)/login');
-        } catch (error) {
-            console.error('Logout error:', JSON.stringify(error.response?.data || error.message, null, 2));
-            Alert.alert('Error', error.response?.data?.error?.message || 'Failed to log out. Please try again.');
-        }
+        Haptics.trigger('impactLight');
+
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to log out?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const token = await AsyncStorage.getItem('userToken');
+                            if (token) {
+                                await axios.post(
+                                    `${API_BASE_URL}/TdUsers/logout`,
+                                    {},
+                                    {
+                                        headers: { Authorization: `Bearer ${token}` },
+                                        timeout: 8000,
+                                    }
+                                );
+                            }
+                        } catch (error) {
+                            // Totally fine if server says "Invalid token" — it's already expired
+                            console.warn('Server logout failed (token likely expired):', error.message);
+                        } finally {
+                            // This is the important part: always clear local session
+                            await contextLogout();  // Uses the proper context logout
+
+                            Alert.alert('Success', 'You have been logged out successfully.');
+                            router.replace('/(auth)/login');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     // Handle navigation to different screens
