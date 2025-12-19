@@ -1,27 +1,24 @@
 // /components/OrderDetailsSheet.jsx
 import { router } from 'expo-router';
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 
 const OrderDetailSheet = ({ stock }) => {
     if (!stock) return null;
 
-    // ─────────────────────────────────────
-    // Order-safe extraction
-    // ─────────────────────────────────────
+    // console.log('stock', stock);
+    // Safe extraction
     const qty = Number(stock.quantity || 0);
-    const tradedQty = Number(stock.tradedQuantity || 0);
     const remainingQty = Number(stock.remainingQuantity || 0);
-
+    const tradedQty = qty - remainingQty;
     const orderPrice = Number(stock.price || 0);
-    const avgTradedPrice = Number(
-        stock.averageTradedPrice || stock.averagePrice || 0
-    );
+    const avgTradedPrice = Number(stock.averageTradedPrice || 0);
 
-    const orderValue = orderPrice * qty;
+    const formatINR = (num) =>
+        `₹${Number(num || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
-    const orderTime = stock.orderDateTime
-        ? new Date(stock.orderDateTime).toLocaleString('en-IN', {
+    const orderTime = stock.orderUpdateTime
+        ? new Date(stock.orderUpdateTime).toLocaleString('en-IN', {
             hour: '2-digit',
             minute: '2-digit',
             day: 'numeric',
@@ -30,122 +27,146 @@ const OrderDetailSheet = ({ stock }) => {
         })
         : '-';
 
-    // ─────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────
-    const formatINR = (num) =>
-        `₹${Number(num || 0).toLocaleString('en-IN', {
-            maximumFractionDigits: 2,
-        })}`;
+    const orderCreatedTime = stock.orderCreateTime
+        ? new Date(stock.orderCreateTime).toLocaleString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+        })
+        : '-';
 
-    // ─────────────────────────────────────
-    // Order data grid
-    // ─────────────────────────────────────
-    const data = [
+    // Status color mapping
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'TRADED':
+            case 'COMPLETE':
+                return '#10B981'; // emerald green
+            case 'PENDING':
+            case 'TRANSIT':
+                return '#F59E0B'; // amber
+            case 'CANCELLED':
+            case 'REJECTED':
+                return '#EF4444'; // red
+            default:
+                return '#9CA3AF';
+        }
+    };
+
+    // Order details data for FlatList
+    const orderDetails = [
         { label: 'Exchange', value: stock.exchangeSegment || 'NSE' },
-        // { label: 'Order ID', value: stock.orderId },
-        { label: 'Order Status', value: stock.orderStatus },
-        // { label: 'Transaction', value: stock.transactionType },
-        // { label: 'Order Type', value: stock.orderType },
-        { label: 'Product', value: stock.productType },
-
-        { label: 'Order Quantity', value: qty },
-        { label: 'Traded Quantity', value: tradedQty },
-
+        { label: 'Order Status', value: stock.orderStatus, highlight: true },
+        // Conditionally add Error only if it exists and is not empty
+        ...(stock.omsErrorDescription && stock.omsErrorDescription.trim() !== ''
+            ? [{ label: 'Error', value: stock.omsErrorDescription, highlight: true }]
+            : []),
+        { label: 'Product Type', value: stock.productType },
+        { label: 'Order Type', value: stock.orderType },
+        { label: 'Validity', value: stock.orderValidity },
+        { label: 'Quantity', value: `${qty}` },
+        { label: 'Traded Qty', value: `${tradedQty}` },
         { label: 'Order Price', value: formatINR(orderPrice) },
+        ...(tradedQty > 0
+            ? [{ label: 'Avg. Traded Price', value: formatINR(avgTradedPrice) }]
+            : []),
+        { label: 'Order Create Time', value: orderCreatedTime },
+        { label: 'Order ID', value: stock.orderId },
+        { label: 'Correlation ID', value: stock.correlationId },
+        { label: 'Exchange Order ID', value: stock.exchangeOrderId || '-' },
+    ];
 
-        tradedQty > 0 && {
-            label: 'Avg Traded Price',
-            value: formatINR(avgTradedPrice),
-        },
-
-        // { label: 'Order Time', value: orderTime },
-    ].filter(Boolean);
-
-    // ─────────────────────────────────────
     // Action permissions
-    // ─────────────────────────────────────
-    const canModify = stock.orderStatus === 'PENDING';
-    const canCancel = stock.orderStatus === 'PENDING';
-    const canReorder = ['TRADED', 'CANCELLED', 'REJECTED'].includes(
-        stock.orderStatus
+    const canModify = stock.orderStatus === 'PENDING' || stock.orderStatus === 'TRANSIT';
+    const canCancel = canModify;
+    const canReorder = ['TRADED', 'CANCELLED', 'REJECTED'].includes(stock.orderStatus);
+
+    const renderItem = ({ item }) => (
+        <View style={styles.row}>
+            <Text style={styles.label}>{item.label}</Text>
+            <Text
+                style={[
+                    styles.value,
+                    item.highlight && (
+                        item.label === 'Error'
+                            ? { color: '#EF4444', fontWeight: '700' } // Red for error
+                            : { color: getStatusColor(item.value), fontWeight: '700' }
+                    ),
+                ]}
+            >
+                {item.value}
+            </Text>
+        </View>
     );
 
     return (
-        <ScrollView style={styles.container}>
+        <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.symbol}>{stock.tradingSymbol}</Text>
-                <Text style={styles.subTitle}>
-                    {stock.transactionType} • {stock.orderType} • {new Date(stock.orderDateTime).toLocaleString('en-IN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                    })}
+                <Text style={styles.transactionType}>
+                    <Text style={[styles.statusText, { color: getStatusColor('COMPLETE') }]}> {stock.transactionType}</Text> - {stock.orderType} - <Text style={[styles.statusText, { color: getStatusColor(stock.orderStatus) }]}>
+                        {stock.orderStatus}
+                    </Text>
                 </Text>
+                <Text style={styles.time}>{orderTime}</Text>
             </View>
 
-            {/* Order Details */}
-            <View style={styles.grid}>
-                {data.map((item) => (
-                    <View key={item.label} style={styles.row}>
-                        <Text style={styles.label}>{item.label}</Text>
-                        <Text
-                            style={[
-                                styles.value,
-                                item.bold && styles.boldValue,
-                            ]}
-                        >
-                            {item.value}
-                        </Text>
-                    </View>
-                ))}
-            </View>
+
 
             {/* Action Buttons */}
-            <View style={styles.tradeButtons}>
+            <View style={styles.actionContainer}>
                 <TouchableOpacity
                     disabled={!canModify}
                     style={[
-                        styles.tradeBtn,
-                        styles.modifyBtn,
-                        !canModify && styles.disabledBtn,
+                        styles.actionButton,
+                        styles.modifyButton,
+                        !canModify && styles.disabledButton,
                     ]}
-                    onPress={() => router.push({
-                        pathname: 'orderbook/ModifyOrder',
-                        params: {
-                            stock: JSON.stringify(stock),
-                        },
-                    })}
+                    onPress={() =>
+                        router.push({
+                            pathname: 'orderbook/ModifyOrder',
+                            params: { stock: JSON.stringify(stock) },
+                        })
+                    }
                 >
-                    <Text style={[styles.tradeText]}>Modify</Text>
+                    <Text style={styles.buttonText}>Modify</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     disabled={!canCancel}
                     style={[
-                        styles.tradeBtn,
-                        styles.cancelBtn,
-                        !canCancel && styles.disabledBtn,
+                        styles.actionButton,
+                        styles.cancelButton,
+                        !canCancel && styles.disabledButton,
                     ]}
                 >
-                    <Text style={styles.tradeText}>Cancel</Text>
+                    <Text style={styles.buttonText}>Cancel</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     disabled={!canReorder}
                     style={[
-                        styles.tradeBtn,
-                        styles.reorderBtn,
-                        !canReorder && styles.disabledBtn,
+                        styles.actionButton,
+                        styles.reorderButton,
+                        !canReorder && styles.disabledButton,
                     ]}
                 >
-                    <Text style={styles.tradeText}>Reorder</Text>
+                    <Text style={styles.buttonText}>Reorder</Text>
                 </TouchableOpacity>
             </View>
-        </ScrollView>
+
+            {/* Details List */}
+            <FlatList
+                data={orderDetails}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.label}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.listContainer}
+                ItemSeparatorComponent={() => <View style={styles.separator} />}
+            />
+        </View>
     );
 };
 
@@ -153,81 +174,102 @@ export default OrderDetailSheet;
 
 const styles = StyleSheet.create({
     container: {
-        padding: 20,
+        flex: 1,
+        backgroundColor: '#111', // Deep slate background
+        paddingHorizontal: 20,
+        paddingVertical: 20,
     },
-
     header: {
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 10,
     },
     symbol: {
-        color: '#FFF',
-        fontSize: 28,
+        fontSize: 32,
         fontWeight: '800',
-        letterSpacing: 0.5,
+        color: '#FFFFFF',
+        letterSpacing: 0.8,
     },
-    subTitle: {
-        color: '#9AA0B4',
-        fontSize: 15,
+    transactionType: {
+        fontSize: 16,
+        color: '#94A3B8',
         marginTop: 6,
+        fontWeight: '600',
+    },
+    statusBadge: {
+        marginTop: 10,
+    },
+    statusText: {
+        fontSize: 15,
+        fontWeight: '700',
+    },
+    time: {
+        fontSize: 14,
+        color: '#64748B',
+        marginTop: 8,
     },
 
-    grid: {
-        backgroundColor: '#1A1A2E',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 24,
+    listContainer: {
+        backgroundColor: '#111',
+        borderRadius: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
         borderWidth: 1,
-        borderColor: '#2A2A3A',
+        borderColor: '#222',
+        marginTop: 5,
+        marginBottom: 50,
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#2A2A3A',
+        paddingVertical: 14,
     },
     label: {
-        color: '#A0A0C0',
-        fontSize: 14,
+        fontSize: 15,
+        color: '#94A3B8',
         fontWeight: '500',
+        flex: 1,
     },
     value: {
-        color: '#FFF',
-        fontSize: 14,
+        fontSize: 15,
+        color: '#E2E8F0',
         fontWeight: '600',
         textAlign: 'right',
+        flex: 1,
     },
-    boldValue: {
-        fontSize: 15,
-        fontWeight: '800',
+    separator: {
+        height: 1,
+        backgroundColor: '#222',
+        // marginHorizontal: -20,
     },
 
-    tradeButtons: {
+    actionContainer: {
         flexDirection: 'row',
         gap: 12,
+        marginTop: 5,
+        marginBottom: 10,
     },
-    tradeBtn: {
+    actionButton: {
         flex: 1,
-        paddingVertical: 14,
-        borderRadius: 14,
+        paddingVertical: 16,
+        borderRadius: 16,
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    modifyBtn: {
-        backgroundColor: 'green',
+    modifyButton: {
+        backgroundColor: '#10B981',
     },
-    cancelBtn: {
-        backgroundColor: 'red',
+    cancelButton: {
+        backgroundColor: '#EF4444',
     },
-    reorderBtn: {
-        backgroundColor: '#3366FF',
+    reorderButton: {
+        backgroundColor: '#3B82F6',
     },
-    disabledBtn: {
-        opacity: 0.4,
+    disabledButton: {
+        opacity: 0.5,
     },
-    tradeText: {
-        color: '#FFF',
+    buttonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
         fontWeight: '700',
-        fontSize: 15,
     },
 });

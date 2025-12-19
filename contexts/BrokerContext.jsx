@@ -229,6 +229,8 @@ export const BrokerProvider = ({ children }) => {
 
         socketRef.current.on('connect', () => {
             setIsLive(true);
+
+            // Subscribe to first 100 securities in portfolio
             const symbols = [...holdings, ...positions]
                 .map((i) => i.securityId || i.isin)
                 .filter(Boolean)
@@ -242,7 +244,7 @@ export const BrokerProvider = ({ children }) => {
             }
         });
 
-        socketRef.current.on('market', (msg) => {
+        socketRef.current.on('market', async (msg) => {
             if (msg.type !== 'LIVE_QUOTE' || !msg.data) return;
 
             const { securityId, ltp, change, changePercent } = msg.data;
@@ -252,6 +254,8 @@ export const BrokerProvider = ({ children }) => {
                 changePercent: Number(changePercent),
             };
             livePricesRef.current[securityId] = quote;
+            const result = await getLivePrice(securityId);
+            if (!result.success || !result.data) return;
 
             setHoldings((prev) =>
                 prev.map((item) =>
@@ -272,7 +276,7 @@ export const BrokerProvider = ({ children }) => {
         });
 
         socketRef.current.on('disconnect', () => setIsLive(false));
-    }, [appToken, brokerToken, holdings, positions, recalculateSummary]);
+    }, [appToken, brokerToken, holdings, positions, recalculateSummary, getLivePrice]);
 
     const refreshPortfolio = useCallback(() => {
         livePricesRef.current = {};
@@ -378,8 +382,8 @@ export const BrokerProvider = ({ children }) => {
                 // console.log('Todays data', orders);
                 // Sort by latest first
                 const sortedOrders = orders.sort((a, b) => {
-                    const timeA = a.orderDateTime || a.exchangeTime || 0;
-                    const timeB = b.orderDateTime || b.exchangeTime || 0;
+                    const timeA = a.orderUpdateTime || a.exchangeTime || 0;
+                    const timeB = b.orderUpdateTime || b.exchangeTime || 0;
                     return new Date(timeB) - new Date(timeA);
                 });
 
@@ -441,8 +445,8 @@ export const BrokerProvider = ({ children }) => {
 
                 // Sort by latest first
                 const sortedOrders = orders.sort((a, b) => {
-                    const timeA = a.orderDateTime || a.exchangeTime || 0;
-                    const timeB = b.orderDateTime || b.exchangeTime || 0;
+                    const timeA = a.orderUpdateTime || a.exchangeTime || 0;
+                    const timeB = b.orderUpdateTime || b.exchangeTime || 0;
                     return new Date(timeB) - new Date(timeA);
                 });
 
@@ -466,6 +470,83 @@ export const BrokerProvider = ({ children }) => {
         },
         [appToken, isConnected]
     );
+
+    const getLivePrice = useCallback(
+        async (securityId, exchangeSegment = 'NSE_EQ') => {
+            if (!appToken || !securityId) {
+                console.error('[BrokerContext] getLivePrice → Missing appToken or securityId');
+                return {
+                    success: false,
+                    error: { code: "VALIDATION_ERROR", message: "App token or securityId missing" }
+                };
+            }
+
+            // 1️⃣ Check WebSocket cache first
+            if (livePricesRef.current[securityId]) {
+                const cached = livePricesRef.current[securityId];
+                return { success: true, data: cached };
+            }
+
+            // 2️⃣ Fallback to REST /live-price
+            try {
+                console.log(`[BrokerContext] Fallback REST → securityId: ${securityId}`);
+
+                const payload = { [exchangeSegment]: [securityId] };
+
+                const res = await fetch(`${BASE_URL}/api/BrokerConnections/live-price`, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${appToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`Live price fetch failed: ${res.status} ${text}`);
+                }
+
+                const data = await res.json();
+
+                if (!data.success || !data.data) {
+                    console.warn('[BrokerContext] Backend returned error:', data.error);
+                    return data;
+                }
+
+                const quote = { ltp: Number(data.data.ltp), timestamp: Date.now() };
+                livePricesRef.current[securityId] = quote;
+
+                // Update holdings & positions if applicable
+                setHoldings(prev =>
+                    prev.map(item =>
+                        (item.securityId || item.isin) === securityId
+                            ? applyLivePrice(item, quote)
+                            : item
+                    )
+                );
+                setPositions(prev =>
+                    prev.map(item =>
+                        item.securityId === securityId
+                            ? applyLivePrice(item, quote)
+                            : item
+                    )
+                );
+                recalculateSummary();
+
+                return { success: true, data: quote };
+
+            } catch (err) {
+                console.error('[BrokerContext] getLivePrice EXCEPTION:', err);
+                return {
+                    success: false,
+                    error: { message: err.message || 'Failed to fetch live price', recoverable: true }
+                };
+            }
+        },
+        [appToken, recalculateSummary]
+    );
+
 
     // -------------------------------------------------
     // Effects
@@ -583,6 +664,7 @@ export const BrokerProvider = ({ children }) => {
                 fetchTodayOrders,
                 refreshTodayOrders: () => fetchTodayOrders(true),
                 modifyPendingOrder,
+                getLivePrice,
                 // TradeBook
                 tradeDateRange,
                 setTradeDateRange,

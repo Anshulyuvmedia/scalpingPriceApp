@@ -6,14 +6,12 @@ import LinearGradient from 'react-native-linear-gradient';
 import HomeHeader from '@/components/HomeHeader';
 import PendingOrders from './OrderViews/PendingOrders';
 import ExecutedOrders from './OrderViews/ExecutedOrders';
-import GTTOrders from './OrderViews/GTTOrders';
 
 const OrderBookTabs = () => {
     const [index, setIndex] = useState(0);
     const [routes] = useState([
         { key: 'PendingOrders', title: 'Pending' },
         { key: 'ExecutedOrders', title: 'Executed' },
-        { key: 'GTTOrders', title: 'GTT' },
     ]);
 
     const [layout, setLayout] = useState(Dimensions.get('window'));
@@ -31,8 +29,6 @@ const OrderBookTabs = () => {
                 return <PendingOrders />;
             case 'ExecutedOrders':
                 return <ExecutedOrders />;
-            case 'GTTOrders':
-                return <GTTOrders />;
             default:
                 return null;
         }
@@ -55,7 +51,7 @@ const OrderBookTabs = () => {
                                     {
                                         translateX: position.interpolate({
                                             inputRange: [0, 1],
-                                            outputRange: [8, layout.width / 2 - 72],
+                                            outputRange: [8, layout.width / 2 - 5],
                                         }),
                                     },
                                 ],
@@ -158,7 +154,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         top: 6,
-        width: '30%',
+        width: '45%',
         height: 44,
         borderRadius: 26,
         zIndex: 1,

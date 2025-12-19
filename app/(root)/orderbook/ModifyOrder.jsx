@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import HomeHeader from '@/components/HomeHeader';
 import RBSheet from 'react-native-raw-bottom-sheet';
@@ -9,16 +9,17 @@ const ModifyOrder = () => {
     const params = useLocalSearchParams();
     const bottomSheetRef = useRef(null);
     const [sheetMessage, setSheetMessage] = useState('');
-    const { modifyPendingOrder, refreshTodayOrders } = useBroker();
+    const { modifyPendingOrder, refreshTodayOrders, getLivePrice } = useBroker();
 
+    const [livePrice, setLivePrice] = useState(null); // null = loading, number = loaded, 0 = unavailable
     const [price, setPrice] = useState('');
     const [quantity, setQuantity] = useState('');
     const [orderType, setOrderType] = useState('LIMIT');
     const [validity, setValidity] = useState('DAY');
     const [legName, setLegName] = useState('NA');
     const [loading, setLoading] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
-    // Parse stock from params
+
+    // ─────────── Parse stock from params ───────────
     const stock = useMemo(() => {
         try {
             return params.stock ? JSON.parse(params.stock) : null;
@@ -27,51 +28,49 @@ const ModifyOrder = () => {
             return null;
         }
     }, [params.stock]);
-    console.log('stock', stock);
-    // Store the original price from the order (only once)
+
     const originalPrice = useMemo(() => stock ? String(stock.price ?? '') : '', [stock]);
     const isMultiLegOrder = ['BO', 'BRACKET', 'FOREVER', 'OCO'].includes(stock?.productType);
+    const remainingQty = Number(stock?.remainingQuantity || 0);
 
-    // Initialize states (including price)
+    const canModify =
+        stock &&
+        (stock.orderStatus === 'PENDING' || stock.orderStatus === 'TRANSIT') &&
+        remainingQty > 0;
+
+    const isStopLossOrder =
+        stock?.orderType === 'STOP_LOSS' || stock?.orderType === 'STOP_LOSS_MARKET';
+
+    const isPriceEditable =
+        canModify &&
+        orderType === 'LIMIT' &&
+        stock?.orderType !== 'STOP_LOSS_MARKET';
+
+    const isBuy = stock?.transactionType === 'BUY';
+    const primaryColor = isBuy ? '#05FF93' : '#FF5C5C';
+
+    // ─────────── Initialize states ───────────
     useEffect(() => {
         if (!stock) return;
-
         setPrice(String(stock.price ?? ''));
         setQuantity(String(stock.remainingQuantity ?? ''));
         setOrderType(stock.orderType || 'LIMIT');
         setValidity(stock.orderValidity || 'DAY');
         setLegName(isMultiLegOrder ? 'ENTRY_LEG' : 'NA');
-
-        setIsInitialized(true); // mark states initialized
     }, [stock, isMultiLegOrder]);
 
     useEffect(() => {
-        if (orderType === 'MARKET') {
-            setPrice('');
-        } else if (orderType === 'LIMIT' && price === '' && originalPrice) {
-            setPrice(originalPrice);
-        }
+        if (orderType === 'MARKET') setPrice('');
+        else if (orderType === 'LIMIT' && price === '' && originalPrice) setPrice(originalPrice);
     }, [orderType, originalPrice, price]);
 
-    // Order meta
-    const remainingQty = Number(stock.remainingQuantity || 0);
-    const canModify = stock.orderStatus === 'PENDING' && remainingQty > 0;
-
-    const isBuy = stock.transactionType === 'BUY';
-    const primaryColor = isBuy ? '#05FF93' : '#FF5C5C';
-    const secondaryColor = isBuy ? 'rgba(5,255,147,0.15)' : 'rgba(255,92,92,0.15)';
-    const textColor = isBuy ? '#05FF93' : '#FF5C5C';
-
-    // ─────────────────────────────────────
-    // Correct Payload using useMemo
-    // ─────────────────────────────────────
+    // ─────────── Payload builder ───────────
     const payload = useMemo(() => {
         if (!stock) return null;
 
         const currentTotalQty = Number(stock.quantity || 0);
         const currentRemainingQty = Number(stock.remainingQuantity || 0);
         const currentPrice = Number(stock.price || 0);
-
         const newQty = Number(quantity || currentRemainingQty);
         const newPrice = Number(price || currentPrice);
 
@@ -79,96 +78,138 @@ const ModifyOrder = () => {
             orderId: stock.orderId,
             orderType,
             validity,
-            legName: isMultiLegOrder ? legName : "",
+            ...(isMultiLegOrder && { legName }),
         };
 
         let hasChanges = false;
 
-        // PRICE
-        if (orderType === 'LIMIT' && newPrice > 0 && newPrice !== currentPrice) {
+        if (orderType === 'LIMIT' && newPrice > 0) {
             base.price = newPrice;
-            hasChanges = true;
-        } else if (orderType === 'LIMIT' && newPrice > 0) {
-            base.price = newPrice; // Always send for LIMIT
+            if (newPrice !== currentPrice) hasChanges = true;
         }
 
-        // QUANTITY
+        if (orderType.startsWith('STOP_LOSS') && newPrice > 0) {
+            base.triggerPrice = newPrice;
+            if (newPrice !== (stock.triggerPrice || currentPrice)) hasChanges = true;
+            if (orderType === 'STOP_LOSS' && stock.price) {
+                base.price = stock.price;
+            }
+        }
+
         if (newQty !== currentTotalQty && newQty >= currentRemainingQty) {
             base.quantity = newQty;
             hasChanges = true;
         }
 
-        // Order type/validity
         if (orderType !== stock.orderType) hasChanges = true;
         if (validity !== stock.orderValidity) hasChanges = true;
 
-        return hasChanges ? base : null; // null if no changes
-    }, [stock, orderType, validity, quantity, price, legName]);
+        return hasChanges ? base : null;
+    }, [stock, orderType, validity, quantity, price, legName, isMultiLegOrder]);
 
+    // ─────────── Payload validator (No LTP dependency) ───────────
+    const validateModifyPayload = () => {
+        if (!stock) return 'Invalid stock data';
 
-    // ─────────────────────────────────────
-    // Modify Action
-    // ─────────────────────────────────────
+        const newQty = Number(quantity || 0);
+        const newPrice = Number(price || 0);
+
+        if (newQty < remainingQty) return `Quantity cannot be less than remaining (${remainingQty})`;
+
+        if ((orderType === 'LIMIT' || isStopLossOrder) && (!newPrice || newPrice <= 0)) {
+            return isStopLossOrder ? 'Trigger price is required for Stop Loss' : 'Please enter a valid price';
+        }
+
+        if (isMultiLegOrder && !legName) {
+            return 'Please select a valid order leg';
+        }
+
+        if (!payload) return 'No changes detected. Modify price, quantity, or validity.';
+
+        return null;
+    };
+
+    // ─────────── Modify action ───────────
     const onModify = async () => {
         if (!canModify) return;
 
-        const newQty = Number(quantity || 0);
-        if (newQty < remainingQty) {
-            setSheetMessage(`Cannot reduce below remaining: ${remainingQty}`);
+        const error = validateModifyPayload();
+        if (error) {
+            setSheetMessage(error);
             bottomSheetRef.current?.open();
             return;
-        }
-
-        if (!payload || Object.keys(payload).length <= 4) {
-            setSheetMessage('No changes detected. Modify price, quantity, type, or validity.');
-            bottomSheetRef.current?.open();
-            return;
-        }
-        // Only validate price for LIMIT orders
-        if (orderType === 'LIMIT') {
-            const priceNum = Number(price);
-            if (!price || priceNum <= 0) {
-                setSheetMessage(
-                    legName === 'STOP_LOSS_LEG'
-                        ? 'Please enter a valid trigger price'
-                        : 'Please enter a valid price'
-                );
-                bottomSheetRef.current?.open();
-                return;
-            }
         }
 
         setLoading(true);
         console.log('MODIFY ORDER PAYLOAD →', payload);
 
-        const result = await modifyPendingOrder(payload);
+        try {
+            const result = await modifyPendingOrder(payload);
 
-        if (result.success) {
-            setSheetMessage('Order modified successfully');
-            refreshTodayOrders?.(); // Refresh order list
-        } else {
-            setSheetMessage(result.message || 'Failed to modify order');
-        }
+            if (!result) {
+                setSheetMessage('No response from broker. Please try again.');
+                bottomSheetRef.current?.open();
+                return;
+            }
 
-        bottomSheetRef.current?.open();
-        setLoading(false);
+            if (result.success) {
+                setSheetMessage(result.warning?.message || 'Order modified successfully');
+                refreshTodayOrders?.();
+                bottomSheetRef.current?.open();
 
-
-        if (result.success) {
-            setSheetMessage('Order modified successfully');
-            refreshTodayOrders?.();
-            setTimeout(() => {
-                bottomSheetRef.current?.close();
-            }, 1500);
-            // Auto navigate back after a short delay
-            setTimeout(() => {
-                router.push('orderbook/OrderBookTabs');
-            }, 1500);
+                setTimeout(() => {
+                    bottomSheetRef.current?.close();
+                    router.push('orderbook/OrderBookTabs');
+                }, 1500);
+            } else {
+                setSheetMessage(result.error?.message || result.message || 'Failed to modify order');
+                bottomSheetRef.current?.open();
+            }
+        } catch (err) {
+            console.error('Modify order error', err);
+            setSheetMessage(err?.message || 'Failed to modify order');
+            bottomSheetRef.current?.open();
+        } finally {
+            setLoading(false);
         }
     };
 
     const hasChanges = useMemo(() => !!payload, [payload]);
 
+    // ─────────── Live Price Fetching (Best Effort Only) ───────────
+    useEffect(() => {
+        const secId = stock?.securityId || stock?.orderSecurityId;
+        if (!secId) {
+            console.warn('[ModifyOrder] No securityId found');
+            setLivePrice(0);
+            return;
+        }
+
+        let isMounted = true;
+
+        const fetchLivePrice = async () => {
+            try {
+                const res = await getLivePrice(secId);
+                if (isMounted) {
+                    if (res.success && res.data?.ltp > 0) {
+                        setLivePrice(res.data.ltp);
+                    } else {
+                        setLivePrice(0); // Unavailable (sandbox or error)
+                    }
+                }
+            } catch (err) {
+                if (isMounted) setLivePrice(0);
+            }
+        };
+
+        fetchLivePrice();
+        const interval = setInterval(fetchLivePrice, 8000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, [stock, getLivePrice]);
 
     if (!stock) {
         return (
@@ -179,34 +220,26 @@ const ModifyOrder = () => {
         );
     }
 
-    // ─────────────────────────────────────
-    // UI
-    // ─────────────────────────────────────
     return (
         <View className="flex-1 bg-black px-4">
             <HomeHeader page="chatbot" title="Modify Order" />
 
-            {/* SYMBOL HEADER */}
-            <View className="mt-4 flex-row justify-between">
-                <View className="flex-col items-start mt-2">
-                    <Text className="text-2xl font-extrabold text-white">
-                        {stock.tradingSymbol}
-                    </Text>
+            <View className="mt-4 flex-row justify-between items-center">
+                <View className="flex-1">
+                    <Text className="text-2xl font-extrabold text-white">{stock.tradingSymbol}</Text>
                     <Text className="text-base text-gray-400 mt-1">
-                        {stock.transactionType} • {stock.orderType} • {stock.productType} • {stock.orderValidity}
+                        {stock.transactionType} • {stock.orderType} • {stock.productType}
                     </Text>
                 </View>
 
-                <View className="flex-col items-end mt-2">
-                    <View style={{ backgroundColor: secondaryColor, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
-                        <Text style={{ color: textColor, fontWeight: '700', fontSize: 12 }}>
-                            {stock.orderStatus}
-                        </Text>
+                {/* Live LTP - Only show if available */}
+                {livePrice > 0 && (
+                    <View className="flex-col items-end">
+                        <Text className="text-sm text-gray-400">Live LTP</Text>
+                        <Text className="text-2xl font-bold text-white">₹{livePrice.toFixed(2)}</Text>
                     </View>
-                    <Text className="text-base text-gray-500 mt-3">
-                        {stock.orderDateTime}
-                    </Text>
-                </View>
+                )}
+                {livePrice === null && <ActivityIndicator size="small" color="#666" />}
             </View>
 
             <View className="h-px bg-gray-800 my-5" />
@@ -225,7 +258,6 @@ const ModifyOrder = () => {
 
             <Text className="text-white text-lg font-semibold mb-4">Modify Order</Text>
 
-            {/* LEG SELECTOR */}
             {isMultiLegOrder && (
                 <View className="mb-5">
                     <Label>Order Leg</Label>
@@ -262,18 +294,33 @@ const ModifyOrder = () => {
             <View className="flex-row gap-4 mt-5">
                 {orderType === 'LIMIT' && (
                     <View className="flex-1">
-                        <Label>
-                            {legName === 'STOP_LOSS_LEG' ? 'Trigger Price' : 'Price'}
-                        </Label>
-                        <Input
-                            value={price}
-                            onChangeText={setPrice}
-                            editable={canModify}
-                            keyboardType="decimal-pad"
-                        />
+                        <Label>{isStopLossOrder ? 'Trigger Price' : 'Price'}</Label>
+                        <View className="flex-row items-center justify-between bg-[#0F0F1C] rounded-xl border border-gray-800 px-4 py-3">
+                            <TextInput
+                                value={price}
+                                onChangeText={setPrice}
+                                editable={isPriceEditable}
+                                keyboardType="decimal-pad"
+                                className="text-white flex-1"
+                                placeholderTextColor="#666"
+                            />
+                            {livePrice > 0 && (
+                                <Text className="text-green-400 font-medium ml-2">
+                                    ₹{livePrice.toFixed(2)}
+                                </Text>
+                            )}
+                        </View>
+                        {livePrice > 0 ? (
+                            <Text className="text-xs text-gray-500 mt-1">
+                                Market Price: ₹{livePrice.toFixed(2)}
+                            </Text>
+                        ) : (
+                            <Text className="text-xs text-gray-600 mt-1">
+                                Live market data unavailable
+                            </Text>
+                        )}
                     </View>
                 )}
-
                 <View className="flex-1">
                     <Label>Quantity</Label>
                     <Input
@@ -301,34 +348,18 @@ const ModifyOrder = () => {
                 </Text>
             </TouchableOpacity>
 
-
             <RBSheet
                 ref={bottomSheetRef}
                 height={200}
                 openDuration={250}
                 closeOnDragDown
-                customStyles={{
-                    container: {
-                        borderTopLeftRadius: 20,
-                        borderTopRightRadius: 20,
-                        padding: 20,
-                        backgroundColor: '#111',
-                    },
-                }}
+                customStyles={{ container: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, backgroundColor: '#111' } }}
             >
                 <View className="flex-1 justify-center items-center">
-                    <Text className="text-lg text-white font-semibold text-center">
-                        {sheetMessage}
-                    </Text>
+                    <Text className="text-lg text-white font-semibold text-center">{sheetMessage}</Text>
                     <TouchableOpacity
                         onPress={() => bottomSheetRef.current?.close()}
-                        style={{
-                            marginTop: 20,
-                            backgroundColor: primaryColor,
-                            paddingVertical: 12,
-                            paddingHorizontal: 24,
-                            borderRadius: 16,
-                        }}
+                        style={{ marginTop: 20, backgroundColor: primaryColor, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 16 }}
                     >
                         <Text style={{ color: '#000', fontWeight: '700' }}>OK</Text>
                     </TouchableOpacity>
@@ -340,7 +371,7 @@ const ModifyOrder = () => {
 
 export default ModifyOrder;
 
-// Helper Components (updated to respect props)
+// ─────────── Helper Components ───────────
 const Meta = ({ label, value }) => (
     <View>
         <Text className="text-sm text-gray-400">{label}</Text>
@@ -348,9 +379,7 @@ const Meta = ({ label, value }) => (
     </View>
 );
 
-const Label = ({ children }) => (
-    <Text className="text-sm text-gray-400 mb-2">{children}</Text>
-);
+const Label = ({ children }) => <Text className="text-sm text-gray-400 mb-2">{children}</Text>;
 
 const Input = (props) => (
     <TextInput
@@ -374,12 +403,7 @@ const SegmentedControl = ({ options, value, onChange, color }) => (
                     backgroundColor: value === opt ? color : '#0F0F1C',
                 }}
             >
-                <Text
-                    style={{
-                        fontWeight: '700',
-                        color: value === opt ? '#000' : '#A0A0C0',
-                    }}
-                >
+                <Text style={{ fontWeight: '700', color: value === opt ? '#000' : '#A0A0C0' }}>
                     {opt.replace('_', ' ')}
                 </Text>
             </TouchableOpacity>

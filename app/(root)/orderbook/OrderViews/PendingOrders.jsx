@@ -1,15 +1,6 @@
 // app/orderbook/OrderViews/PendingOrders.jsx
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-    View,
-    Text,
-    FlatList,
-    RefreshControl,
-    TouchableOpacity,
-    StyleSheet,
-    ActivityIndicator,
-    TextInput,
-} from 'react-native';
+import { View, Text, FlatList, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useBroker } from '@/contexts/BrokerContext';
 import { router } from 'expo-router';
@@ -17,18 +8,10 @@ import OrderDetailSheet from '@/components/OrderDetailSheet';
 import RBSheet from 'react-native-raw-bottom-sheet';
 
 const PendingOrders = () => {
-    const {
-        todayOrders,
-        todayOrdersLoading,
-        todayOrdersRefreshing,
-        fetchTodayOrders,
-        refreshTodayOrders,
-        isConnected,
-        isLive,
-    } = useBroker();
+    const { todayOrders, todayOrdersLoading, todayOrdersRefreshing, fetchTodayOrders, refreshTodayOrders, isConnected, isLive } = useBroker();
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterType, setFilterType] = useState('All'); // All, Buy, Sell
+    const [filterType, setFilterType] = useState('All');
     const [showFilterMenu, setShowFilterMenu] = useState(false);
 
     const [selectedStock, setSelectedStock] = useState(null);
@@ -82,10 +65,10 @@ const PendingOrders = () => {
         const qty = Math.abs(item.quantity || 0);
         const filledQty = Math.abs(item.filledQty || 0);
         const price = Number(item.price || 0);
-        const avgPrice = Number(item.averagePrice || 0);
+        const avgPrice = Number(item.averageTradedPrice || 0);
         const displayedPrice = avgPrice > 0 ? avgPrice : price;
         const status = item.orderStatus;
-
+        // console.log('orderUpdateTime', item.orderUpdateTime);
         return (
             <TouchableOpacity
                 style={styles.orderCard}
@@ -100,7 +83,7 @@ const PendingOrders = () => {
                         <Text style={styles.symbol}>{item.tradingSymbol}</Text>
                         {/* <Text style={styles.exchange}>{item.exchangeSegment}</Text> */}
                         <Text style={styles.time}>
-                            {new Date(item.orderDateTime || Date.now()).toLocaleString('en-IN', {
+                            {new Date(item.orderUpdateTime || Date.now()).toLocaleString('en-IN', {
                                 hour: '2-digit',
                                 minute: '2-digit',
                                 day: 'numeric',
@@ -264,8 +247,8 @@ const PendingOrders = () => {
             )}
 
 
-            <RBSheet ref={rbSheetRef} height={600} closeOnDragDown closeOnPressMask
-                customStyles={{ container: { backgroundColor: '#1A1A2E',  borderTopLeftRadius: 20, borderTopRightRadius: 20, } }}>
+            <RBSheet ref={rbSheetRef} height={700} closeOnDragDown closeOnPressMask
+                customStyles={{ container: { backgroundColor: '#1A1A2E', borderTopLeftRadius: 20, borderTopRightRadius: 20, } }}>
                 <OrderDetailSheet stock={selectedStock} showConvertButton={false} />
             </RBSheet>
         </View>
