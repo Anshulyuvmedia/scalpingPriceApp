@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 export default function StockDetailSheet({ stock, showConvertButton = true }) {
     const router = useRouter();
     if (!stock) return null;
-    console.log(stock);
+    // console.log(stock);
     // ─────────────────────────────────────
     // Safe extraction – Dhan holdings fields
     // ─────────────────────────────────────
@@ -111,7 +111,7 @@ export default function StockDetailSheet({ stock, showConvertButton = true }) {
 }
 
 const styles = StyleSheet.create({
-    container: { padding: 20, backgroundColor: '#0F0F1A' },
+    container: { padding: 20, backgroundColor: '#1A1A2E' },
     header: { alignItems: 'center', marginBottom: 24 },
     symbol: { color: '#FFF', fontSize: 28, fontWeight: '800', letterSpacing: 0.5 },
     name: { color: '#888', fontSize: 16, marginTop: 4 },

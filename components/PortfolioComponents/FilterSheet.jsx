@@ -87,7 +87,7 @@ export default function FilterSheet({
 }
 
 const styles = StyleSheet.create({
-    container: { padding: 20, backgroundColor: '#0F0F1A', flex: 1 },
+    container: { padding: 20, backgroundColor: '#1A1A2E', flex: 1 },
     title: { color: '#FFF', fontSize: 22, fontWeight: '600', marginBottom: 20 },
     section: { color: '#A9A9A9', fontSize: 16, marginTop: 20, marginBottom: 10 },
 

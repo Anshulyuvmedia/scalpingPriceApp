@@ -1,14 +1,13 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { FontAwesome, Feather } from '@expo/vector-icons';
-import LinearGradient from 'react-native-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
-import IndexPieChart from '@/components/IndexPieChart';
 import HomeHeader from '@/components/HomeHeader';
-import { router } from 'expo-router';
-import CallPut from '../../../components/CallPut';
+import IndexPieChart from '@/components/IndexPieChart';
+import { useBroker } from '@/contexts/broker/BrokerProvider';
 import { useIndex } from '@/contexts/IndexContext'; // Simplified import
-import React, { useState, useEffect } from 'react';
-import { useBroker } from '@/contexts/BrokerContext';
+import { Feather, FontAwesome } from '@expo/vector-icons';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
 const Index = () => {
   const { indicesData, loading, error } = useIndex();
@@ -42,8 +41,7 @@ const Index = () => {
     }
   }, [indicesData, loading, error]);
 
-  if (loading) return <View><Text style={{ color: '#FFF' }}>Loading...</Text></View>;
-  if (error) return <View><Text style={{ color: '#FFF' }}>Error: {error}</Text></View>;
+
 
   return (
     <View style={styles.container}>
@@ -55,7 +53,6 @@ const Index = () => {
           </TouchableOpacity>
         </View>
       )}
-
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* News and FX Signal Buttons */}
         <View style={styles.buttonRow}>
@@ -164,6 +161,17 @@ const Index = () => {
         </View>
 
         <IndexPieChart />
+
+        {loading && (
+          <View><Text style={{ color: '#fff' }}>Loading...</Text>
+            <ActivityIndicator size="large" color="#3B82F6" />
+          </View>
+        )}
+        {error && (
+          <View><Text style={{ color: '#fff' }}>Error: {error}</Text>
+            {/* <ActivityIndicator size="large" color="#3B82F6" /> */}
+          </View>
+        )}
       </ScrollView>
     </View>
   );

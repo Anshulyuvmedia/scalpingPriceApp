@@ -1,26 +1,25 @@
 // app/portfolio/Overview.jsx
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { useBroker } from '@/contexts/BrokerContext';
+import { useBroker } from '@/contexts/broker/BrokerProvider';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width } = Dimensions.get('window');
+import { StyleSheet, Text, View, ScrollView, RefreshControl } from 'react-native';
 
 export default function Overview() {
     const {
         summary = {},
         broker,
+        profile,
         funds,
         error,
         loading,
         isLive,
+        refresh,
+        refreshing,
+        refreshPortfolio,  // ← now works reliably
     } = useBroker();
 
-    // console.log('broker:', broker);
+    // console.log('profile:', profile);
     // console.log('funds:', funds);
     // console.log('summary:', summary);
-    // console.log('isLive:', isLive);
-    // console.log('error:', error);
 
     const SEGMENT_MAP = {
         E: { label: 'Equity', color: '#22c55e' },
@@ -29,23 +28,18 @@ export default function Overview() {
         M: { label: 'Commodity', color: '#f97316' },
     };
 
-    const segments = (broker?.activeSegment || '')
+    const segments = (profile?.activeSegment || '')
         .split(',')
         .map(s => s.trim())
         .filter(Boolean);
 
     const isActive = (v) => v?.toLowerCase() === 'active';
-    const formatDate = (d) => d ? d.split('.')[0] : '—';
+    const formatDate = (d) => d ? d.split('.')[0].split('T')[0] : '—';
     const format = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
+    const { currentValue = 0, availableCash = 0 } = summary;
 
-    const {
-        currentValue = 0,
-        availableCash = 0
-    } = summary;
-
-
-    if (loading) {
+    if (loading && !refreshing) {
         return (
             <View style={styles.center}>
                 <Text style={styles.loadingText}>Syncing portfolio...</Text>
@@ -53,7 +47,7 @@ export default function Overview() {
         );
     }
 
-    if (currentValue === 0 && availableCash === 0) {
+    if (currentValue === 0 && availableCash === 0 && !refreshing) {
         return (
             <View style={styles.center}>
                 <Text style={styles.emptyTitle}>No Holdings Yet</Text>
@@ -63,7 +57,18 @@ export default function Overview() {
     }
 
     return (
-        <View style={styles.container}>
+        <ScrollView
+            style={styles.container}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={refreshPortfolio}
+                    colors={['#22c55e']}
+                    tintColor="#22c55e"
+                />
+            }
+        >
             {/* Hero Card */}
             <LinearGradient
                 colors={['#020617', '#0f172a']}
@@ -86,23 +91,19 @@ export default function Overview() {
                 </View>
             </LinearGradient>
 
-
             <View className="mx-4 mt-6 rounded-2xl bg-slate-900/80 border border-white/5 p-5">
-
                 {/* Header */}
                 <View className="flex-row justify-between items-center">
                     <View>
-                        <Text className="text-white text-2xl font-bold capitalize">{broker.broker}</Text>
+                        <Text className="text-white text-2xl font-bold capitalize">Dhan</Text>
                         <Text className="text-slate-400 text-base mt-1">
-                            Client ID: {broker.clientId}
+                            Client ID: {profile.dhanClientId}
                         </Text>
                     </View>
 
-                    <View className={`px-3 py-1 rounded-full ${isActive(broker.dataPlan) ? 'bg-green-500/20' : 'bg-red-500/20'
-                        }`}>
-                        <Text className={`text-base font-semibold ${isActive(broker.dataPlan) ? 'text-green-400' : 'text-red-400'
-                            }`}>
-                            {broker.dataPlan}
+                    <View className={`px-3 py-1 rounded-full ${isActive(profile.dataPlan) ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                        <Text className={`text-base font-semibold ${isActive(profile.dataPlan) ? 'text-green-400' : 'text-red-400'}`}>
+                            {profile.dataPlan}
                         </Text>
                     </View>
                 </View>
@@ -131,13 +132,12 @@ export default function Overview() {
                 {/* DDPI & MTF */}
                 <View className="flex-row justify-between mt-6">
                     {[
-                        { label: 'DDPI', value: broker.ddpi },
-                        { label: 'MTF', value: broker.mtf },
+                        { label: 'DDPI', value: profile.ddpi },
+                        { label: 'MTF', value: profile.mtf },
                     ].map(item => (
                         <View key={item.label} className="w-[48%] rounded-xl bg-white/5 p-4">
                             <Text className="text-slate-400 text-base">{item.label}</Text>
-                            <Text className={`mt-2 font-bold ${item.value === 'Active' ? 'text-green-400' : 'text-red-400'
-                                }`}>
+                            <Text className={`mt-2 font-bold ${item.value === 'Active' ? 'text-green-400' : 'text-red-400'}`}>
                                 {item.value === 'Active' ? 'Enabled' : 'Disabled'}
                             </Text>
                         </View>
@@ -149,23 +149,21 @@ export default function Overview() {
                     <View>
                         <Text className="text-slate-400 text-base">Token Validity</Text>
                         <Text className="text-white text-sm font-semibold mt-1">
-                            {broker.tokenValidity}
+                            {profile.tokenValidity}
                         </Text>
                     </View>
 
                     <View className="items-end">
                         <Text className="text-slate-400 text-base">Data Validity</Text>
                         <Text className="text-white text-sm font-semibold mt-1">
-                            {formatDate(broker.dataValidity)}
+                            {formatDate(profile.dataValidity)}
                         </Text>
                     </View>
                 </View>
             </View>
 
-
-
-            {/* Live Status Indicator (React Native Safe) */}
-            <View className="mt-6 items-center">
+            {/* Live Status Indicator */}
+            {/* <View className="mt-6 items-center px-4">
                 {isLive ? (
                     <View className="flex-row items-center gap-2">
                         <View className="w-2 h-2 rounded-full bg-green-400" />
@@ -180,11 +178,36 @@ export default function Overview() {
                         </Text>
                     </View>
                 )}
-            </View>
-
-        </View>
+            </View> */}
+        </ScrollView>
     );
 }
 
-// Add these new styles
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#020617',
+    },
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#020617',
+    },
+    loadingText: {
+        color: '#94a3b8',
+        fontSize: 16,
+    },
+    emptyTitle: {
+        color: '#ffffff',
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    emptySubtitle: {
+        color: '#64748b',
+        fontSize: 16,
+        marginTop: 8,
+        textAlign: 'center',
+        paddingHorizontal: 40,
+    },
+});

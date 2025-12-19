@@ -1,16 +1,16 @@
-import React, { useMemo, useState } from 'react';
-import { View, FlatList, RefreshControl, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import RBSheet from 'react-native-raw-bottom-sheet';
-import SearchAndFilterBar from '@/components/PortfolioComponents/SearchAndFilterBar';
 import ActiveFiltersBar from '@/components/PortfolioComponents/ActiveFiltersBar';
-import StockListItem from '@/components/PortfolioComponents/StockListItem';
-import StockDetailSheet from '@/components/PortfolioComponents/StockDetailSheet';
 import FilterSheet from '@/components/PortfolioComponents/FilterSheet';
+import SearchAndFilterBar from '@/components/PortfolioComponents/SearchAndFilterBar';
+import StockDetailSheet from '@/components/PortfolioComponents/StockDetailSheet';
+import StockListItem from '@/components/PortfolioComponents/StockListItem';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import RBSheet from 'react-native-raw-bottom-sheet';
 
-import { useBroker } from '@/contexts/BrokerContext';
+import { useBroker } from '@/contexts/broker/BrokerProvider';
 
 const DematHolding = () => {
     const { holdings, loading, refreshPortfolio, error } = useBroker();
@@ -161,12 +161,12 @@ const DematHolding = () => {
             </LinearGradient>
 
             <RBSheet ref={rbSheetRef} height={600} closeOnDragDown closeOnPressMask
-                customStyles={{ container: { backgroundColor: '#0F0F1A', borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}>
+                customStyles={{ container: { backgroundColor: '#1A1A2E', borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}>
                 <StockDetailSheet stock={selectedStock} showConvertButton={false} />
             </RBSheet>
 
             <RBSheet ref={filterSheetRef} height={560} closeOnDragDown closeOnPressMask
-                customStyles={{ container: { backgroundColor: '#0F0F1A', borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}>
+                customStyles={{ container: { backgroundColor: '#1A1A2E', borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}>
                 <FilterSheet
                     exchange={exchange} setExchange={setExchange}
                     unrealizedLossActive={unrealizedLossActive} setUnrealizedLossActive={setUnrealizedLossActive}

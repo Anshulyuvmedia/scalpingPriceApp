@@ -1,25 +1,25 @@
 // app/broker/ConnectBrokerForm.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import HomeHeader from '@/components/HomeHeader';
+import images from '@/constants/images';
+import { useBroker } from '@/contexts/broker/BrokerProvider';
+import { useUser } from '@/contexts/UserContext';
+import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import { useEffect, useRef, useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    ScrollView,
-    Linking,
     Animated,
     Easing,
+    Linking,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import HomeHeader from '@/components/HomeHeader';
-import * as SecureStore from 'expo-secure-store';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useUser } from '@/contexts/UserContext';
-import { useBroker } from '@/contexts/BrokerContext';
-import images from '@/constants/images';
 import RBSheet from 'react-native-raw-bottom-sheet';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BASE_URL = __DEV__
     ? 'https://johnson-prevertebral-irradiatingly.ngrok-free.dev'
@@ -57,7 +57,7 @@ export default function ConnectBrokerForm() {
     } = useBroker() || {};
     // console.log('connectedBroker', connectedBroker);
     const config = broker === 'dhan' ? BROKER_CONFIG.dhan : null;
-    const isConnected = connectedBroker?.broker === 'dhan';
+    const isConnected = connectedBroker === 'dhan';
 
     const [formData, setFormData] = useState({});
     const [showSecrets, setShowSecrets] = useState({});
@@ -71,7 +71,7 @@ export default function ConnectBrokerForm() {
     const pulseAnim = new Animated.Value(1);
 
     useEffect(() => {
-        if (isConnected) {
+        if (isConnected && refreshPortfolio) {
             refreshPortfolio?.();
             startPulse();
         }
@@ -88,7 +88,7 @@ export default function ConnectBrokerForm() {
             }
         };
         loadSaved();
-    }, [isConnected]);
+    }, [isConnected, refreshPortfolio]);
 
     const startPulse = () => {
         Animated.loop(
@@ -153,7 +153,9 @@ export default function ConnectBrokerForm() {
             for (const key of config.fields) {
                 await SecureStore.setItemAsync(`dhan_${key}`, formData[key].trim());
             }
-
+            // console.log('formData.clientId:', formData.clientId.trim())
+            // console.log('formData.apiKey:', formData.apiKey.trim())
+            // console.log('formData.apiSecret:', formData.apiSecret.trim())
             // Save to backend
             const res = await fetch(
                 'https://johnson-prevertebral-irradiatingly.ngrok-free.dev/api/BrokerConnections/save-credentials',
@@ -170,7 +172,7 @@ export default function ConnectBrokerForm() {
                     }),
                 }
             );
-
+            // console.log('res', res);
             if (!res.ok) {
                 const text = await res.text();
                 throw new Error(
@@ -322,7 +324,7 @@ export default function ConnectBrokerForm() {
     return (
         <View style={styles.container}>
             <View className="px-3">
-                <HomeHeader page="settings" title="Connect Broker" />
+                <HomeHeader page="chatbot" title="Connect Broker" />
             </View>
 
             {/* Connected Success Screen */}

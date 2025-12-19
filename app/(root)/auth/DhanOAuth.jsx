@@ -1,16 +1,16 @@
 // app/broker/auth/DhanOAuth.jsx
-import React, { useEffect, useState, useRef } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
-import WebView from 'react-native-webview';
+import { useBroker } from '@/contexts/broker/BrokerProvider';
 import { useUser } from '@/contexts/UserContext';
-import { useBroker } from '@/contexts/BrokerContext';
 import { useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import WebView from 'react-native-webview';
 
 const BASE_URL = 'https://johnson-prevertebral-irradiatingly.ngrok-free.dev/api/BrokerConnections';
 
 export default function DhanOAuth() {
-    const { appToken } = useUser();           // ← Only to start OAuth
-    const { setBrokerToken, refreshPortfolio } = useBroker();
+    const { appToken } = useUser();
+    const { setBroker, setBrokerToken, refreshPortfolio } = useBroker();
     const router = useRouter();
     const [loginUrl, setLoginUrl] = useState(null);
     const webviewRef = useRef(null);
@@ -32,21 +32,29 @@ export default function DhanOAuth() {
     }, [appToken]);
 
     const handleMessage = (event) => {
-        const data = event.nativeEvent.data;
+        const rawData = event.nativeEvent.data;
+        console.log('WebView message received:', rawData);
 
+        let msg;
         try {
-            const msg = JSON.parse(data);
+            msg = JSON.parse(rawData);
 
             if (msg.type === 'DHAN_OAUTH_SUCCESS' && msg.brokerToken) {
-                // SUCCESS: Save broker token ONLY
-                setBrokerToken(msg.brokerToken);
+                console.log('Saving broker token:', msg.brokerToken);  // ← FIXED: use msg, not data
+
+                setBroker('dhan');
+                setBrokerToken(msg.brokerToken);  // This will now get the correct token
                 refreshPortfolio();
                 router.back();
                 return;
             }
-        } catch (e) { }
+        } catch (e) {
+            console.warn('Failed to parse WebView message:', e);
+        }
 
-        if (data === 'DHAN_OAUTH_SUCCESS') {
+        // Fallback (unlikely to hit now)
+        if (rawData === 'DHAN_OAUTH_SUCCESS') {
+            setBroker('dhan');
             refreshPortfolio();
             router.back();
         }
@@ -66,15 +74,15 @@ export default function DhanOAuth() {
             ref={webviewRef}
             source={{ uri: loginUrl }}
             onMessage={handleMessage}
-            injectedJavaScript={`
-        (function() {
-            window.originalPostMessage = window.postMessage;
-            window.postMessage = function(message) {
-                window.ReactNativeWebView.postMessage(message);
-            };
-        })();
-        true;
-    `}
+            // injectedJavaScript={`
+            //     (function() {
+            //         window.originalPostMessage = window.postMessage;
+            //         window.postMessage = function(message) {
+            //             window.ReactNativeWebView.postMessage(message);
+            //         };
+            //     })();
+            //     true;
+            // `}
             javaScriptEnabled={true}
             domStorageEnabled={true}
             startInLoadingState={true}
@@ -86,7 +94,6 @@ export default function DhanOAuth() {
             )}
             style={{ backgroundColor: '#000' }}
         />
-
     );
 }
 

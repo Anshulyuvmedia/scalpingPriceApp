@@ -1,28 +1,28 @@
 // screens/BrokerConnection.jsx
+import HomeHeader from '@/components/HomeHeader';
+import images from '@/constants/images';
+import { useBroker } from '@/contexts/broker/BrokerProvider';
+import { MaterialIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native'; // ← Add this import
 import React from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    ScrollView,
-    Alert,
-    RefreshControl,
     ActivityIndicator,
+    Alert,
     Animated,
     Easing,
+    Image,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import HomeHeader from '@/components/HomeHeader';
-import { MaterialIcons } from '@expo/vector-icons';
-import images from '@/constants/images';
-import { router } from 'expo-router';
-import { useBroker } from '@/contexts/BrokerContext';
-import * as Haptics from 'expo-haptics';
 
 const brokers = [
     { id: 'dhan', name: 'Dhan', logo: images.dhanimg, description: 'Lightning fast' },
-    // confirm key in images: images.angelone or images.angleone ?
     { id: 'upstox', name: 'Upstox', logo: images.upstox, description: 'Coming Soon' },
     { id: 'angelone', name: 'Angel One', logo: images.angelone ?? images.angleone, description: 'Coming Soon' },
     { id: 'groww', name: 'Groww', logo: images.groww, description: 'Coming Soon' },
@@ -30,7 +30,6 @@ const brokers = [
 
 const BrokerCard = ({ broker, isConnected, isLive, onPress }) => {
     const isAvailable = broker.id === 'dhan';
-    // keep animated value stable across renders
     const scaleValueRef = React.useRef(new Animated.Value(1));
 
     React.useEffect(() => {
@@ -54,7 +53,6 @@ const BrokerCard = ({ broker, isConnected, isLive, onPress }) => {
             pulse.start();
             return () => pulse.stop();
         }
-        // when not live, ensure value reset
         scaleValueRef.current.setValue(1);
     }, [isLive, isConnected]);
 
@@ -81,7 +79,7 @@ const BrokerCard = ({ broker, isConnected, isLive, onPress }) => {
 
                     {isAvailable && !isConnected && (
                         <View style={styles.liveBadge}>
-                            <Text style={styles.liveText}>LIVE</Text>
+                            <Text style={styles.liveText}>Live</Text>
                         </View>
                     )}
                 </View>
@@ -113,18 +111,33 @@ const BrokerCard = ({ broker, isConnected, isLive, onPress }) => {
 };
 
 const BrokerConnection = () => {
-    const { broker, isConnected, loading, error, refreshPortfolio, isLive, lastSync } = useBroker();
+    const {
+        broker,
+        isConnected,
+        loading,          // from connection (initial restore)
+        error,
+        refreshPortfolio,
+        isLive,
+        lastSync,
+    } = useBroker();
+
     const [refreshing, setRefreshing] = React.useState(false);
 
+    // console.log('BrokerConnection Render →', { isConnected, loading, refreshing, hasError: !!error });
+
     const onRefresh = React.useCallback(async () => {
+        if (!isConnected || !refreshPortfolio) return;
+
         setRefreshing(true);
         try {
-            await Haptics.selectionAsync(); // optional await
-            await refreshPortfolio?.();
+            await Haptics.selectionAsync();
+            await refreshPortfolio();
+        } catch (err) {
+            console.error('Manual refresh failed:', err);
         } finally {
             setRefreshing(false);
         }
-    }, [refreshPortfolio]);
+    }, [isConnected, refreshPortfolio]);
 
     const [currentTime, setCurrentTime] = React.useState(new Date().toLocaleTimeString('en-IN'));
 
@@ -139,19 +152,28 @@ const BrokerConnection = () => {
         }
     }, [isLive, lastSync]);
 
-    const showError = error && !isConnected && !isLive;
+    // Force refresh when returning from OAuth login
+    useFocusEffect(
+        React.useCallback(() => {
+            if (isConnected && refreshPortfolio) {
+                // console.log('Screen focused → triggering portfolio refresh');
+                refreshPortfolio();
+            }
+        }, [isConnected, refreshPortfolio])
+    );
 
     return (
         <View style={styles.container}>
             <View style={{ paddingHorizontal: 12 }}>
-                <HomeHeader page="settings" title="Broker Connection" />
+                <HomeHeader page="chatbot" title="Broker Connection" />
             </View>
 
+            {/* Global loading overlay */}
             {(loading || refreshing) && (
                 <View style={styles.loadingOverlay}>
                     <ActivityIndicator size="large" color="#00D09C" />
                     <Text style={styles.loadingText}>
-                        {refreshing ? 'Refreshing...' : 'Syncing with Dhan...'}
+                        {refreshing ? 'Refreshing portfolio...' : 'Syncing with Dhan...'}
                     </Text>
                 </View>
             )}
@@ -160,7 +182,12 @@ const BrokerConnection = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ padding: 15 }}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#00D09C']} tintColor="#00D09C" />
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={['#00D09C']}
+                        tintColor="#00D09C"
+                    />
                 }
             >
                 <Text style={styles.headerText}>Connect Your Broker</Text>
@@ -168,6 +195,7 @@ const BrokerConnection = () => {
                     Link your trading account to view holdings, live PnL & place orders
                 </Text>
 
+                {/* Connected Status Banner */}
                 {isConnected && !loading && (
                     <View style={styles.syncStatus}>
                         <View style={styles.statusRow}>
@@ -182,13 +210,17 @@ const BrokerConnection = () => {
                     </View>
                 )}
 
-                {showError && (
+                {/* Always show error if exists */}
+                {error && (
                     <TouchableOpacity onPress={onRefresh} style={styles.errorContainer}>
                         <MaterialIcons name="error-outline" size={18} color="#FF6B6B" />
-                        <Text style={styles.errorText}>Sync failed • Tap to retry</Text>
+                        <Text style={styles.errorText}>
+                            {error} • Tap to retry
+                        </Text>
                     </TouchableOpacity>
                 )}
 
+                {/* Broker List */}
                 {brokers.map((b) => (
                     <BrokerCard
                         key={b.id}
@@ -211,7 +243,6 @@ const BrokerConnection = () => {
                         }}
                     />
                 ))}
-
             </ScrollView>
         </View>
     );
@@ -219,7 +250,6 @@ const BrokerConnection = () => {
 
 export default BrokerConnection;
 
-// styles (unchanged)
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
     loadingOverlay: {

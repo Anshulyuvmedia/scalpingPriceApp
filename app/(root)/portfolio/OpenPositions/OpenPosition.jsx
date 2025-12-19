@@ -1,14 +1,14 @@
+import ActiveFiltersBar from '@/components/PortfolioComponents/ActiveFiltersBar';
+import FilterSheet from '@/components/PortfolioComponents/FilterSheet';
+import PositionDetailSheet from '@/components/PortfolioComponents/PositionDetailSheet';
+import PositionListItem from '@/components/PortfolioComponents/PositionListItem';
+import SearchAndFilterBar from '@/components/PortfolioComponents/SearchAndFilterBar';
 import React, { useMemo, useState } from 'react';
-import { View, FlatList, RefreshControl, Text, StyleSheet } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from 'react-native-raw-bottom-sheet';
-import SearchAndFilterBar from '@/components/PortfolioComponents/SearchAndFilterBar';
-import ActiveFiltersBar from '@/components/PortfolioComponents/ActiveFiltersBar';
-import PositionListItem from '@/components/PortfolioComponents/PositionListItem';
-import PositionDetailSheet from '@/components/PortfolioComponents/PositionDetailSheet';
-import FilterSheet from '@/components/PortfolioComponents/FilterSheet';
 
-import { useBroker } from '@/contexts/BrokerContext';
+import { useBroker } from '@/contexts/broker/BrokerProvider';
 
 const OpenPosition = () => {
     const { positions, loading, refreshPortfolio, error, convertPosition } = useBroker();

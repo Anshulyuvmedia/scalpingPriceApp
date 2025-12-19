@@ -1,20 +1,20 @@
 // app/_layout.tsx
-import React, { useEffect } from 'react';
-import { Stack, usePathname, router } from 'expo-router';
-import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { View, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
+import { router, Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import './globals.css';
 
-import { UserProvider, useUser } from '@/contexts/UserContext';
-import { IndexProvider } from '@/contexts/IndexContext';
+import { BrokerProvider } from '@/contexts/broker/BrokerProvider';
 import { ForexProvider } from '@/contexts/ForexContext';
+import { IndexProvider } from '@/contexts/IndexContext';
 import { PackageProvider } from '@/contexts/PackageContext';
 import { StrategyProvider } from '@/contexts/StrategyContext';
-import { BrokerProvider } from '@/contexts/BrokerContext';
+import { UserProvider, useUser } from '@/contexts/UserContext';
 
 SplashScreen.preventAutoHideAsync();
 
