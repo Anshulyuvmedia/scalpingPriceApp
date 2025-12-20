@@ -1,7 +1,8 @@
 // components/tradingview/TradingViewFinancials.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { WebView } from 'react-native-webview';
-import { Dimensions } from 'react-native';
+import { Dimensions, View, ActivityIndicator, StyleSheet } from 'react-native';
+
 
 const TradingViewFinancials = ({ symbol }) => {
     const displaySymbol = symbol.trim().toUpperCase();
@@ -10,6 +11,7 @@ const TradingViewFinancials = ({ symbol }) => {
     // Half screen height for responsive layout
     const screenHeight = Dimensions.get('window').height;
     const widgetHeight = screenHeight * 2;
+    const [loading, setLoading] = useState(true);
 
     const html = `
     <!DOCTYPE html>
@@ -56,22 +58,50 @@ const TradingViewFinancials = ({ symbol }) => {
     `;
 
     return (
-        <WebView
-            source={{ html }}
-            style={{
-                width: '100%',
-                height: widgetHeight,
-                backgroundColor: 'transparent',
-            }}
-            scrollEnabled={true}
-            nestedScrollEnabled={true}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            originWhitelist={['*']}
-        />
+        <View style={[styles.container, { height: widgetHeight }]}>
+            {loading && (
+                <View style={styles.loader}>
+                    <ActivityIndicator size="large" color="#22ab94" />
+                </View>
+            )}
+            <WebView
+                source={{ html }}
+                style={{
+                    width: '100%',
+                    height: widgetHeight,
+                    backgroundColor: 'transparent',
+                }}
+                scrollEnabled={true}
+                nestedScrollEnabled={true}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                originWhitelist={['*']}
+                onLoadStart={() => setLoading(true)}
+                onLoadEnd={() => setLoading(false)}
+            />
+        </View>
+
     );
 };
 
 export default TradingViewFinancials;
+
+const styles = StyleSheet.create({
+    container: {
+        width: '100%',
+        backgroundColor: '#0F0F0F',
+    },
+    webview: {
+        flex: 1,
+        backgroundColor: 'transparent',
+    },
+    loader: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#0F0F0F',
+        zIndex: 10,
+    },
+});

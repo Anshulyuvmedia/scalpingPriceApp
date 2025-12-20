@@ -1,12 +1,15 @@
 // components/TradingViewChart.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { WebView } from 'react-native-webview';
+import { Dimensions, View, ActivityIndicator, StyleSheet } from 'react-native';
 
 const TradingViewChart = ({ symbol }) => {
     // This is what the USER sees → clean, no prefix
     const displaySymbol = symbol.trim().toUpperCase();
     const tvSymbol = `BSE:${displaySymbol}`;
-
+    const [loading, setLoading] = useState(true);
+    const screenHeight = Dimensions.get('window').height;
+    const widgetHeight = screenHeight;
     const html = `
     <!DOCTYPE html>
         <html>
@@ -51,17 +54,44 @@ const TradingViewChart = ({ symbol }) => {
     `;
 
     return (
-        <WebView
-            source={{ html }}
-            style={{ height: 400, backgroundColor: '#000' }}
-            scrollEnabled={false}
-            bounces={false}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            originWhitelist={['*']}
-            allowsInlineMediaPlayback={true}
-        />
+        <View style={[styles.container, { height: widgetHeight }]}>
+            {loading && (
+                <View style={styles.loader}>
+                    <ActivityIndicator size="large" color="#22ab94" />
+                </View>
+            )}
+            <WebView
+                source={{ html }}
+                style={{ height: 400, backgroundColor: '#000' }}
+                scrollEnabled={false}
+                bounces={false}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                originWhitelist={['*']}
+                allowsInlineMediaPlayback={true}
+                onLoadStart={() => setLoading(true)}
+                onLoadEnd={() => setLoading(false)}
+            />
+        </View>
     );
 };
 
 export default TradingViewChart;
+
+const styles = StyleSheet.create({
+    container: {
+        width: '100%',
+        backgroundColor: '#0F0F0F',
+    },
+    webview: {
+        flex: 1,
+        backgroundColor: 'transparent',
+    },
+    loader: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#0F0F0F',
+        zIndex: 10,
+    },
+});
