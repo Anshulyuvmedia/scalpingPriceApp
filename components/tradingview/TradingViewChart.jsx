@@ -5,7 +5,7 @@ import { WebView } from 'react-native-webview';
 const TradingViewChart = ({ symbol }) => {
     // This is what the USER sees → clean, no prefix
     const displaySymbol = symbol.trim().toUpperCase();
-    const tvSymbol = `${displaySymbol}`;
+    const tvSymbol = `BSE:${displaySymbol}`;
 
     const html = `
     <!DOCTYPE html>
@@ -24,7 +24,7 @@ const TradingViewChart = ({ symbol }) => {
             new TradingView.widget({
                 autosize: true,
                 symbol: "${tvSymbol}",           // ← TradingView gets NSE:TCS
-                interval: "D",
+                interval: "1Y",
                 timezone: "Asia/Kolkata",
                 theme: "dark",
                 style: "1",

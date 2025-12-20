@@ -35,6 +35,7 @@ export default function RootMainStackLayout() {
 
             <Stack.Screen name="orderbook/OrderBookTabs" options={{ headerShown: false, title: 'Order Book' }} />
             <Stack.Screen name="orderbook/ModifyOrder" options={{ headerShown: false, title: 'Modify Order' }} />
+            <Stack.Screen name="TechnicalChart" options={{ headerShown: false, title: 'Technical Chart' }} />
         </Stack>
     );
 }

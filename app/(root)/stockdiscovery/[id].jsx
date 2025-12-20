@@ -1,21 +1,16 @@
 // app/stockdiscovery/[id].tsx
 
 import React, { useState, useRef, useMemo } from 'react';
-import {
-    StyleSheet,
-    Text,
-    View,
-    TouchableOpacity,
-    FlatList,
-    Dimensions,
-} from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import HomeHeader from '@/components/HomeHeader';
-import TradingViewChart from '@/components/TradingViewChart';
+import TradingViewChart from '@/components/tradingview/TradingViewChart';
 import OrderBottomSheet from '@/components/OrderBottomSheet';
 import LinearGradient from 'react-native-linear-gradient';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+import TradingViewSymbolInfo from '@/components/tradingview/TradingViewSymbolInfo';
+import TradingViewSymbolProfile from '@/components/tradingview/TradingViewSymbolProfile';
+import TradingViewFinancials from '../../../components/tradingview/TradingViewFinancials';
+import TradingViewTechnicalAnalysis from '../../../components/tradingview/TradingViewTechnicalAnalysis';
 
 const stockData = [
     { id: '1', title: 'RELIANCE', company: 'Reliance Industries Ltd', value: '2,956.75', volume: '1.23 Cr', mcap: '20.1L Cr', change: '+43.45 (1.49%)' },
@@ -94,87 +89,126 @@ const StockDetails = () => {
     );
 
     const renderItem = ({ item }) => {
-        if (item.type === 'header') {
-            return (
-                <>
-                    <HomeHeader page="chatbot" title={stock.title} />
 
-                    <View style={styles.header}>
-                        <View>
-                            <Text style={styles.title}>{stock.title}</Text>
-                            <Text style={styles.company}>{stock.company}</Text>
-                        </View>
-                        <View style={styles.priceBox}>
-                            <Text style={styles.price}>₹{stock.value}</Text>
-                            <Text style={[styles.change, stock.change.includes('-') ? styles.red : styles.green]}>
-                                {stock.change}
-                            </Text>
-                        </View>
+        if (item.type === 'symbolinfo') {
+            return (
+                <View style={styles.section}>
+                    {/* <Text style={styles.sectionTitle}>Symbol Info</Text> */}
+                    <View style={styles.chartWrapper}>
+                        <TradingViewSymbolInfo symbol={stock.title} />
                     </View>
-                </>
+                </View>
             );
         }
+        if (item.type === 'viewchart') {
+            return (
+                <TouchableOpacity
+                    onPress={() =>
+                        router.push({
+                            pathname: '/TechnicalChart',
+                            params: { symbol: stock.title },
+                        })}>
+                    <View className="flex-1 mx-2 bg-gray-900 border-2 border-gray-500 p-2 rounded-lg" style={styles.section}>
+                        <Text className="mx-auto text-white">View chart</Text>
+                    </View>
+                </TouchableOpacity>
 
+            );
+        }
+        if (item.type === 'TradingViewTechnicalAnalysis') {
+            return (
+                <View style={styles.section}>
+                    {/* <Text style={styles.sectionTitle}>Symbol Info</Text> */}
+                    <View style={styles.chartWrapper}>
+                        <TradingViewTechnicalAnalysis symbol={stock.title} />
+                    </View>
+                </View>
+            );
+        }
+        if (item.type === 'TradingViewSymbolProfile') {
+            return (
+                <View style={styles.section}>
+                    {/* <Text style={styles.sectionTitle}>Symbol Info</Text> */}
+                    <View style={styles.chartWrapper}>
+                        <TradingViewSymbolProfile symbol={stock.title} />
+                    </View>
+                </View>
+            );
+        }
         if (item.type === 'chart') {
             return (
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Live Chart</Text>
+                    {/* <Text style={styles.sectionTitle}>Live Chart</Text> */}
                     <View style={styles.chartWrapper}>
                         <TradingViewChart symbol={stock.title} />
                     </View>
                 </View>
             );
         }
-
-        if (item.type === 'metrics') {
+        if (item.type === 'TradingViewFinancials') {
             return (
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Key Metrics</Text>
-                    <FlatList
-                        data={fundamentalsData}
-                        renderItem={renderFundamental}
-                        keyExtractor={(_, i) => i.toString()}
-                        numColumns={2}
-                        columnWrapperStyle={styles.row}
-                        scrollEnabled={false}
-                    />
+                    {/* <Text style={styles.sectionTitle}>Live Chart</Text> */}
+                    <View style={styles.chartWrapper}>
+                        <TradingViewFinancials symbol={stock.title} />
+                    </View>
                 </View>
             );
         }
 
-        if (item.type === 'footer') {
-            return (
-                <View style={styles.footerButtons}>
-                    <TouchableOpacity onPress={() => openSheet('Buy')} style={[styles.actionBtn, styles.buyBtn]}>
-                        <Text style={styles.buyText}>Buy</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => openSheet('Sell')} style={[styles.actionBtn, styles.sellBtn]}>
-                        <Text style={styles.sellText}>Sell</Text>
-                    </TouchableOpacity>
-                </View>
-            );
-        }
-
+        // if (item.type === 'metrics') {
+        //     return (
+        //         <View style={styles.section}>
+        //             <Text style={styles.sectionTitle}>Key Metrics</Text>
+        //             <FlatList
+        //                 data={fundamentalsData}
+        //                 renderItem={renderFundamental}
+        //                 keyExtractor={(_, i) => i.toString()}
+        //                 numColumns={2}
+        //                 columnWrapperStyle={styles.row}
+        //                 scrollEnabled={false}
+        //             />
+        //         </View>
+        //     );
+        // }
         return null;
     };
 
     const data = [
-        { type: 'header', key: 'header' },
-        { type: 'chart', key: 'chart' },
-        { type: 'metrics', key: 'metrics' },
-        { type: 'footer', key: 'footer' },
+        { type: 'symbolinfo', key: 'symbolinfo' },
+        { type: 'viewchart', key: 'viewchart' },
+        { type: 'technicalAnalysis', key: 'technicalAnalysis' },
+        { type: 'tradingViewFinancials', key: 'tradingViewFinancials' },
+        { type: 'TradingViewTechnicalAnalysis', key: 'TradingViewTechnicalAnalysis' },
+        { type: 'TradingViewFinancials', key: 'TradingViewFinancials' },
+        { type: 'TradingViewSymbolProfile', key: 'TradingViewSymbolProfile' },
     ];
 
     return (
-        <>
+        <View style={styles.container}>
+
+            <View className="px-3">
+                <HomeHeader page="chatbot" title={stock.title} />
+            </View>
+
             <FlatList
                 data={data}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.key}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 20 }}
-                style={styles.container}
+                style={styles.flexContainer}
             />
+
+            {/* Sticky Buy/Sell Buttons */}
+            <View style={styles.stickyFooter}>
+                <TouchableOpacity onPress={() => openSheet('Buy')} style={[styles.actionBtn, styles.buyBtn]}>
+                    <Text style={styles.buyText}>Buy</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => openSheet('Sell')} style={[styles.actionBtn, styles.sellBtn]}>
+                    <Text style={styles.sellText}>Sell</Text>
+                </TouchableOpacity>
+            </View>
 
             {/* Bottom Sheet */}
             <OrderBottomSheet
@@ -188,7 +222,7 @@ const StockDetails = () => {
                 totalValue={totalValue}
                 onConfirm={handleConfirm}
             />
-        </>
+        </View>
     );
 };
 
@@ -198,6 +232,10 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
+    },
+    flexContainer: {
+        flex: 1,
+        marginBottom: 70,
     },
     header: {
         flexDirection: 'row',
@@ -246,4 +284,18 @@ const styles = StyleSheet.create({
     sellText: { color: '#FFF', fontSize: 18, fontWeight: '700' },
 
     error: { color: '#FF0505', textAlign: 'center', marginTop: 50, fontSize: 18 },
+    stickyFooter: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 12,
+        paddingVertical: 16,
+        // paddingBottom: 34, // Safe area for iPhone notch if needed
+        backgroundColor: '#000',
+        borderTopWidth: 1,
+        borderTopColor: '#222',
+    },
 });
