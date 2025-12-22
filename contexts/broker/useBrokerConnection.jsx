@@ -83,16 +83,15 @@ export const useBrokerConnection = () => {
 
     /* ==================== DISCONNECT ==================== */
     const disconnectBroker = useCallback(async () => {
-        console.log('🔌 Disconnecting broker...');
+        console.log('🔌 disconnectBroker called');
         try {
             setBroker(null);
             setBrokerToken(null);
-            setError(null);
+            setError(null);  // ← Also clear connection error
             await AsyncStorage.multiRemove(['broker', 'brokerToken']);
-            console.log('✅ Broker disconnected and storage cleared');
+            console.log('✅ Broker fully disconnected and storage cleared');
         } catch (e) {
             console.error('❌ Disconnect failed:', e);
-            setError('Failed to disconnect broker');
         }
     }, []);
 

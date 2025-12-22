@@ -7,18 +7,12 @@ const BASE_URL = __DEV__
     : 'https://api.yourapp.com';
 
 export const useBrokerPortfolio = (connection) => {
-    const {
-        appToken,
-        broker,
-        setBroker,
-        isConnected,
-        setError,
-    } = connection;
-
+    const { appToken, broker, isConnected, disconnectBroker } = connection;
     const { user } = useUser();
     const [profile, setProfile] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState(null);
     // Raw data from API
     const [rawHoldings, setRawHoldings] = useState([]);
     const [rawPositions, setRawPositions] = useState([]);
@@ -91,6 +85,12 @@ export const useBrokerPortfolio = (connection) => {
             setInitialLoading(false);
             return;
         }
+        let profileRes;
+        let summaryRes;
+        let fundsRes;
+        let todayPnlRes;
+        let holdingsRes;
+        let positionsRes;
 
         try {
             // Only show loading spinner on first attempt
@@ -116,16 +116,18 @@ export const useBrokerPortfolio = (connection) => {
                 fetch(`${BASE_URL}/api/BrokerConnections/positions`, { headers }),
             ]);
 
-            // Profile is mandatory
+            // Now profileRes is available below
             if (!profileRes.ok) {
                 const text = await profileRes.text();
+                if (profileRes.status === 401) {
+                    throw new Error('AUTH_FAILED_401');  // ← Best way: throw custom error
+                }
                 throw new Error(`Profile sync failed: ${profileRes.status} ${text}`);
             }
             // console.log('profile', profileRes.data);
             const profile = await profileRes.json();
-            // Ensure broker is set (in case backend returns updated info)
-            // setBroker('dhan'); // you can remove this if backend already guarantees it
             setProfile(profile);
+            
             // Helper to safely get JSON or fallback
             const safeJson = async (res) => {
                 if (!res.ok) {
@@ -184,7 +186,31 @@ export const useBrokerPortfolio = (connection) => {
             // });
 
         } catch (err) {
-            console.warn(`Portfolio sync attempt ${attempt} failed:`, err.message);
+            console.warn(`Portfolio sync attempt ${attempt} failed:`, err);
+            console.log('🔍 Full error object:', err);  // <--- IMPORTANT
+            console.log('Error message:', err.message);
+            console.log('Error name:', err.name);
+
+            let isAuthError = false;
+
+            // Check if profile response caused it
+            if (profileRes && profileRes.status === 401) {
+                console.log('🚨 Profile response status 401 detected directly');
+                isAuthError = true;
+            }
+
+            if (err.message === 'AUTH_FAILED_401') {
+                console.log('🚨 AUTH_FAILED_401 custom error caught');
+                isAuthError = true;
+            } else if (err.message?.includes('401')) {
+                console.log('🚨 401 found in error message');
+                isAuthError = true;
+            } else if (err.message?.includes('Profile sync failed')) {
+                console.log('🚨 Profile sync failed message detected');
+                isAuthError = true;
+            }
+
+            console.log('Final isAuthError decision:', isAuthError);
 
             if (attempt < maxAttempts) {
                 const delay = Math.min(1000 * 2 ** (attempt - 1), 8000); // 1s → 2s → 4s → 8s
@@ -192,7 +218,16 @@ export const useBrokerPortfolio = (connection) => {
                 return fetchInitialData(attempt + 1, maxAttempts);
             } else {
                 console.error('All portfolio sync attempts failed');
-                setError('Unable to sync portfolio. Please try again later.');
+
+                if (isAuthError) {
+                    console.log('🔥 TRIGGERING DISCONNECT DUE TO AUTH FAILURE');
+                    disconnectBroker?.();
+                    console.log('Setting error to BROKER_EXPIRED');
+                    setError('BROKER_EXPIRED');
+                } else {
+                    console.log('Setting generic error');
+                    setError('Unable to sync portfolio. Please try again later.');
+                }
             }
         } finally {
             setInitialLoading(false);
@@ -260,21 +295,26 @@ export const useBrokerPortfolio = (connection) => {
     }, [appToken, broker?.clientId]);
 
     // Main effect
-    // Initial load when connected
+    // Main effect
     useEffect(() => {
+        console.log('🟢 useBrokerPortfolio effect triggered', {
+            isConnected,
+            hasAppToken: !!appToken,
+            currentError: error,  // if you expose error in return
+        });
         if (isConnected && appToken) {
+            console.log('Starting sync and live feed');
             fetchInitialData();
             startLiveFeed();
-
             pollIntervalRef.current = setInterval(pollLivePrices, 4000);
-
-            return () => {
-                if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            };
+            return () => clearInterval(pollIntervalRef.current);
         } else {
+            console.log('Not connected or no token → cleaning up');
             setInitialLoading(false);
             setIsLive(false);
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            console.log('Clearing portfolio error on disconnect');
+            setError(null);
         }
     }, [isConnected, appToken]);
 
@@ -322,11 +362,13 @@ export const useBrokerPortfolio = (connection) => {
         todayPnL,
         lastSync,
         isLive,
-        loading: initialLoading || refreshing,     // ← this is what Overview uses
-        refreshing,                                 // for pull-to-refresh spinner
-        refreshPortfolio,                           // ← now reliable
+        loading: initialLoading || refreshing,
+        refreshing,
+        refreshPortfolio,
         getLivePrice,
         fetchOrderHistoryBySecurityId,
         profile,
+        disconnectBroker,
+        error,  // ← ADD THIS
     };
 };

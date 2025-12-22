@@ -5,7 +5,7 @@ import { useBroker } from '@/contexts/broker/BrokerProvider';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native'; // ← Add this import
+import { useFocusEffect } from '@react-navigation/native';
 import React from 'react';
 import {
     ActivityIndicator,
@@ -114,12 +114,21 @@ const BrokerConnection = () => {
     const {
         broker,
         isConnected,
-        loading,          // from connection (initial restore)
+        loading,
         error,
         refreshPortfolio,
         isLive,
         lastSync,
     } = useBroker();
+
+    // console.log('BrokerConnection Render →', {
+    //     isConnected,
+    //     loading,
+    //     error,
+    //     isLive,
+    //     lastSync,
+    //     hasRefreshPortfolio: !!refreshPortfolio,
+    // });
 
     const [refreshing, setRefreshing] = React.useState(false);
 
@@ -162,6 +171,15 @@ const BrokerConnection = () => {
         }, [isConnected, refreshPortfolio])
     );
 
+    // console.log('UI Decision Tree:', {
+    //     isConnected,
+    //     hasError: !!error,
+    //     errorValue: error,
+    //     showGenericRetry: isConnected && error && error !== 'BROKER_EXPIRED',
+    //     showExpiredMessage: !isConnected && error === 'BROKER_EXPIRED',
+    //     showOtherDisconnectedError: !isConnected && error && error !== 'BROKER_EXPIRED',
+    // });
+
     return (
         <View style={styles.container}>
             <View style={{ paddingHorizontal: 12 }}>
@@ -195,6 +213,12 @@ const BrokerConnection = () => {
                     Link your trading account to view holdings, live PnL & place orders
                 </Text>
 
+                {!isConnected && !error && (
+                    <View style={styles.noConnectionContainer}>
+                        <Text style={styles.noConnectionTitle}>No Broker Connected</Text>
+                    </View>
+                )}
+
                 {/* Connected Status Banner */}
                 {isConnected && !loading && (
                     <View style={styles.syncStatus}>
@@ -210,14 +234,32 @@ const BrokerConnection = () => {
                     </View>
                 )}
 
-                {/* Always show error if exists */}
-                {error && (
+                {/* Error Handling - Clean & Prioritized */}
+                {isConnected && error && error !== 'BROKER_EXPIRED' && (
                     <TouchableOpacity onPress={onRefresh} style={styles.errorContainer}>
                         <MaterialIcons name="error-outline" size={18} color="#FF6B6B" />
                         <Text style={styles.errorText}>
                             {error} • Tap to retry
                         </Text>
                     </TouchableOpacity>
+                )}
+
+                {!isConnected && error === 'BROKER_EXPIRED' && (
+                    <View style={styles.errorContainer}>
+                        <MaterialIcons name="warning-amber" size={18} color="#FF6B6B" />
+                        <Text style={styles.errorText}>
+                            Session expired. Tap Dhan to reconnect.
+                        </Text>
+                    </View>
+                )}
+
+                {!isConnected && error && error !== 'BROKER_EXPIRED' && (
+                    <View style={styles.errorContainer}>
+                        <MaterialIcons name="cloud-offline" size={18} color="#FF6B6B" />
+                        <Text style={styles.errorText}>
+                            Broker disconnected: {error}
+                        </Text>
+                    </View>
                 )}
 
                 {/* Broker List */}
@@ -262,8 +304,7 @@ const styles = StyleSheet.create({
     loadingText: { color: '#FFF', marginTop: 15, fontSize: 16, fontWeight: '500' },
 
     headerText: { color: '#FFF', fontSize: 26, fontWeight: '800', marginBottom: 8 },
-    subText: { color: '#AAA', fontSize: 15, marginBottom: 30, lineHeight: 22 },
-
+    subText: { color: '#AAA', fontSize: 15, marginBottom: 10, lineHeight: 22 },
     card: {
         backgroundColor: '#1A1A2E',
         borderRadius: 20,
@@ -355,4 +396,18 @@ const styles = StyleSheet.create({
     },
     syncText: { color: '#00D09C', fontSize: 15, fontWeight: '700' },
     liveLabel: { color: '#00D09C', fontSize: 12, marginTop: 6, opacity: 0.9, fontWeight: '500' },
+    noConnectionContainer: {
+        alignItems: 'center',
+        marginVertical: 5,
+        padding: 5,
+        backgroundColor: 'red',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#333',
+    },
+    noConnectionTitle: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '700',
+    }
 });

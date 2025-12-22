@@ -9,8 +9,8 @@ import OrderBottomSheet from '@/components/OrderBottomSheet';
 import LinearGradient from 'react-native-linear-gradient';
 import TradingViewSymbolInfo from '@/components/tradingview/TradingViewSymbolInfo';
 import TradingViewSymbolProfile from '@/components/tradingview/TradingViewSymbolProfile';
-import TradingViewFinancials from '../../../components/tradingview/TradingViewFinancials';
-import TradingViewTechnicalAnalysis from '../../../components/tradingview/TradingViewTechnicalAnalysis';
+import TradingViewFinancials from '@/components/tradingview/TradingViewFinancials';
+import TradingViewTechnicalAnalysis from '@/components/tradingview/TradingViewTechnicalAnalysis';
 
 const stockData = [
     { id: '1', title: 'RELIANCE', company: 'Reliance Industries Ltd', value: '2,956.75', volume: '1.23 Cr', mcap: '20.1L Cr', change: '+43.45 (1.49%)' },
@@ -18,6 +18,7 @@ const stockData = [
     { id: '3', title: 'HDFCBANK', company: 'HDFC Bank Ltd', value: '1,724.85', volume: '2.1 Cr', mcap: '13.1L Cr', change: '+12.15 (0.71%)' },
     { id: '4', title: 'INFY', company: 'Infosys Ltd', value: '1,965.30', volume: '98.7L', mcap: '8.1L Cr', change: '+35.10 (1.82%)' },
     { id: '5', title: 'ICICIBANK', company: 'ICICI Bank Ltd', value: '1,289.60', volume: '1.8 Cr', mcap: '9.0L Cr', change: '-8.40 (-0.65%)' },
+    { id: '6', title: 'MCL', company: 'Madhav Copper', value: '1,289.60', volume: '1.8 Cr', mcap: '9.0L Cr', change: '-8.40 (-0.65%)' },
 ];
 
 const StockDetails = () => {
@@ -31,14 +32,14 @@ const StockDetails = () => {
 
     const stock = useMemo(() => stockData.find(s => s.id === id), [id]);
 
-    const fundamentalsData = useMemo(() => stock ? [
-        { label: 'Volume', value: stock.volume },
-        { label: 'Market Cap', value: stock.mcap },
-        { label: '52W High', value: '₹3,200' },
-        { label: '52W Low', value: '₹2,100' },
-        { label: 'P/E Ratio', value: '28.4' },
-        { label: 'Div Yield', value: '0.38%' },
-    ] : [], [stock]);
+    // const fundamentalsData = useMemo(() => stock ? [
+    //     { label: 'Volume', value: stock.volume },
+    //     { label: 'Market Cap', value: stock.mcap },
+    //     { label: '52W High', value: '₹3,200' },
+    //     { label: '52W Low', value: '₹2,100' },
+    //     { label: 'P/E Ratio', value: '28.4' },
+    //     { label: 'Div Yield', value: '0.38%' },
+    // ] : [], [stock]);
 
     const totalValue = useMemo(() => {
         if (!stock || !quantity) return '0.00';
@@ -81,12 +82,12 @@ const StockDetails = () => {
         sheetRef.current?.close();
     };
 
-    const renderFundamental = ({ item }) => (
-        <LinearGradient colors={['#2A2A3D', '#1E1E2F']} style={styles.fundamentalItem}>
-            <Text style={styles.fundamentalLabel}>{item.label}</Text>
-            <Text style={styles.fundamentalValue}>{item.value}</Text>
-        </LinearGradient>
-    );
+    // const renderFundamental = ({ item }) => (
+    //     <LinearGradient colors={['#2A2A3D', '#1E1E2F']} style={styles.fundamentalItem}>
+    //         <Text style={styles.fundamentalLabel}>{item.label}</Text>
+    //         <Text style={styles.fundamentalValue}>{item.value}</Text>
+    //     </LinearGradient>
+    // );
 
     const renderItem = ({ item }) => {
 
@@ -188,7 +189,7 @@ const StockDetails = () => {
         <View style={styles.container}>
 
             <View className="px-3">
-                <HomeHeader page="chatbot" title={stock.title} />
+                <HomeHeader page="chatbot" title={stock.company} />
             </View>
 
             <FlatList

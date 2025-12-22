@@ -7,7 +7,7 @@ import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import * as Haptics from 'react-native-haptic-feedback';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { useUser } from '@/contexts/UserContext';  // Adjust path if needed
+import { useUser } from '@/contexts/UserContext';
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
 const API_BASE_URL = 'http://192.168.1.48:3000/api';
@@ -16,7 +16,7 @@ const menuItems = [
     // { name: 'Algo Builder', route: 'algobuilder', icon: 'rocket' },
     { name: 'Broker Connection', route: 'auth/BrokerConnection', icon: 'history' },
     { name: 'Portfolio', route: 'portfolio/PortfolioScreen', icon: 'chart-bar' },
-    { name: 'Order Book', route: 'orderbook/OrderBookTabs', icon: 'rocket' },
+    { name: 'Order Book', route: 'orderbook/OrderBookTabs', icon: 'book-open-variant-outline' },
     { name: 'Packages', route: 'packages/package', icon: 'rocket' },
     { name: 'Settings', route: 'settings', icon: 'robot' },
 ];
