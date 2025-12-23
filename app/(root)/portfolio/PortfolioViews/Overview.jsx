@@ -6,15 +6,14 @@ import { StyleSheet, Text, View, ScrollView, RefreshControl } from 'react-native
 export default function Overview() {
     const {
         summary = {},
-        broker,
+        todayPnL = { todayTotalPL: 0 },
         profile,
         funds,
         error,
         loading,
         isLive,
-        refresh,
         refreshing,
-        refreshPortfolio,  // ← now works reliably
+        refreshPortfolio,
     } = useBroker();
 
     // console.log('profile:', profile);
@@ -35,9 +34,7 @@ export default function Overview() {
 
     const isActive = (v) => v?.toLowerCase() === 'active';
     const formatDate = (d) => d ? d.split('.')[0].split('T')[0] : '—';
-    const format = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
-
-    const { currentValue = 0, availableCash = 0 } = summary;
+    const format = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
     if (loading && !refreshing) {
         return (
@@ -47,7 +44,7 @@ export default function Overview() {
         );
     }
 
-    if (currentValue === 0 && availableCash === 0 && !refreshing) {
+    if (summary.currentValue === 0 && summary.availableCash === 0 && !refreshing) {
         return (
             <View style={styles.center}>
                 <Text style={styles.emptyTitle}>No Holdings Yet</Text>
@@ -72,21 +69,59 @@ export default function Overview() {
             {/* Hero Card */}
             <LinearGradient
                 colors={['#020617', '#0f172a']}
-                className="px-6 pt-12 pb-8 rounded-b-3xl"
+                className="px-6 pt-12 rounded-b-3xl"
             >
-                <View className="flex-row justify-between">
+                {/* Main Row: Investment & Current Value */}
+                <View className="flex-row justify-between mb-6">
                     <View>
-                        <Text className="text-slate-400 text-sm">Portfolio Value</Text>
-                        <Text className="text-white text-3xl font-extrabold mt-1">
-                            {format(summary.currentValue)}
+                        <Text className="text-slate-400 text-sm">Investment</Text>
+                        <Text className="text-white text-xl font-bold mt-1">
+                            {format(summary.totalInvestment)}
                         </Text>
                     </View>
 
+                    <View className="">
+                        <Text className="text-slate-400 text-sm">Current Value</Text>
+                        <Text className="text-white text-xl font-extrabold mt-1">
+                            {format(summary.currentValue)}
+                        </Text>
+                    </View>
+                    {/* Available Cash */}
                     <View className="items-end">
-                        <Text className="text-slate-400 text-sm">Available Cash</Text>
-                        <Text className="text-white text-2xl font-bold mt-1">
+                        <Text className="text-slate-400 text-sm text-right">Available Cash</Text>
+                        <Text className="text-white text-xl font-bold mt-1 text-right">
                             {format(summary.availableCash)}
                         </Text>
+                    </View>
+                </View>
+
+                <View className="flex-row justify-between mb-6">
+                    {/* Overall P&L */}
+                    <View className="mb-6">
+                        <Text className="text-slate-400 text-sm">Overall {summary.totalPL >= 0 ? 'Profit' : 'Loss'}</Text>
+                        <View className="flex-row items-baseline gap-2 mt-2">
+                            <Text className={`text-xl font-bold ${summary.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {summary.totalPL >= 0 ? '+' : ''}{format(summary.totalPL)}
+                            </Text>
+                            <Text className={`text-sm ${summary.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ({summary.overallPnLPercent >= 0 ? '+' : ''}{summary.overallPnLPercent.toFixed(2)}%)
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Today's P&L */}
+                    <View className="mb-6">
+                        <Text className="text-slate-400 text-sm">Today&apos;s {todayPnL.todayUnrealisedPL >= 0 ? 'Profit' : 'Loss'}</Text>
+                        <View className="flex-row items-baseline gap-3 mt-2">
+                            <Text className={`text-xl font-semibold ${todayPnL.todayUnrealisedPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {todayPnL.todayUnrealisedPL >= 0 ? '+' : ''}{format(todayPnL.todayUnrealisedPL)}
+                            </Text>
+                            {summary.totalInvestment > 0 && (
+                                <Text className={`text-sm ${todayPnL.todayUnrealisedPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    ({((todayPnL.todayUnrealisedPL / summary.totalInvestment) * 100).toFixed(2)}%)
+                                </Text>
+                            )}
+                        </View>
                     </View>
                 </View>
             </LinearGradient>
@@ -95,7 +130,7 @@ export default function Overview() {
                 {/* Header */}
                 <View className="flex-row justify-between items-center">
                     <View>
-                        <Text className="text-white text-2xl font-bold capitalize">Dhan</Text>
+                        <Text className="text-white text-xl font-bold capitalize">Dhan</Text>
                         <Text className="text-slate-400 text-base mt-1">
                             Client ID: {profile.dhanClientId}
                         </Text>

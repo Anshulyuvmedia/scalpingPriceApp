@@ -71,12 +71,15 @@ const StockListItem = React.memo(({ item, onPress }) => {
                     <LinearGradient colors={['#0F0F1A', '#1A1A2E']} style={styles.card}>
                         {/* Row 1 */}
                         <View style={styles.row1}>
-                            <Text style={styles.symbol} numberOfLines={1}>
-                                {item.tradingSymbol}
-                            </Text>
+                            <View className="flex-row gap-2">
+                                <Text style={styles.symbol} numberOfLines={1}>
+                                    {item.tradingSymbol}
+                                </Text>
                                 <Text style={styles.exchange}>
                                     ({item.exchange})
                                 </Text>
+                            </View>
+
                             <View style={styles.right}>
                                 <Text className="text-white">
                                     LTP: <Text style={[styles.ltp, ltp > 0 ? styles.green : ltp < 0 ? styles.red : styles.gray]}>₹{ltp.toFixed(2)}</Text>
@@ -117,9 +120,15 @@ const StockListItem = React.memo(({ item, onPress }) => {
 
                         {/* Row 3 */}
                         <View style={styles.row3}>
-                            <Text style={styles.marketVal}>
-                                Investment: ₹{currentValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                            </Text>
+                            <View className="flex-row gap-2">
+                                <Text style={styles.marketVal}>
+                                    Investment: <Text style={styles.infowhite}> ₹{investment.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</Text>
+                                </Text>
+                                <Text style={styles.marketVal}>
+                                    CV: <Text style={styles.infowhite}> ₹{currentValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })} </Text>
+                                </Text>
+                            </View>
+
                             <Text
                                 style={[
                                     styles.plPct,
@@ -162,8 +171,8 @@ const styles = StyleSheet.create({
         borderRadius: 14,
     },
     row1: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-    symbol: { color: '#FFF', fontSize: 16.5, fontWeight: '800', flex: 1,},
-    exchange: { color: '#AAA', fontSize: 12, fontWeight: '800', flex: 1,},
+    symbol: { color: '#FFF', fontSize: 16.5, fontWeight: '800', },
+    exchange: { color: '#AAA', fontSize: 12, fontWeight: '800', },
     right: { alignItems: 'flex-end', flexDirection: 'row', gap: 3 },
     ltp: { fontSize: 16, fontWeight: '800' },
     dailyPct: { fontSize: 11.5, fontWeight: '700', marginTop: 1 },

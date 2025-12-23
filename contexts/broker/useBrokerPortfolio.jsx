@@ -1,374 +1,304 @@
-// contexts/broker/useBrokerPortfolio.js
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useUser } from '@/contexts/UserContext';
+// import { useBrokerConnection } from './useBrokerConnection';
+import axios from 'axios';
 
 const BASE_URL = __DEV__
     ? 'https://johnson-prevertebral-irradiatingly.ngrok-free.dev'
     : 'https://api.yourapp.com';
 
+const log = (...args) => console.log('[PORTFOLIO]', ...args);
+const warn = (...args) => console.warn('[PORTFOLIO]', ...args);
+const errLog = (...args) => console.error('[PORTFOLIO]', ...args);
+
 export const useBrokerPortfolio = (connection) => {
-    const { appToken, broker, isConnected, disconnectBroker } = connection;
-    const { user } = useUser();
-    const [profile, setProfile] = useState(false);
-    const [initialLoading, setInitialLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState(null);
-    // Raw data from API
+    const { user, appToken } = useUser();
+    const { brokerToken, isConnected, disconnectBroker } = connection;
+    const hasInitialSyncRef = useRef(false);
+    const syncingRef = useRef(false);
+
+    const wsRef = useRef(null);
+    const livePricesRef = useRef({});
+    const pollRef = useRef(null);
+    const liveFeedStartedRef = useRef(false);
+
+    const [profile, setProfile] = useState(null);
+    const [funds, setFunds] = useState(null);
     const [rawHoldings, setRawHoldings] = useState([]);
     const [rawPositions, setRawPositions] = useState([]);
-
-    // Enriched data
     const [holdings, setHoldings] = useState([]);
     const [positions, setPositions] = useState([]);
-    const [funds, setFunds] = useState(null);
     const [summary, setSummary] = useState({
         totalInvestment: 0,
         currentValue: 0,
         totalPL: 0,
         overallPnLPercent: 0,
+        availableCash: 0
     });
     const [todayPnL, setTodayPnL] = useState({
         todayTotalPL: 0,
         todayRealisedPL: 0,
         todayUnrealisedPL: 0,
+        todayPnLPercent: 0
     });
-    const [lastSync, setLastSync] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState(null);
     const [isLive, setIsLive] = useState(false);
+    const [lastSync, setLastSync] = useState(null);
 
-    const livePricesRef = useRef({});
-    const pollIntervalRef = useRef(null);
+    /** ------------------ Axios instance ------------------ */
+    const api = useMemo(() => {
+        if (!appToken || !brokerToken) return null;
 
+        return axios.create({
+            baseURL: BASE_URL,
+            headers: {
+                Authorization: `Bearer ${appToken}`,
+                'x-broker-token': brokerToken,
+                'Content-Type': 'application/json'
+            }
+        });
+    }, [appToken, brokerToken]);
+
+    /** ------------------ Helper: Apply live price ------------------ */
     const applyLivePrice = useCallback((item, quote) => {
-        const ltp = quote?.ltp ?? item.ltp ?? 0;
-        const qty = Math.abs(Number(item.netQty || item.qty || item.holdingQuantity || 0));
-        const avg = Number(item.buyAvg || item.avgCostPrice || item.costPrice || 0);
-        const currentValue = ltp * qty;
+        const qty = Number(item.totalQty || item.holdingQuantity || item.netQty || item.qty || 0);
+        const avg = Number(item.avgCostPrice || item.buyAvg || item.costPrice || 0);
+        const ltp = quote?.ltp ?? item.lastTradedPrice ?? 0;
+        const change = quote?.change ?? quote?.chg ?? 0;
+
         const investment = avg * qty;
+        const currentValue = ltp * qty;
         const unrealisedPL = currentValue - investment;
         const realisedPL = Number(item.realizedProfit || item.realizedProfitLoss || 0);
 
         return {
             ...item,
             ltp,
-            currentValue,
+            qty,
             investment,
+            currentValue,
             unrealisedPL,
             profitLoss: unrealisedPL + realisedPL,
             profitLossPercent: investment > 0 ? (unrealisedPL / investment) * 100 : 0,
-            change: quote?.change || 0,
-            changePercent: quote?.changePercent || 0,
-            isLive: !!quote,
+            todayUnrealisedPL: change * qty,
+            isLive: !!quote
         };
     }, []);
 
-    const recalculateSummary = useCallback(() => {
-        const items = [...holdings, ...positions];
-        const totalInvestment = items.reduce((sum, i) => sum + (i.investment || 0), 0);
-        const currentValue = items.reduce((sum, i) => sum + (i.currentValue || 0), 0);
+    /** ------------------ Helper: Recalculate summary ------------------ */
+    const recalcAll = useCallback((h, p) => {
+        const items = [...h, ...p];
+        const totalInvestment = items.reduce((s, i) => s + (i.investment || 0), 0);
+        const currentValue = items.reduce((s, i) => s + (i.currentValue || 0), 0);
         const totalPL = currentValue - totalInvestment;
-        const overallPnLPercent = totalInvestment > 0 ? (totalPL / totalInvestment) * 100 : 0;
 
-        setSummary({
-            totalInvestment: Number(totalInvestment.toFixed(2)),
-            currentValue: Number(currentValue.toFixed(2)),
-            totalPL: Number(totalPL.toFixed(2)),
-            overallPnLPercent: Number(overallPnLPercent.toFixed(2)),
+        const todayUnrealisedPL = items.reduce((s, i) => s + (i.todayUnrealisedPL || 0), 0);
+        const todayRealisedPL = items.reduce((s, i) => s + Number(i.realizedProfit || i.realizedProfitLoss || 0), 0);
+        const todayTotalPL = todayUnrealisedPL + todayRealisedPL;
+
+        setSummary(prev => ({
+            ...prev,
+            totalInvestment: +totalInvestment.toFixed(2),
+            currentValue: +currentValue.toFixed(2),
+            totalPL: +totalPL.toFixed(2),
+            overallPnLPercent: totalInvestment > 0 ? +(totalPL / totalInvestment * 100).toFixed(2) : 0
+        }));
+
+        setTodayPnL({
+            todayUnrealisedPL: +todayUnrealisedPL.toFixed(2),
+            todayRealisedPL: +todayRealisedPL.toFixed(2),
+            todayTotalPL: +todayTotalPL.toFixed(2),
+            todayPnLPercent: totalInvestment > 0 ? +(todayTotalPL / totalInvestment * 100).toFixed(2) : 0
         });
-    }, [holdings, positions]);
+    }, []);
 
-    // Helper to safely convert data to array
-    const toSafeArray = (data) => (Array.isArray(data) ? data : []);
+    const refreshPortfolio = useCallback(async () => {
+        if (!api || !isConnected) return;
 
-    // Fetch all initial broker data
-    const fetchInitialData = useCallback(async (attempt = 1, maxAttempts = 4) => {
-        if (!appToken || !isConnected) {
-            setInitialLoading(false);
+        if (syncingRef.current) {
+            log('Sync already running, skipping');
             return;
         }
-        let profileRes;
-        let summaryRes;
-        let fundsRes;
-        let todayPnlRes;
-        let holdingsRes;
-        let positionsRes;
+
+        syncingRef.current = true;
+        setRefreshing(true);
+        setLoading(true);
+        setError(null);
 
         try {
-            // Only show loading spinner on first attempt
-            if (attempt === 1) setInitialLoading(true);
-            setRefreshing(attempt > 1);
-            setError(null);
+            log('Starting portfolio sync');
 
-            const headers = { Authorization: `Bearer ${appToken}` };
-
-            const [
-                profileRes,
-                summaryRes,
-                fundsRes,
-                todayPnlRes,
-                holdingsRes,
-                positionsRes,
-            ] = await Promise.all([
-                fetch(`${BASE_URL}/api/BrokerConnections/profile`, { headers }),
-                fetch(`${BASE_URL}/api/BrokerConnections/portfolio-summary`, { headers }),
-                fetch(`${BASE_URL}/api/BrokerConnections/funds`, { headers }),
-                fetch(`${BASE_URL}/api/BrokerConnections/today-pnl`, { headers }),
-                fetch(`${BASE_URL}/api/BrokerConnections/holdings`, { headers }),
-                fetch(`${BASE_URL}/api/BrokerConnections/positions`, { headers }),
+            const [profileRes, fundsRes, holdingsRes, positionsRes] = await Promise.all([
+                api.get('/api/BrokerConnections/profile'),
+                api.get('/api/BrokerConnections/funds'),
+                api.get('/api/BrokerConnections/holdings'),
+                api.get('/api/BrokerConnections/positions')
             ]);
 
-            // Now profileRes is available below
-            if (!profileRes.ok) {
-                const text = await profileRes.text();
-                if (profileRes.status === 401) {
-                    throw new Error('AUTH_FAILED_401');  // ← Best way: throw custom error
-                }
-                throw new Error(`Profile sync failed: ${profileRes.status} ${text}`);
-            }
-            // console.log('profile', profileRes.data);
-            const profile = await profileRes.json();
-            setProfile(profile);
-            
-            // Helper to safely get JSON or fallback
-            const safeJson = async (res) => {
-                if (!res.ok) {
-                    if (res.status === 404) return null; // treat 404 as empty
-                    const text = await res.text();
-                    throw new Error(`${res.status}: ${text}`);
-                }
-                return res.json();
-            };
+            setProfile(profileRes.data);
+            setFunds(fundsRes.data || null);
+            setRawHoldings(holdingsRes.data || []);
+            setRawPositions(positionsRes.data || []);
 
-            const [
-                summaryData,
-                fundsData,
-                todayPnLData,
-                rawHoldingsData,
-                rawPositionsData,
-            ] = await Promise.all([
-                safeJson(summaryRes).catch(() => ({})),
-                safeJson(fundsRes).catch(() => null),
-                safeJson(todayPnlRes).catch(() => ({ todayTotalPL: 0, todayRealisedPL: 0, todayUnrealisedPL: 0 })),
-                safeJson(holdingsRes).catch(() => []),
-                safeJson(positionsRes).catch(() => []),
-            ]);
-
-            setFunds(fundsData);
-            setSummary(summaryData || {
-                totalInvestment: 0,
-                currentValue: 0,
-                totalPL: 0,
-                overallPnLPercent: 0,
-            });
-            setTodayPnL(todayPnLData);
-
-            const safeHoldings = toSafeArray(rawHoldingsData);
-            const safePositions = toSafeArray(rawPositionsData);
-
-            setRawHoldings(safeHoldings);
-            setRawPositions(safePositions);
-
-            // Enrich with any cached live prices
-            const enrichedHoldings = safeHoldings.map(h =>
-                applyLivePrice(h, livePricesRef.current[h.securityId || h.isin])
+            const enrichedHoldings = holdingsRes.data.map(h =>
+                applyLivePrice(h, livePricesRef.current[h.securityId])
             );
-            const enrichedPositions = safePositions.map(p =>
+            const enrichedPositions = positionsRes.data.map(p =>
                 applyLivePrice(p, livePricesRef.current[p.securityId])
             );
 
             setHoldings(enrichedHoldings);
             setPositions(enrichedPositions);
+
+            recalcAll(enrichedHoldings, enrichedPositions);
             setLastSync(new Date().toLocaleTimeString('en-IN'));
 
-            // console.log('Portfolio synced successfully', {
-            //     holdings: safeHoldings.length,
-            //     positions: safePositions.length,
-            //     attempt,
-            // });
+            log('Portfolio sync complete');
+        } catch (e) {
+            errLog('Portfolio sync failed:', e.response?.data || e.message);
 
-        } catch (err) {
-            console.warn(`Portfolio sync attempt ${attempt} failed:`, err);
-            console.log('🔍 Full error object:', err);  // <--- IMPORTANT
-            console.log('Error message:', err.message);
-            console.log('Error name:', err.name);
-
-            let isAuthError = false;
-
-            // Check if profile response caused it
-            if (profileRes && profileRes.status === 401) {
-                console.log('🚨 Profile response status 401 detected directly');
-                isAuthError = true;
-            }
-
-            if (err.message === 'AUTH_FAILED_401') {
-                console.log('🚨 AUTH_FAILED_401 custom error caught');
-                isAuthError = true;
-            } else if (err.message?.includes('401')) {
-                console.log('🚨 401 found in error message');
-                isAuthError = true;
-            } else if (err.message?.includes('Profile sync failed')) {
-                console.log('🚨 Profile sync failed message detected');
-                isAuthError = true;
-            }
-
-            console.log('Final isAuthError decision:', isAuthError);
-
-            if (attempt < maxAttempts) {
-                const delay = Math.min(1000 * 2 ** (attempt - 1), 8000); // 1s → 2s → 4s → 8s
-                await new Promise(res => setTimeout(res, delay));
-                return fetchInitialData(attempt + 1, maxAttempts);
+            if (e.response?.status === 401) {
+                warn('Broker token expired → disconnecting');
+                setError('BROKER_EXPIRED');
+                await disconnectBroker();
             } else {
-                console.error('All portfolio sync attempts failed');
-
-                if (isAuthError) {
-                    console.log('🔥 TRIGGERING DISCONNECT DUE TO AUTH FAILURE');
-                    disconnectBroker?.();
-                    console.log('Setting error to BROKER_EXPIRED');
-                    setError('BROKER_EXPIRED');
-                } else {
-                    console.log('Setting generic error');
-                    setError('Unable to sync portfolio. Please try again later.');
-                }
+                setError('PORTFOLIO_SYNC_FAILED');
             }
         } finally {
-            setInitialLoading(false);
+            syncingRef.current = false;
             setRefreshing(false);
+            setLoading(false);
         }
-    }, [appToken, isConnected, setError, applyLivePrice]);
+    }, [api, isConnected, applyLivePrice, recalcAll, disconnectBroker]);
 
-    // Start live feed
-    const startLiveFeed = useCallback(async () => {
-        if (!appToken || !broker?.clientId) return;
+    /** ------------------ Fetch live quotes ------------------ */
+    const fetchQuotes = useCallback(async () => {
+        if (!profile?.dhanClientId || !api) return;
 
         try {
-            const res = await fetch(
-                `${BASE_URL}/api/DhanInstruments/user/${broker.clientId}/init-subscription`,
-                {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${appToken}` },
-                }
+            const res = await axios.post(
+                `${BASE_URL}/api/DhanInstruments/portfolio-quote/user/${profile.dhanClientId}`,
+                {},
+                { headers: { Authorization: `Bearer ${appToken}`, 'x-broker-token': brokerToken }, validateStatus: () => true }
             );
 
-            if (res.ok) {
-                setIsLive(true);
-                console.log('✅ Dhan live feed started');
+            if (res.status === 429) {
+                warn('Dhan API rate limit hit (429). Retrying after 15s');
+                clearInterval(pollRef.current);
+                pollRef.current = setTimeout(fetchQuotes, 15000);
+                return;
             }
-        } catch (err) {
-            console.warn('⚠️ Live feed init failed:', err);
-            setIsLive(false);
-        }
-    }, [appToken, broker?.clientId]);
 
-    // Poll live prices
-    const pollLivePrices = useCallback(async () => {
-        if (!appToken || !broker?.clientId) return;
+            const data = res.data;
+            if (!Array.isArray(data) || data.length === 0) {
+                warn('Empty quotes received. Using previous live prices');
+                const h = rawHoldings.map(x => applyLivePrice(x, livePricesRef.current[x.securityId]));
+                const p = rawPositions.map(x => applyLivePrice(x, livePricesRef.current[x.securityId]));
+                setHoldings(h);
+                setPositions(p);
+                recalcAll(h, p);
+                return;
+            }
 
-        try {
-            const res = await fetch(
-                `${BASE_URL}/api/DhanInstruments/live-prices/user/${broker.clientId}`,
-                {
-                    headers: { Authorization: `Bearer ${appToken}` },
-                }
-            );
-
-            if (!res.ok) return;
-
-            const data = await res.json();
-            if (!Array.isArray(data)) return;
-
-            const newPrices = {};
-            data.forEach(p => {
-                if (p.securityId) {
-                    newPrices[p.securityId] = { ltp: p.ltp };
-                }
+            const quotes = {};
+            data.forEach(q => {
+                if (!q?.securityId) return;
+                quotes[String(q.securityId)] = { ltp: q.ltp ?? 0, change: q.chg ?? q.change ?? 0 };
             });
 
-            livePricesRef.current = { ...livePricesRef.current, ...newPrices };
+            livePricesRef.current = { ...livePricesRef.current, ...quotes };
 
-            // Re-apply to current raw data
-            setHoldings(prev => rawHoldings.map(h => applyLivePrice(h, newPrices[h.securityId || h.isin])));
-            setPositions(prev => rawPositions.map(p => applyLivePrice(p, newPrices[p.securityId])));
-
-            recalculateSummary();
-        } catch (err) {
-            console.warn('Live prices poll failed:', err);
+            const h = rawHoldings.map(x => applyLivePrice(x, quotes[x.securityId]));
+            const p = rawPositions.map(x => applyLivePrice(x, quotes[x.securityId]));
+            setHoldings(h);
+            setPositions(p);
+            recalcAll(h, p);
+        } catch (e) {
+            if (e.response) warn('Quote fetch failed', e.response.status, e.response.data);
+            else warn('Quote polling failed', e.message);
         }
-    }, [appToken, broker?.clientId]);
+    }, [profile?.dhanClientId, api, rawHoldings, rawPositions, applyLivePrice, recalcAll, appToken, brokerToken]);
 
-    // Main effect
-    // Main effect
-    useEffect(() => {
-        console.log('🟢 useBrokerPortfolio effect triggered', {
-            isConnected,
-            hasAppToken: !!appToken,
-            currentError: error,  // if you expose error in return
-        });
-        if (isConnected && appToken) {
-            console.log('Starting sync and live feed');
-            fetchInitialData();
-            startLiveFeed();
-            pollIntervalRef.current = setInterval(pollLivePrices, 4000);
-            return () => clearInterval(pollIntervalRef.current);
-        } else {
-            console.log('Not connected or no token → cleaning up');
-            setInitialLoading(false);
-            setIsLive(false);
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            console.log('Clearing portfolio error on disconnect');
-            setError(null);
-        }
-    }, [isConnected, appToken]);
-
-    // Refresh handler
-    // Refresh function used by pull-to-refresh
-    const refreshPortfolio = useCallback(async () => {
-        livePricesRef.current = {};
-        setIsLive(false);
-        setHoldings([]);
-        setPositions([]);
-        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-        await fetchInitialData(1, 3); // fewer retries on manual refresh
-        startLiveFeed();
-        pollIntervalRef.current = setInterval(pollLivePrices, 4000);
-    }, [fetchInitialData, startLiveFeed, pollLivePrices]);
-
-    const combinedPortfolio = [...holdings, ...positions];
-
-    const getLivePrice = useCallback((securityId) => {
-        const cached = livePricesRef.current[securityId];
-        return cached ? { success: true, data: cached } : { success: false };
-    }, []);
-
-    const fetchOrderHistoryBySecurityId = useCallback(async (securityId, fy) => {
-        if (!appToken || !securityId) return [];
+    /** ------------------ Start WebSocket live feed ------------------ */
+    const startLiveFeed = useCallback(async () => {
+        if (!profile?.dhanClientId || !api || liveFeedStartedRef.current) return;
+        liveFeedStartedRef.current = true;
 
         try {
-            let url = `${BASE_URL}/api/BrokerConnections/order-history-by-security?securityId=${securityId}`;
-            if (fy) url += `&fy=${encodeURIComponent(fy)}`;
-
-            const res = await fetch(url, { headers: { Authorization: `Bearer ${appToken}` } });
-            return res.ok ? await res.json() : [];
-        } catch (err) {
-            console.error('Order history fetch error:', err);
-            return [];
+            log('Starting Dhan live feed...', profile.dhanClientId);
+            await api.post(`/api/DhanInstruments/user/${profile.dhanClientId}/init-subscription`);
+            setIsLive(true);
+            log('Live feed started');
+        } catch (e) {
+            warn('Live feed failed, fallback to polling', e.response?.data || e.message);
+            liveFeedStartedRef.current = false;
+            setIsLive(false);
         }
-    }, [appToken]);
+    }, [profile?.dhanClientId, api]);
+
+    /** ------------------ Effects ------------------ */
+
+    useEffect(() => {
+        let pollInterval;
+
+        const startPollingAfterSync = async () => {
+            if (!profile?.dhanClientId || liveFeedStartedRef.current) return;
+            // Perform initial sync first
+            await refreshPortfolio();
+            // Start live feed
+            await startLiveFeed();
+            // Start polling quotes
+            pollInterval = setInterval(fetchQuotes, 8000);
+        };
+
+        startPollingAfterSync();
+
+        return () => clearInterval(pollInterval);
+    }, [profile?.dhanClientId, refreshPortfolio, startLiveFeed, fetchQuotes]);
+
+
+
+    useEffect(() => {
+        if (!isConnected) {
+            hasInitialSyncRef.current = false;
+            setLoading(false); // 👈 ADD THIS
+            return;
+        }
+
+        if (hasInitialSyncRef.current) return;
+
+        hasInitialSyncRef.current = true;
+        refreshPortfolio();
+    }, [isConnected]);
+
+
+    useEffect(() => {
+        if (!isConnected) {
+            hasInitialSyncRef.current = false;
+            syncingRef.current = false;
+            liveFeedStartedRef.current = false;
+
+            livePricesRef.current = {};   // 👈 ADD
+            clearInterval(pollRef.current);
+        }
+    }, [isConnected]);
+
 
     return {
+        profile,
+        funds,
         holdings,
         positions,
-        combinedPortfolio,
-        funds,
+        combinedPortfolio: [...holdings, ...positions],
         summary,
         todayPnL,
         lastSync,
         isLive,
-        loading: initialLoading || refreshing,
+        loading,
         refreshing,
-        refreshPortfolio,
-        getLivePrice,
-        fetchOrderHistoryBySecurityId,
-        profile,
-        disconnectBroker,
-        error,  // ← ADD THIS
+        error,
+        refreshPortfolio
     };
 };

@@ -5,7 +5,7 @@ const BASE_URL = __DEV__
     ? 'https://johnson-prevertebral-irradiatingly.ngrok-free.dev'
     : 'https://api.yourapp.com';
 
-export const useBrokerTradebook = ({ appToken, isConnected }) => {
+export const useBrokerTradebook = ({ appToken, isConnected, disconnectBroker }) => {
     const [tradeDateRange, setTradeDateRange] = useState({
         from: new Date().toISOString().split('T')[0],
         to: new Date().toISOString().split('T')[0],
@@ -40,6 +40,12 @@ export const useBrokerTradebook = ({ appToken, isConnected }) => {
                         headers: { Authorization: `Bearer ${appToken}` },
                     }
                 );
+
+                if (res.status === 401) {
+                    console.warn('[BROKER] Tradebook token expired. Disconnecting broker.');
+                    await disconnectBroker();
+                    return;
+                }
 
                 if (!res.ok) throw new Error('Failed to load trades');
 

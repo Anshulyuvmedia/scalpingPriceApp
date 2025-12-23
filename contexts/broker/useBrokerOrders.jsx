@@ -5,7 +5,7 @@ const BASE_URL = __DEV__
     ? 'https://johnson-prevertebral-irradiatingly.ngrok-free.dev'
     : 'https://api.yourapp.com';
 
-export const useBrokerOrders = ({ appToken, isConnected }) => {
+export const useBrokerOrders = ({ appToken, isConnected, disconnectBroker }) => {
     const [todayOrders, setTodayOrders] = useState([]);
     const [todayOrdersLoading, setTodayOrdersLoading] = useState(false);
     const [todayOrdersRefreshing, setTodayOrdersRefreshing] = useState(false);
@@ -37,6 +37,12 @@ export const useBrokerOrders = ({ appToken, isConnected }) => {
                         'Content-Type': 'application/json',
                     },
                 });
+
+                if (res.status === 401) {
+                    console.warn('[BROKER] Orders token expired. Disconnecting broker.');
+                    await disconnectBroker();
+                    return;
+                }
 
                 if (!res.ok) {
                     const text = await res.text();
@@ -96,6 +102,12 @@ export const useBrokerOrders = ({ appToken, isConnected }) => {
                     },
                     body: JSON.stringify(payload),
                 });
+
+                if (res.status === 401) {
+                    console.warn('[BROKER] Modify order auth expired. Disconnecting broker.');
+                    await disconnectBroker();
+                    return { success: false, message: 'Broker session expired' };
+                }
 
                 if (!res.ok) {
                     const text = await res.text();

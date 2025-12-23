@@ -51,11 +51,12 @@ export default function ConnectBrokerForm() {
     const { appToken } = useUser();
     const {
         broker: connectedBroker = null,
+        profile,
         isLive = false,
         refreshPortfolio,
         disconnectBroker,
     } = useBroker() || {};
-    // console.log('connectedBroker', connectedBroker);
+    // console.log('profile', profile);
     const config = broker === 'dhan' ? BROKER_CONFIG.dhan : null;
     const isConnected = connectedBroker === 'dhan';
 
@@ -343,7 +344,10 @@ export default function ConnectBrokerForm() {
                         Env: {connectedBroker.environment}
                     </Text> */}
                     <Text style={styles.clientId}>
-                        Client ID: {connectedBroker.clientId}
+                        Client ID: {profile.dhanClientId}
+                    </Text>
+                    <Text style={styles.clientId}>
+                        Connected till: {profile.tokenValidity}
                     </Text>
 
                     <View style={styles.statusRow}>

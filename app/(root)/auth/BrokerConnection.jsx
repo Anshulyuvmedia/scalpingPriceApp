@@ -164,19 +164,18 @@ const BrokerConnection = () => {
     // Force refresh when returning from OAuth login
     useFocusEffect(
         React.useCallback(() => {
-            if (isConnected && refreshPortfolio) {
-                // console.log('Screen focused → triggering portfolio refresh');
-                refreshPortfolio();
-            }
-        }, [isConnected, refreshPortfolio])
+            // DO NOTHING on focus
+            // Portfolio auto-sync is handled by useBrokerPortfolio
+            return () => { };
+        }, [])
     );
+
 
     // console.log('UI Decision Tree:', {
     //     isConnected,
     //     hasError: !!error,
     //     errorValue: error,
     //     showGenericRetry: isConnected && error && error !== 'BROKER_EXPIRED',
-    //     showExpiredMessage: !isConnected && error === 'BROKER_EXPIRED',
     //     showOtherDisconnectedError: !isConnected && error && error !== 'BROKER_EXPIRED',
     // });
 
@@ -222,14 +221,14 @@ const BrokerConnection = () => {
                 {/* Connected Status Banner */}
                 {isConnected && !loading && (
                     <View style={styles.syncStatus}>
-                        <View style={styles.statusRow}>
+                        {/* <View style={styles.statusRow}>
                             <View style={[styles.statusDot, isLive ? styles.liveDot : styles.connectedDot]} />
                             <Text style={styles.syncText}>
                                 {isLive ? `Live • ${currentTime}` : `Connected • ${currentTime}`}
                             </Text>
-                        </View>
+                        </View> */}
                         {isLive && (
-                            <Text style={styles.liveLabel}>Real-time updates active</Text>
+                            <Text style={styles.syncText}>Real-time updates active</Text>
                         )}
                     </View>
                 )}
@@ -244,16 +243,8 @@ const BrokerConnection = () => {
                     </TouchableOpacity>
                 )}
 
-                {!isConnected && error === 'BROKER_EXPIRED' && (
-                    <View style={styles.errorContainer}>
-                        <MaterialIcons name="warning-amber" size={18} color="#FF6B6B" />
-                        <Text style={styles.errorText}>
-                            Session expired. Tap Dhan to reconnect.
-                        </Text>
-                    </View>
-                )}
 
-                {!isConnected && error && error !== 'BROKER_EXPIRED' && (
+                {!isConnected && error && (
                     <View style={styles.errorContainer}>
                         <MaterialIcons name="cloud-offline" size={18} color="#FF6B6B" />
                         <Text style={styles.errorText}>

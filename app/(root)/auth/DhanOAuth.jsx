@@ -33,14 +33,14 @@ export default function DhanOAuth() {
 
     const handleMessage = (event) => {
         const rawData = event.nativeEvent.data;
-        console.log('WebView message received:', rawData);
+        // console.log('WebView message received:', rawData);
 
         let msg;
         try {
             msg = JSON.parse(rawData);
 
             if (msg.type === 'DHAN_OAUTH_SUCCESS' && msg.brokerToken) {
-                console.log('Saving broker token:', msg.brokerToken);  // ← FIXED: use msg, not data
+                // console.log('Saving broker token:', msg.brokerToken);  // ← FIXED: use msg, not data
 
                 setBroker('dhan');
                 setBrokerToken(msg.brokerToken);  // This will now get the correct token

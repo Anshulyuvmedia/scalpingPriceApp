@@ -42,7 +42,7 @@ export const useBrokerConnection = () => {
                 setError('Failed to restore broker connection');
             } finally {
                 setLoading(false);
-                console.log('🏁 Restore phase completed. loading = false');
+                // console.log('🏁 Restore phase completed. loading = false');
             }
         };
 

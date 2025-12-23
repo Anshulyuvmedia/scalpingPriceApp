@@ -21,7 +21,6 @@ const DematHolding = () => {
     const [sortBy, setSortBy] = useState(null);
     const [sortOrder, setSortOrder] = useState('asc');
     const [selectedStock, setSelectedStock] = useState(null);
-
     const rbSheetRef = React.useRef(null);
     const filterSheetRef = React.useRef(null);
 

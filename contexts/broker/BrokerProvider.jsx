@@ -21,7 +21,7 @@ export const BrokerProvider = ({ children }) => {
         brokerToken: connection.brokerToken,
         setBrokerToken: connection.setBrokerToken,
         isConnected: connection.isConnected,
-        loading: portfolio.loading,
+        loading: connection.loading || (connection.isConnected && portfolio.loading),
         error: connection.error || portfolio.error,
         disconnectBroker: connection.disconnectBroker,
 
